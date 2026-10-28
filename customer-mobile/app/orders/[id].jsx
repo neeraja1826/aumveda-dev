@@ -13,7 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../src/context/AuthContext';
-import { getOrder } from '../../src/services/orderService';
+import {
+  getOrder,
+  getOrderReturnRequests,
+} from '../../src/services/orderService';
 import { colors } from '../../src/theme/colors';
 import OrderTracking from '../../src/components/orders/OrderTracking';
 function formatAmount(value, currency = 'INR') {
@@ -70,6 +73,9 @@ export default function OrderDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
+  const [returnRequests, setReturnRequests] = useState([]);
+  const [returnLoading, setReturnLoading] = useState(true);
+  const [returnError, setReturnError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -93,6 +99,45 @@ export default function OrderDetailsScreen() {
       active = false;
     };
   }, [orderId, retryKey, token]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadReturnRequests() {
+      if (!token || !orderId) {
+        setReturnRequests([]);
+        setReturnLoading(false);
+        return;
+      }
+
+      setReturnLoading(true);
+      setReturnError('');
+
+      try {
+        const requests = await getOrderReturnRequests(token, orderId);
+
+        if (active) {
+          setReturnRequests(requests);
+        }
+      } catch (error) {
+        console.error('Load return requests error:', error);
+
+        if (active) {
+          setReturnError('Unable to load return details.');
+        }
+      } finally {
+        if (active) {
+          setReturnLoading(false);
+        }
+      }
+    }
+
+    loadReturnRequests();
+
+    return () => {
+      active = false;
+    };
+  }, [token, orderId]);
 
   const currency = order?.currency || 'INR';
 const items = Array.isArray(order?.items) ? order.items : [];
@@ -150,6 +195,119 @@ const items = Array.isArray(order?.items) ? order.items : [];
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
           <OrderTracking status={order.status} />
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Return Details</Text>
+
+            {returnLoading ? (
+              <View style={styles.returnLoading}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.helperText}>
+                  Loading return details...
+                </Text>
+              </View>
+            ) : returnError ? (
+              <Text style={styles.helperText}>{returnError}</Text>
+            ) : returnRequests.length === 0 ? (
+              <View style={styles.returnEmpty}>
+                <Ionicons
+                  name="receipt-outline"
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={styles.helperText}>
+                  No return or replacement request has been submitted for this order.
+                </Text>
+                {String(order.status).toLowerCase() === 'delivered' && (
+                  <Text style={styles.returnHint}>
+                    Eligible items can be selected for return or replacement.
+                  </Text>
+                )}
+              </View>
+            ) : (
+              returnRequests.map((request) => {
+                const item = items.find(
+                  (entry) => String(entry.id) === String(request.order_item_id)
+                );
+
+                const requestStatus = String(
+                  request.status || 'requested'
+                ).replaceAll('_', ' ');
+
+                const refundMessage =
+                  request.request_type === 'replacement'
+                    ? 'This is a replacement request, not a refund confirmation.'
+                    : request.status === 'refund_processing'
+                      ? 'Refund processing is in progress. Payment confirmation is pending.'
+                      : request.status === 'completed'
+                        ? 'Return workflow completed. Check the payment provider or finance records to confirm whether the refund was paid.'
+                        : 'Refund has not been confirmed. Check the latest return status.';
+
+                return (
+                  <View key={request.id} style={styles.returnRequest}>
+                    <View style={styles.returnStatusRow}>
+                      <View style={styles.returnIcon}>
+                        <Ionicons
+                          name="return-down-back-outline"
+                          size={21}
+                          color={colors.primary}
+                        />
+                      </View>
+
+                      <View style={styles.returnTitleGroup}>
+                        <Text style={styles.returnProduct}>
+                          {item?.product_name || 'Order item'}
+                        </Text>
+                        <Text style={styles.returnType}>
+                          {request.request_type === 'replacement'
+                            ? 'Replacement request'
+                            : 'Return request'}
+                        </Text>
+                      </View>
+
+                      <View style={styles.returnBadge}>
+                        <Text style={styles.returnBadgeText}>
+                          {requestStatus}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.returnDivider} />
+
+                    <DetailRow
+                      label="Quantity"
+                      value={String(request.requested_quantity ?? '—')}
+                    />
+
+                    <DetailRow
+                      label="Reason"
+                      value={request.reason || 'Not provided'}
+                    />
+
+                    <DetailRow
+                      label="Requested on"
+                      value={formatDate(request.created_at)}
+                    />
+
+                    <DetailRow
+                      label="Last updated"
+                      value={formatDate(request.updated_at)}
+                    />
+
+                    <View style={styles.refundNotice}>
+                      <Ionicons
+                        name="information-circle-outline"
+                        size={18}
+                        color={colors.primary}
+                      />
+                      <Text style={styles.refundNoticeText}>
+                        {refundMessage}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
           <View style={styles.summaryCard}>
             <View style={styles.summaryIcon}>
               <Ionicons name="bag-check-outline" size={25} color={colors.primary} />
@@ -386,4 +544,82 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   primaryButtonText: { color: colors.white, fontWeight: '700' },
+  returnLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+  },
+  returnEmpty: {
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 4,
+  },
+  returnHint: {
+    color: colors.primary,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  returnRequest: {
+    gap: 8,
+  },
+  returnStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  returnIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: colors.cream,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  returnTitleGroup: {
+    flex: 1,
+    gap: 4,
+  },
+  returnProduct: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  returnType: {
+    color: colors.textSecondary,
+    fontSize: 11,
+  },
+  returnBadge: {
+    maxWidth: 115,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: colors.cream,
+  },
+  returnBadgeText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  returnDivider: {
+    marginVertical: 5,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  refundNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 8,
+    padding: 11,
+    borderRadius: 10,
+    backgroundColor: colors.cream,
+  },
+  refundNoticeText: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 17,
+  },
 });

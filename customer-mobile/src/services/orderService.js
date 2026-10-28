@@ -130,3 +130,23 @@ export async function createOrder({
   }
   return response.data;
 }
+
+export async function getOrderReturnRequests(token, orderId) {
+  if (!token) {
+    throw new Error('Sign in to view your return requests.');
+  }
+
+  const query = orderId
+    ? `?order_id=${encodeURIComponent(orderId)}`
+    : '';
+
+  const response = await apiRequest(`/returns${query}`, { token });
+
+  if (!Array.isArray(response?.items)) {
+    throw new Error(
+      'The return requests response was not in the expected format.'
+    );
+  }
+
+  return response.items;
+}
