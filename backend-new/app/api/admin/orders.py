@@ -97,6 +97,7 @@ def get_order(order_id: str):
 
 
 
+
 @router.patch("/{order_id}/status")
 def update_order_status(
     order_id: str,
@@ -120,13 +121,17 @@ def update_order_status(
 
         previous_status = existing.data["status"]
         new_status = payload.status
+
         if previous_status == new_status:
             return {
                 "message": "Order status is unchanged",
                 "order": existing.data,
             }
 
-        allowed_statuses = ALLOWED_ORDER_TRANSITIONS.get(previous_status, set())
+        allowed_statuses = ALLOWED_ORDER_TRANSITIONS.get(
+            previous_status, set()
+        )
+
         if new_status not in allowed_statuses:
             raise HTTPException(
                 status_code=400,
@@ -140,13 +145,14 @@ def update_order_status(
             supabase.table("orders")
             .update({"status": new_status})
             .eq("id", order_id)
+            .eq("status", previous_status)
             .execute()
         )
 
         if not result.data:
             raise HTTPException(
-                status_code=500,
-                detail="Order status was not updated",
+                status_code=409,
+                detail="Order status changed concurrently. Refresh and try again.",
             )
 
         updated_order = result.data[0]
@@ -164,21 +170,32 @@ def update_order_status(
                 }
             ).execute()
 
-        except Exception as history_error:
+            # Update order items when the entire order is delivered.
+            if new_status == "delivered":
+                supabase.table("order_items").update(
+                    {"status": "delivered"}
+                ).eq("order_id", order_id).eq(
+                    "status", "pending"
+                ).execute()
+
+        except Exception as update_error:
+            # Preserve the existing rollback behavior.
             try:
                 supabase.table("orders").update(
                     {"status": previous_status}
-                ).eq("id", order_id).execute()
+                ).eq("id", order_id).eq(
+                    "status", new_status
+                ).execute()
             except Exception:
-                pass
+                logger.exception("Order status rollback failed")
 
             raise HTTPException(
                 status_code=500,
                 detail=(
-                    "Unable to record order status history. "
-                    "The status rollback was attempted."
+                    "Unable to complete the order status update. "
+                    "Please verify the order and its history."
                 ),
-            ) from history_error
+            ) from update_error
 
         return {
             "message": "Order status updated and history recorded",

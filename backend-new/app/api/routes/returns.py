@@ -1,4 +1,4 @@
-
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 import logging
 from typing import Literal
 from uuid import UUID
@@ -106,4 +106,57 @@ def create_return_request(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create return request.",
+        ) from exc
+
+@router.get("")
+def get_customer_return_requests(
+    order_id: UUID | None = Query(default=None),
+    customer_id: str = Depends(get_current_customer_id),
+):
+    try:
+        query = (
+            supabase.table("return_requests")
+            .select("*", count="exact")
+            .eq("customer_id", str(customer_id))
+        )
+
+        if order_id is not None:
+            # Verify that the requested order belongs to this customer.
+            order_result = (
+                supabase.table("orders")
+                .select("id")
+                .eq("id", str(order_id))
+                .eq("customer_id", str(customer_id))
+                .limit(1)
+                .execute()
+            )
+
+            if not order_result.data:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Order not found.",
+                )
+
+            query = query.eq("order_id", str(order_id))
+
+        result = (
+            query.order("created_at", desc=True)
+            .execute()
+        )
+
+        items = result.data or []
+
+        return {
+            "items": items,
+            "total": result.count if result.count is not None else len(items),
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        logger.exception("Failed to retrieve customer return requests: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to retrieve return requests.",
         ) from exc
