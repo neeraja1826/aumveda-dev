@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Aumveda Wellness LLP",
+    "slug": "customer-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "aumveda",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/app-icon.png",
+    "android": {
+      "predictiveBackGestureEnabled": false,
+      "package": "com.aumveda.wellness",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "data": [
+            {
+              "scheme": "aumveda",
+              "host": "auth",
+              "pathPrefix": "/callback"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "output": "static",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-splash-screen",
+      "expo-status-bar",
+      "expo-font",
+      "expo-video",
+      "expo-web-browser",
+      "expo-image"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
