@@ -1,6 +1,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getReportsOverview, getResource } from '../services/adminService.js';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 const summaryFields = [
   ['Customers', 'customers'],
@@ -359,12 +360,13 @@ export default function Reports() {
         }
       `}</style>
 
-      <div className="module-intro">
-        <div>
-          <h2>Reports</h2>
-          <p>Review operational summaries and detailed records.</p>
-        </div>
-      </div>
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA BUSINESS ANALYTICS"
+        title="Reports, Metrics & Store Intelligence"
+        description="Review operational summaries, sales trends, supplier performance, and detailed inventory metrics."
+        badgeText="Analytics Engine"
+        doodle="leaf"
+      />
 
       {overviewError && (
         <div className="report-overview-error" role="alert">

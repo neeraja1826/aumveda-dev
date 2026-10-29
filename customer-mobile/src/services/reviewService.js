@@ -1,5 +1,4 @@
 import { API_BASE_URL } from '../constants/config';
-console.log('Review POST URL:', `${API_BASE_URL}/reviews`);
 /**
  * Get approved reviews for a product.
  */

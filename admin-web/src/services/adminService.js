@@ -162,3 +162,39 @@ export const adjustInventoryStock = (payload) =>
   });
 export const getOrderDetails = (orderId) =>
   apiRequest(`/admin/orders/${encodeURIComponent(orderId)}`);
+
+/* Admin Returns */
+
+export const getReturnRequests = (params = {}) => {
+  const query = new URLSearchParams();
+
+  if (params.status) {
+    query.set('status', params.status);
+  }
+
+  query.set('limit', String(params.limit ?? 50));
+  query.set('offset', String(params.offset ?? 0));
+
+  return apiRequest(`/admin/returns?${query.toString()}`);
+};
+
+export const updateReturnRequestStatus = (
+  returnId,
+  status,
+  notes = ''
+) => {
+  if (!returnId) {
+    throw new Error('Return request ID is required.');
+  }
+
+  return apiRequest(
+    `/admin/returns/${encodeURIComponent(returnId)}/status`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status,
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
+      }),
+    }
+  );
+};

@@ -13,7 +13,6 @@ import { API_BASE_URL } from '../constants/config';
  * - Deployed Render backend connectivity
  */
 
-console.log('ACTIVE API BASE URL:', API_BASE_URL);
 
 export async function apiRequest(endpoint, options = {}) {
   // Avoid duplicate slashes between the base URL and endpoint.
@@ -39,11 +38,7 @@ export async function apiRequest(endpoint, options = {}) {
     headers.Authorization = `Bearer ${options.token}`;
   }
 
-  console.log(`API ${method}: ${url}`);
-  console.log(
-    'API AUTH:',
-    options.token ? 'Bearer token attached' : 'Public request'
-  );
+
 
   let response;
 
@@ -98,7 +93,6 @@ export async function apiRequest(endpoint, options = {}) {
     }
   }
 
-  console.log(`API RESULT: ${endpoint} — HTTP ${response.status}`);
 
   // Handle unsuccessful HTTP responses.
   if (!response.ok) {

@@ -1,6 +1,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getResource } from '../services/adminService.js';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 const sections = [
   ['payments', 'Payments'],
@@ -192,25 +193,29 @@ export default function Finance() {
         }
 
         .finance-page .finance-tabs button {
-          padding: 8px 11px;
-          color: #625e54;
-          background: transparent;
-          border: 1px solid transparent;
-          border-radius: 8px;
-          font-size: 12px;
+          padding: 8px 16px;
+          color: #716F68;
+          background: #FFFFFF;
+          border: 1px solid #D5E4D2;
+          border-radius: 20px;
+          font-size: 12.5px;
+          font-weight: 500;
           cursor: pointer;
-          transition: background 0.15s ease;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .finance-page .finance-tabs button:hover {
-          background: #f6f7f3;
+          background: #F8FAF7;
+          color: #123D2B;
+          border-color: #276345;
         }
 
         .finance-page .finance-tabs button.selected {
-          color: #344d38;
-          background: #e8ebdf;
-          border-color: #d5ddce;
-          font-weight: 700;
+          color: #FFFFFF;
+          background: linear-gradient(135deg, #173F1D 0%, #123D2B 100%);
+          border-color: #123D2B;
+          font-weight: 600;
+          box-shadow: 0 3px 10px rgba(18, 61, 43, 0.22);
         }
 
         .finance-page .finance-tools {
@@ -346,12 +351,13 @@ export default function Finance() {
         }
       `}</style>
 
-      <div className="module-intro">
-        <div>
-          <h2>Finance</h2>
-          <p>Review payment, refund, and vendor payout records.</p>
-        </div>
-      </div>
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA REVENUE & TRANSACTIONS"
+        title="Finance, Ledgers & Vendor Payouts"
+        description="Review payment gateways, customer refunds, commission ledgers, and herbal supplier payouts."
+        badgeText="Financial Console"
+        doodle="leaf"
+      />
 
       <div className="finance-summary">
         <div className="finance-stat">

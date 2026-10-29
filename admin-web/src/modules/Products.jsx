@@ -7,6 +7,7 @@ import {
   updateProduct,
   updateResourceStatus,
 } from '../services/adminService.js';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 const statuses = [
   'draft',
@@ -538,30 +539,21 @@ export default function Products() {
 
   return (
     <section className="module-page products-page">
-      <div className="module-intro">
-        <div>
-          <h2>Products</h2>
-          <p>
-            Manage catalog details, variants, pricing,
-            images, and publication status.
-          </p>
-        </div>
-
-        <div className="products-intro-actions">
-          <span className="products-count">
-            {visibleCount}{' '}
-            {visibleCount === 1 ? 'product' : 'products'}
-          </span>
-
-          <button
-            type="button"
-            className="primary-button"
-            onClick={openCreate}
-          >
-            + Add product
-          </button>
-        </div>
-      </div>
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA HERBAL CATALOG"
+        title="Products & Ayurvedic Formulations"
+        description="Manage catalog details, therapeutic dosage instructions, variants, pricing, and publication status."
+        badgeText={`${visibleCount} ${visibleCount === 1 ? 'Product' : 'Products'}`}
+        doodle="mortar"
+      >
+        <button
+          type="button"
+          className="primary-button"
+          onClick={openCreate}
+        >
+          + Add Product
+        </button>
+      </AyurvedicHeroBanner>
 
       <div className="module-card">
         <div className="module-toolbar">
@@ -1350,7 +1342,7 @@ export default function Products() {
           display: flex;
           flex-wrap: wrap;
           gap: 12px;
-          background: #fffefd;
+          background: #FFFFFF;
         }
 
         .products-page .module-toolbar input {
@@ -1369,7 +1361,7 @@ export default function Products() {
         }
 
         .products-count {
-          color: #77747a;
+          color: #716F68;
           font-size: 13px;
         }
 
@@ -1386,22 +1378,23 @@ export default function Products() {
 
         .products-page .data-table th,
         .products-page .data-table td {
-          padding: 14px 16px;
-          border-bottom: 1px solid #eee6dc;
+          padding: 14px 18px;
+          border-bottom: 1px solid #EDF3EC;
           vertical-align: middle;
           white-space: nowrap;
         }
 
         .products-page .data-table th {
-          color: #77747a;
+          color: #716F68;
           font-size: 11px;
-          font-weight: 600;
+          font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: .04em;
+          letter-spacing: .05em;
+          background: #F8FAF7;
         }
 
         .products-page .product-name {
-          color: #343522;
+          color: #123D2B;
           font-weight: 600;
           white-space: normal;
         }
@@ -1409,35 +1402,38 @@ export default function Products() {
         .products-page .product-description {
           max-width: 280px;
           margin-top: 4px;
-          color: #77747a;
+          color: #716F68;
           font-size: 12px;
           white-space: normal;
         }
 
         .products-page .product-slug {
           margin-top: 4px;
-          color: #8b888c;
+          color: #8C9990;
           font-size: 11px;
         }
 
         .products-page .featured-badge {
           display: inline-block;
-          padding: 5px 9px;
+          padding: 4px 10px;
           border-radius: 20px;
-          background: #f2f0eb;
-          color: #77747a;
+          background: #F5F4E7;
+          color: #716F68;
           font-size: 11px;
+          font-weight: 600;
+          border: 1px solid #E2ECE0;
         }
 
         .products-page .featured-badge.is-featured {
-          background: #e7eee5;
-          color: #344955;
+          background: #E8F2E7;
+          color: #123D2B;
+          border-color: #CDE2CB;
         }
 
         .products-page .status-saving {
           display: block;
           margin-top: 4px;
-          color: #77747a;
+          color: #716F68;
           font-size: 11px;
         }
 
@@ -1455,29 +1451,47 @@ export default function Products() {
         .products-page .secondary-button,
         .products-page .primary-button,
         .products-page .text-danger-button {
-          border-radius: 8px;
-          padding: 9px 12px;
+          border-radius: 10px;
+          padding: 9px 14px;
           font-size: 12px;
           font-weight: 600;
           cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .products-page .primary-button {
-          border: 1px solid #285447;
-          background: #285447;
+          border: 1px solid #123D2B;
+          background: linear-gradient(135deg, #173F1D 0%, #123D2B 100%);
           color: white;
+          box-shadow: 0 2px 8px rgba(18, 61, 43, 0.18);
+        }
+
+        .products-page .primary-button:hover {
+          background: #173F1D;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(18, 61, 43, 0.25);
         }
 
         .products-page .secondary-button {
-          border: 1px solid #d9d3c9;
+          border: 1px solid #D5E4D2;
           background: white;
-          color: #343522;
+          color: #123D2B;
+        }
+
+        .products-page .secondary-button:hover {
+          background: #F8FAF7;
+          border-color: #276345;
         }
 
         .products-page .text-danger-button {
           border: 1px solid transparent;
           background: transparent;
-          color: #a3332a;
+          color: #A3332A;
+          border-radius: 8px;
+        }
+
+        .products-page .text-danger-button:hover {
+          background: #FDF1F0;
         }
 
         .products-page button:disabled {
@@ -1494,7 +1508,8 @@ export default function Products() {
           align-items: flex-start;
           padding: 24px;
           overflow-y: auto;
-          background: rgba(24, 30, 27, .56);
+          background: rgba(18, 61, 43, 0.45);
+          backdrop-filter: blur(8px);
         }
 
         .product-modal {
@@ -1502,9 +1517,10 @@ export default function Products() {
           max-height: none;
           margin: auto;
           overflow: hidden;
-          border-radius: 16px;
-          background: #fff;
-          box-shadow: 0 20px 60px rgba(0,0,0,.2);
+          border-radius: 20px;
+          background: #FFFFFF;
+          border: 1px solid #E2ECE0;
+          box-shadow: 0 24px 70px rgba(18, 61, 43, 0.2);
         }
 
         .product-modal-header {
@@ -1515,37 +1531,46 @@ export default function Products() {
           justify-content: space-between;
           align-items: flex-start;
           gap: 20px;
-          padding: 22px 24px;
-          border-bottom: 1px solid #eee6dc;
-          background: #fff;
+          padding: 24px 28px;
+          border-bottom: 1px solid #EDF3EC;
+          background: #FFFFFF;
         }
 
         .product-modal-header h3 {
           margin: 0;
-          color: #343522;
-          font-size: 20px;
+          color: #123D2B;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 22px;
+          font-weight: 700;
         }
 
         .product-modal-header p {
           margin: 6px 0 0;
-          color: #77747a;
+          color: #716F68;
           font-size: 13px;
         }
 
         .modal-close-button {
-          width: 34px;
-          height: 34px;
-          border: 0;
-          border-radius: 8px;
-          background: #f4f1ec;
-          color: #343522;
-          font-size: 24px;
+          width: 36px;
+          height: 36px;
+          border: 1px solid #D5E4D2;
+          border-radius: 10px;
+          background: #F8FAF7;
+          color: #123D2B;
+          font-size: 22px;
           line-height: 1;
           cursor: pointer;
+          display: grid;
+          place-items: center;
+          transition: background 0.15s;
+        }
+
+        .modal-close-button:hover {
+          background: #E8F2E7;
         }
 
         .product-form {
-          padding: 22px 24px 24px;
+          padding: 24px 28px 28px;
           max-height: calc(100vh - 120px);
           overflow-y: auto;
         }
@@ -1553,14 +1578,14 @@ export default function Products() {
         .product-form-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 14px;
+          gap: 16px;
         }
 
         .product-form label {
           display: flex;
           flex-direction: column;
           gap: 6px;
-          color: #45443d;
+          color: #123D2B;
           font-size: 12px;
           font-weight: 600;
           min-width: 0;
@@ -1571,14 +1596,23 @@ export default function Products() {
         .product-form textarea {
           width: 100%;
           box-sizing: border-box;
-          border: 1px solid #ded9d0;
-          border-radius: 8px;
-          padding: 10px 11px;
-          background: #fff;
-          color: #343522;
+          border: 1px solid #D5E4D2;
+          border-radius: 10px;
+          padding: 11px 13px;
+          background: #FFFFFF;
+          color: #123D2B;
           font: inherit;
+          font-size: 13px;
           font-weight: 400;
-          outline-color: #789783;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .product-form input:not([type="checkbox"]):focus,
+        .product-form select:focus,
+        .product-form textarea:focus {
+          border-color: #276345;
+          box-shadow: 0 0 0 3px rgba(39, 99, 69, 0.14);
+          outline: none;
         }
 
         .product-form textarea {
@@ -1592,12 +1626,15 @@ export default function Products() {
         .product-form .product-checkbox-label {
           flex-direction: row;
           align-items: center;
-          gap: 9px;
+          gap: 10px;
           min-height: 40px;
+          cursor: pointer;
         }
 
         .product-form .product-checkbox-label input {
-          accent-color: #285447;
+          accent-color: #123D2B;
+          width: 17px;
+          height: 17px;
         }
 
         .product-form-section-heading {
@@ -1605,29 +1642,31 @@ export default function Products() {
           justify-content: space-between;
           align-items: center;
           gap: 16px;
-          margin: 26px 0 12px;
+          margin: 28px 0 14px;
           padding-bottom: 12px;
-          border-bottom: 1px solid #eee6dc;
+          border-bottom: 1px solid #EDF3EC;
         }
 
         .product-form-section-heading h4 {
           margin: 0;
-          color: #343522;
-          font-size: 15px;
+          color: #123D2B;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 16px;
+          font-weight: 700;
         }
 
         .product-form-section-heading p {
-          margin: 5px 0 0;
-          color: #77747a;
+          margin: 4px 0 0;
+          color: #716F68;
           font-size: 12px;
         }
 
         .product-editor-card {
-          margin-bottom: 12px;
-          padding: 16px;
-          border: 1px solid #e9e3da;
-          border-radius: 12px;
-          background: #fffdfa;
+          margin-bottom: 14px;
+          padding: 18px;
+          border: 1px solid #E2ECE0;
+          border-radius: 14px;
+          background: #FAF9F4;
         }
 
         .product-editor-card-heading {
@@ -1635,17 +1674,18 @@ export default function Products() {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 14px;
-          color: #343522;
-          font-size: 13px;
+          color: #123D2B;
+          font-size: 13.5px;
+          font-weight: 600;
         }
 
         .product-form-footer {
           display: flex;
           justify-content: flex-end;
-          gap: 10px;
-          padding-top: 20px;
-          margin-top: 20px;
-          border-top: 1px solid #eee6dc;
+          gap: 12px;
+          padding-top: 22px;
+          margin-top: 22px;
+          border-top: 1px solid #EDF3EC;
         }
 
         @media (max-width: 700px) {
@@ -1664,17 +1704,17 @@ export default function Products() {
           }
 
           .product-modal-backdrop {
-            padding: 8px;
+            padding: 10px;
           }
 
           .product-modal {
-            border-radius: 12px;
+            border-radius: 14px;
           }
 
           .product-modal-header,
           .product-form {
-            padding-left: 16px;
-            padding-right: 16px;
+            padding-left: 18px;
+            padding-right: 18px;
           }
 
           .product-form-grid {

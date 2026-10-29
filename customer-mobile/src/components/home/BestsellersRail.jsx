@@ -150,27 +150,34 @@ function BestsellerCard({
   const wishlisted = isWishlisted(product?.id);
 
   return (
-    <Pressable
-      style={styles.card}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
-    >
+    <View style={styles.card}>
       {/* =====================================================
           IMAGE STAGE WITH ALIGNED BADGES & WISHLIST
       ===================================================== */}
       <View style={styles.imageStage}>
         {image ? (
-          <Image
-            source={{ uri: image }}
-            style={styles.productImage}
-            contentFit="contain"
-            transition={200}
-          />
+          <Pressable
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
+            style={styles.productImagePressable}
+          >
+            <Image
+              source={{ uri: image }}
+              style={styles.productImage}
+              contentFit="contain"
+              transition={200}
+            />
+          </Pressable>
         ) : (
-          <View style={styles.placeholderWrap}>
+          <Pressable
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
+            style={styles.placeholderWrap}
+          >
             <Ionicons name="leaf-outline" size={30} color="#123D2B" />
-          </View>
+          </Pressable>
         )}
 
         {/* TOP-LEFT: RANK BADGE & READABLE DISCOUNT BADGE */}
@@ -206,18 +213,25 @@ function BestsellerCard({
           CARD CONTENT
       ===================================================== */}
       <View style={styles.content}>
-        {/* PRODUCT NAME */}
-        <Text style={styles.productName} numberOfLines={1}>
-          {product?.name || 'Ayurvedic Product'}
-        </Text>
+        <Pressable
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
+          style={styles.productInfo}
+        >
+          {/* PRODUCT NAME */}
+          <Text style={styles.productName} numberOfLines={1}>
+            {product?.name || 'Ayurvedic Product'}
+          </Text>
 
-        {/* PRICE ROW */}
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>₹{price.toLocaleString('en-IN')}</Text>
-          {compareAtPrice > price && (
-            <Text style={styles.comparePrice}>₹{compareAtPrice.toLocaleString('en-IN')}</Text>
-          )}
-        </View>
+          {/* PRICE ROW */}
+          <View style={styles.priceRow}>
+            <Text style={styles.price}>₹{price.toLocaleString('en-IN')}</Text>
+            {compareAtPrice > price && (
+              <Text style={styles.comparePrice}>₹{compareAtPrice.toLocaleString('en-IN')}</Text>
+            )}
+          </View>
+        </Pressable>
 
         {/* ACTION BUTTON / STEPPER */}
         <View style={styles.actionWrap}>
@@ -259,7 +273,7 @@ function BestsellerCard({
           )}
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -366,6 +380,11 @@ const styles = StyleSheet.create({
   },
 
   productImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  productImagePressable: {
     width: '88%',
     height: '88%',
   },
@@ -460,6 +479,11 @@ const styles = StyleSheet.create({
   // ----------------------------------------------------------
   content: {
     padding: 11,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+
+  productInfo: {
     flex: 1,
     justifyContent: 'space-between',
   },

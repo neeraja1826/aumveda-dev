@@ -1,6 +1,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getResource } from '../services/adminService.js';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 function formatSettingValue(value) {
   if (value == null || value === '') return '—';
@@ -246,12 +247,13 @@ export default function Settings() {
         }
       `}</style>
 
-      <div className="module-intro">
-        <div>
-          <h2>Settings</h2>
-          <p>View the current AUMVEDA site configuration.</p>
-        </div>
-      </div>
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA SYSTEM CONFIGURATION"
+        title="Settings & Platform Governance"
+        description="View live store environment variables, regional delivery rules, policy parameters, and security policies."
+        badgeText="Core Governance"
+        doodle="leaf"
+      />
 
       <div className="module-card">
         <div className="settings-toolbar">

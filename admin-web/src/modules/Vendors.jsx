@@ -6,6 +6,7 @@ import {
   updateVendorActiveStatus,
   getVendorDetails,
 } from '../services/adminService.js';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 const statuses = ['pending', 'approved', 'rejected', 'suspended'];
 
@@ -116,12 +117,13 @@ export default function Vendors() {
 
   return (
     <section className="module-page vendors-page">
-      <div className="module-intro">
-        <div>
-          <h2>Vendors</h2>
-          <p>Review vendor applications and manage vendor accounts.</p>
-        </div>
-      </div>
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA APOTHECARY PARTNERS"
+        title="Vendors & Herbal Suppliers"
+        description="Review artisan apothecary partners, herbal manufacturers, commission rates, and account approvals."
+        badgeText={`${items.length} Suppliers`}
+        doodle="tonic"
+      />
 
       <div className="module-card">
         <div className="module-toolbar">
@@ -463,33 +465,38 @@ export default function Vendors() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #e9eee7;
-          color: #285447;
-          font-weight: 600;
+          background: #E8F2E7;
+          color: #123D2B;
+          font-weight: 700;
+          border: 1px solid #CDE2CB;
+          border-radius: 8px;
         }
 
         .vendors-page .vendor-subtitle {
           margin-top: 4px;
           font-size: 12px;
-          color: #77747a;
+          color: #716F68;
           overflow-wrap: anywhere;
         }
 
         .vendors-page .vendor-account-status {
           display: inline-block;
-          padding: 4px 9px;
+          padding: 4px 12px;
           border-radius: 20px;
-          font-size: 12px;
+          font-size: 11.5px;
+          font-weight: 600;
         }
 
         .vendors-page .vendor-account-status.is-active {
-          background: #e7f3e9;
-          color: #28643b;
+          background: #E8F2E7;
+          color: #123D2B;
+          border: 1px solid #CDE2CB;
         }
 
         .vendors-page .vendor-account-status.is-inactive {
-          background: #fbe9e7;
-          color: #a3332a;
+          background: #FDF1F0;
+          color: #A3332A;
+          border: 1px solid #F8CECA;
         }
 
         .vendors-page .vendor-account-actions {
@@ -500,17 +507,25 @@ export default function Vendors() {
         }
 
         .vendors-page .vendor-account-toggle {
-          padding: 6px 10px;
-          border: 1px solid #d9dce3;
-          border-radius: 6px;
-          background: #fff;
-          color: #333;
+          padding: 7px 12px;
+          border: 1px solid #D5E4D2;
+          border-radius: 8px;
+          background: #FFFFFF;
+          color: #123D2B;
           font-size: 12px;
+          font-weight: 600;
           cursor: pointer;
+          transition: all 0.18s ease;
+        }
+
+        .vendors-page .vendor-account-toggle:hover:not(:disabled) {
+          background: #F8FAF7;
+          border-color: #276345;
+          transform: translateY(-1px);
         }
 
         .vendors-page .vendor-account-toggle:disabled {
-          opacity: 0.6;
+          opacity: 0.55;
           cursor: not-allowed;
         }
 

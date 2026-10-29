@@ -6,19 +6,21 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import OrderTracking from '../../src/components/orders/OrderTracking';
 
 import { useAuth } from '../../src/context/AuthContext';
 import {
+  createReturnRequest,
   getOrder,
   getOrderReturnRequests,
 } from '../../src/services/orderService';
 import { colors } from '../../src/theme/colors';
-import OrderTracking from '../../src/components/orders/OrderTracking';
 function formatAmount(value, currency = 'INR') {
   const amount = Number(value);
   return `${currency} ${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'}`;
@@ -76,6 +78,14 @@ export default function OrderDetailsScreen() {
   const [returnRequests, setReturnRequests] = useState([]);
   const [returnLoading, setReturnLoading] = useState(true);
   const [returnError, setReturnError] = useState('');
+  const [returnFormItemId, setReturnFormItemId] = useState(null);
+  const [returnType, setReturnType] = useState('return');
+  const [returnQuantity, setReturnQuantity] = useState('1');
+  const [returnReason, setReturnReason] = useState('damaged_product');
+  const [returnDescription, setReturnDescription] = useState('');
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
+  const [returnSubmitError, setReturnSubmitError] = useState('');
+  const [returnSubmitSuccess, setReturnSubmitSuccess] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -139,6 +149,61 @@ export default function OrderDetailsScreen() {
     };
   }, [token, orderId]);
 
+  async function submitReturnRequest(item) {
+    if (!token) {
+      router.push('/(auth)/login');
+      return;
+    }
+
+    if (!item?.id) {
+      setReturnSubmitError('This order item is missing its ID.');
+      return;
+    }
+
+    const quantity = Number(returnQuantity);
+    const availableQuantity = Number(item.quantity) || 0;
+
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > availableQuantity) {
+      setReturnSubmitError(`Enter a quantity between 1 and ${availableQuantity}.`);
+      return;
+    }
+
+    if (!returnReason.trim()) {
+      setReturnSubmitError('Please select a reason for your request.');
+      return;
+    }
+
+    setReturnSubmitting(true);
+    setReturnSubmitError('');
+    setReturnSubmitSuccess('');
+
+    try {
+      await createReturnRequest({
+        token,
+        orderId,
+        orderItemId: item.id,
+        requestType: returnType,
+        requestedQuantity: quantity,
+        reason: returnReason,
+        description: returnDescription,
+      });
+
+      const requests = await getOrderReturnRequests(token, orderId);
+      setReturnRequests(requests);
+      setReturnFormItemId(null);
+      setReturnDescription('');
+      setReturnQuantity('1');
+      setReturnSubmitSuccess('Your request has been submitted successfully.');
+    } catch (submitError) {
+      console.error('Create return request error:', submitError);
+      setReturnSubmitError(
+        submitError?.message || 'Unable to submit your return request.'
+      );
+    } finally {
+      setReturnSubmitting(false);
+    }
+  }
+
   const currency = order?.currency || 'INR';
 const items = Array.isArray(order?.items) ? order.items : [];
   const shippingLines = order ? addressLines(order) : [];
@@ -197,6 +262,10 @@ const items = Array.isArray(order?.items) ? order.items : [];
           <OrderTracking status={order.status} />
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Return Details</Text>
+
+            {returnSubmitSuccess ? (
+              <Text style={styles.returnSuccessText}>{returnSubmitSuccess}</Text>
+            ) : null}
 
             {returnLoading ? (
               <View style={styles.returnLoading}>
@@ -318,7 +387,7 @@ const items = Array.isArray(order?.items) ? order.items : [];
             <Text style={styles.orderDate}>{formatDate(order.created_at)}</Text>
             <View style={styles.statusBadge}>
               <Text style={styles.statusText}>
-                {String(order.status || 'pending').replaceAll('_', ' ')}
+                {String(order.status || 'placed').replaceAll('_', ' ')}
               </Text>
             </View>
           </View>
@@ -337,32 +406,166 @@ const items = Array.isArray(order?.items) ? order.items : [];
                 ? item.image_url.trim()
                 : '';
 
+              const existingRequest = returnRequests.find(
+                (request) => String(request.order_item_id) === String(item.id)
+              );
+              const isDelivered = String(order.status || '').toLowerCase() === 'delivered';
+              const canRequestReturn = isDelivered && !existingRequest && Boolean(item.id);
+              const isFormOpen = String(returnFormItemId) === String(item.id);
+
               return (
                 <View
                   key={item.id || `${item.product_id || 'item'}-${index}`}
-                  style={[styles.itemRow, index > 0 && styles.itemDivider]}
+                  style={[styles.orderItemContainer, index > 0 && styles.itemDivider]}
                 >
-                  {imageUrl ? (
-                    <Image source={{ uri: imageUrl }} style={styles.productImage} />
-                  ) : (
-                    <View style={styles.productPlaceholder}>
-                      <Ionicons name="leaf-outline" size={21} color={colors.primary} />
+                  <View style={styles.itemRow}>
+                    {imageUrl ? (
+                      <Image source={{ uri: imageUrl }} style={styles.productImage} />
+                    ) : (
+                      <View style={styles.productPlaceholder}>
+                        <Ionicons name="leaf-outline" size={21} color={colors.primary} />
+                      </View>
+                    )}
+                    <View style={styles.itemDescription}>
+                      <Text style={styles.itemName}>
+                        {item.product_name || item.product_id || 'Product'}
+                      </Text>
+                      {item.variant_name ? (
+                        <Text style={styles.helperText}>{item.variant_name}</Text>
+                      ) : null}
+                      <Text style={styles.itemMeta}>
+                        {quantity} × {formatAmount(unitPrice, currency)}
+                      </Text>
                     </View>
-                  )}
-                  <View style={styles.itemDescription}>
-                    <Text style={styles.itemName}>
-                      {item.product_name || item.product_id || 'Product'}
-                    </Text>
-                    {item.variant_name ? (
-                      <Text style={styles.helperText}>{item.variant_name}</Text>
-                    ) : null}
-                    <Text style={styles.itemMeta}>
-                      {quantity} × {formatAmount(unitPrice, currency)}
+                    <Text style={styles.lineTotal}>
+                      {formatAmount(lineTotal, currency)}
                     </Text>
                   </View>
-                  <Text style={styles.lineTotal}>
-                    {formatAmount(lineTotal, currency)}
-                  </Text>
+
+                  {canRequestReturn ? (
+                    <View style={styles.returnActionArea}>
+                      <Pressable
+                        style={styles.outlineButton}
+                        onPress={() => {
+                          setReturnFormItemId(isFormOpen ? null : item.id);
+                          setReturnType('return');
+                          setReturnQuantity('1');
+                          setReturnReason('damaged_product');
+                          setReturnDescription('');
+                          setReturnSubmitError('');
+                          setReturnSubmitSuccess('');
+                        }}
+                      >
+                        <Text style={styles.outlineButtonText}>
+                          {isFormOpen ? 'Cancel request' : 'Request Return / Replacement'}
+                        </Text>
+                      </Pressable>
+
+                      {isFormOpen ? (
+                        <View style={styles.returnForm}>
+                          <Text style={styles.formLabel}>Request type</Text>
+                          <View style={styles.choiceRow}>
+                            {[
+                              { label: 'Return', value: 'return' },
+                              { label: 'Replacement', value: 'replacement' },
+                            ].map((choice) => (
+                              <Pressable
+                                key={choice.value}
+                                style={[
+                                  styles.choiceButton,
+                                  returnType === choice.value && styles.choiceButtonActive,
+                                ]}
+                                onPress={() => setReturnType(choice.value)}
+                              >
+                                <Text
+                                  style={[
+                                    styles.choiceButtonText,
+                                    returnType === choice.value && styles.choiceButtonTextActive,
+                                  ]}
+                                >
+                                  {choice.label}
+                                </Text>
+                              </Pressable>
+                            ))}
+                          </View>
+
+                          <Text style={styles.formLabel}>Quantity (max {quantity})</Text>
+                          <TextInput
+                            value={returnQuantity}
+                            onChangeText={setReturnQuantity}
+                            keyboardType="number-pad"
+                            maxLength={String(quantity).length || 1}
+                            style={styles.formInput}
+                            placeholder="Quantity"
+                          />
+
+                          <Text style={styles.formLabel}>Reason</Text>
+                          <View style={styles.reasonChoices}>
+                            {[
+                              { label: 'Damaged product', value: 'damaged_product' },
+                              { label: 'Wrong item', value: 'wrong_item' },
+                              { label: 'Quality issue', value: 'quality_issue' },
+                              { label: 'Other', value: 'other' },
+                            ].map((choice) => (
+                              <Pressable
+                                key={choice.value}
+                                style={[
+                                  styles.reasonChip,
+                                  returnReason === choice.value && styles.reasonChipActive,
+                                ]}
+                                onPress={() => setReturnReason(choice.value)}
+                              >
+                                <Text
+                                  style={[
+                                    styles.reasonChipText,
+                                    returnReason === choice.value && styles.reasonChipTextActive,
+                                  ]}
+                                >
+                                  {choice.label}
+                                </Text>
+                              </Pressable>
+                            ))}
+                          </View>
+
+                          <Text style={styles.formLabel}>Additional details (optional)</Text>
+                          <TextInput
+                            value={returnDescription}
+                            onChangeText={setReturnDescription}
+                            multiline
+                            maxLength={1000}
+                            placeholder="Describe the issue..."
+                            style={[styles.formInput, styles.descriptionInput]}
+                            textAlignVertical="top"
+                          />
+
+                          {returnSubmitError ? (
+                            <Text style={styles.formError}>{returnSubmitError}</Text>
+                          ) : null}
+
+                          <Pressable
+                            style={[
+                              styles.primaryButton,
+                              returnSubmitting && styles.buttonDisabled,
+                            ]}
+                            disabled={returnSubmitting}
+                            onPress={() => submitReturnRequest(item)}
+                          >
+                            {returnSubmitting ? (
+                              <ActivityIndicator color={colors.white} />
+                            ) : (
+                              <Text style={styles.primaryButtonText}>Submit Request</Text>
+                            )}
+                          </Pressable>
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : existingRequest ? (
+                    <Text style={styles.existingRequestText}>
+                      {existingRequest.request_type === 'replacement'
+                        ? 'Replacement'
+                        : 'Return'} request already submitted for this item.
+                    </Text>
+                  ) : null}
                 </View>
               );
             })}
@@ -622,4 +825,73 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 17,
   },
+
+  orderItemContainer: { gap: 10 },
+  returnActionArea: { paddingBottom: 6, gap: 10 },
+  outlineButton: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  outlineButtonText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  returnForm: {
+    padding: 13,
+    gap: 9,
+    borderRadius: 12,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  formLabel: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  choiceRow: { flexDirection: 'row', gap: 8 },
+  choiceButton: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: colors.white,
+  },
+  choiceButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  choiceButtonText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  choiceButtonTextActive: { color: colors.white },
+  formInput: {
+    minHeight: 42,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 9,
+    color: colors.text,
+    backgroundColor: colors.white,
+    fontSize: 13,
+  },
+  descriptionInput: { minHeight: 78 },
+  reasonChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  reasonChip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    backgroundColor: colors.white,
+  },
+  reasonChipActive: { backgroundColor: colors.cream, borderColor: colors.primary },
+  reasonChipText: { color: colors.textSecondary, fontSize: 11 },
+  reasonChipTextActive: { color: colors.primary, fontWeight: '700' },
+  formError: { color: colors.danger, fontSize: 12, lineHeight: 17 },
+  returnSuccessText: {
+    marginBottom: 10,
+    padding: 10,
+    borderRadius: 9,
+    backgroundColor: colors.cream,
+    color: colors.primary,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  existingRequestText: { color: colors.textSecondary, fontSize: 11, paddingBottom: 6 },
+  buttonDisabled: { opacity: 0.65 },
 });

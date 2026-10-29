@@ -4,6 +4,7 @@ import {
   getResource,
   updateResourceStatus,
 } from '../services/adminService.js';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 export default function Customers() {
   const [items, setItems] = useState([]);
@@ -63,12 +64,13 @@ export default function Customers() {
 
   return (
     <section className="module-page customers-page">
-      <div className="module-intro">
-        <div>
-          <h2>Customers</h2>
-          <p>View customer profiles and manage account status.</p>
-        </div>
-      </div>
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA PATIENT & CUSTOMER CARE"
+        title="Customers & Ayurvedic Profiles"
+        description="View holistic customer profiles, health journey histories, and manage account statuses."
+        badgeText={`${items.length} Customers`}
+        doodle="flower"
+      />
 
       <div className="module-toolbar">
         <input
@@ -223,9 +225,10 @@ export default function Customers() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #e9eee7;
-          color: #285447;
-          font-weight: 600;
+          background: #E8F2E7;
+          color: #123D2B;
+          font-weight: 700;
+          border: 1px solid #CDE2CB;
         }
 
         .customers-page .customer-id {
@@ -233,24 +236,27 @@ export default function Customers() {
           max-width: 210px;
           overflow-wrap: anywhere;
           font-size: 11px;
-          opacity: 0.6;
+          color: #8C9990;
         }
 
         .customers-page .customer-status {
           display: inline-block;
-          padding: 4px 9px;
+          padding: 4px 12px;
           border-radius: 20px;
-          font-size: 12px;
+          font-size: 11.5px;
+          font-weight: 600;
         }
 
         .customers-page .customer-status.active {
-          background: #e7f3e9;
-          color: #28643b;
+          background: #E8F2E7;
+          color: #123D2B;
+          border: 1px solid #CDE2CB;
         }
 
         .customers-page .customer-status.inactive {
-          background: #fbe9e7;
-          color: #a3332a;
+          background: #FDF1F0;
+          color: #A3332A;
+          border: 1px solid #F8CECA;
         }
 
         @media (max-width: 620px) {

@@ -66,74 +66,131 @@ const response = await fetch(`${apiBaseUrl}/auth/login`,
           min-height: 100vh;
           display: grid;
           grid-template-columns: 1fr 1fr;
-          background: #f7f8f5;
-          color: #202c25;
-          font-family: Inter, system-ui, sans-serif;
+          background: #F8FAF7;
+          color: #123D2B;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         .aum-login-brand {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 48px;
-          color: #fff;
-          background: linear-gradient(145deg, #123d32, #071f1a);
+          padding: 60px 54px;
+          color: #FFFFFF;
+          background: linear-gradient(155deg, #123D2B 0%, #173F1D 45%, #092116 100%);
+          position: relative;
+          overflow: hidden;
+        }
+        .aum-login-brand::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 80% 20%, rgba(217, 165, 46, 0.12) 0%, transparent 60%);
+          pointer-events: none;
         }
         .aum-login-brand h1 {
-          max-width: 440px;
-          font-family: Georgia, serif;
-          font-size: clamp(38px, 4vw, 58px);
-          font-weight: 500;
-          line-height: 1.12;
+          max-width: 460px;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: clamp(36px, 4vw, 52px);
+          font-weight: 600;
+          line-height: 1.16;
+          color: #FFFFFF;
+          margin: 0 0 16px;
         }
         .aum-login-brand p {
-          max-width: 400px;
-          color: #d4e1d7;
+          max-width: 420px;
+          color: #C6DBCF;
+          font-size: 15px;
           line-height: 1.7;
+          font-weight: 400;
+        }
+        .aum-login-logo-wrap {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .aum-login-logo-mark {
+          display: grid;
+          width: 44px;
+          height: 44px;
+          place-items: center;
+          border-radius: 13px;
+          background: #F5F4E7;
+          border: 1.5px solid #D9A52E;
+          color: #123D2B;
+          font-family: 'Playfair Display', serif;
+          font-size: 24px;
+          font-weight: 700;
         }
         .aum-login-logo {
-          font-size: 25px;
-          font-weight: 700;
+          font-size: 22px;
+          font-weight: 800;
           letter-spacing: 3px;
+          color: #FFFFFF;
+        }
+        .aum-login-tagline {
+          display: inline-block;
+          margin-bottom: 18px;
+          padding: 4px 12px;
+          border-radius: 20px;
+          background: rgba(217, 165, 46, 0.15);
+          color: #D9A52E;
+          border: 1px solid rgba(217, 165, 46, 0.35);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 1.2px;
         }
         .aum-login-panel {
           display: grid;
           place-items: center;
-          padding: 32px 24px;
+          padding: 40px 28px;
+          background: #F8FAF7;
         }
         .aum-login-card {
           width: 100%;
-          max-width: 410px;
+          max-width: 420px;
+          background: #FFFFFF;
+          padding: 40px;
+          border-radius: 20px;
+          border: 1px solid #E2ECE0;
+          box-shadow: 0 16px 44px -8px rgba(18, 61, 43, 0.08), 0 4px 12px rgba(18, 61, 43, 0.03);
         }
         .aum-login-card h2 {
-          margin: 0 0 10px;
-          font-size: 30px;
+          margin: 0 0 8px;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 28px;
+          font-weight: 700;
+          color: #123D2B;
         }
         .aum-login-muted {
-          margin: 0 0 30px;
-          color: #737c75;
-          line-height: 1.6;
+          margin: 0 0 28px;
+          color: #716F68;
+          font-size: 13.5px;
+          line-height: 1.5;
         }
         .aum-login-field {
           display: block;
-          margin-bottom: 19px;
-          font-size: 14px;
+          margin-bottom: 20px;
+          font-size: 13px;
           font-weight: 600;
+          color: #123D2B;
         }
         .aum-login-field input {
           box-sizing: border-box;
           width: 100%;
-          margin-top: 9px;
-          padding: 13px 14px;
-          border: 1px solid #d9dfd8;
-          border-radius: 9px;
-          background: #fff;
-          color: #202c25;
+          margin-top: 8px;
+          padding: 13px 15px;
+          border: 1px solid #D5E4D2;
+          border-radius: 11px;
+          background: #FFFFFF;
+          color: #123D2B;
           font: inherit;
+          font-size: 13.5px;
           outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
         }
         .aum-login-field input:focus {
-          border-color: #27634e;
-          box-shadow: 0 0 0 3px #27634e18;
+          border-color: #276345;
+          box-shadow: 0 0 0 3px rgba(39, 99, 69, 0.15);
         }
         .aum-login-password {
           display: flex;
@@ -144,79 +201,99 @@ const response = await fetch(`${apiBaseUrl}/auth/login`,
           min-width: 0;
         }
         .aum-login-show {
-          margin-top: 9px;
-          padding: 0 10px;
-          border: 1px solid #d9dfd8;
-          border-radius: 9px;
-          background: #fff;
+          margin-top: 8px;
+          padding: 0 14px;
+          border: 1px solid #D5E4D2;
+          border-radius: 11px;
+          background: #F8FAF7;
+          color: #123D2B;
+          font-size: 12.5px;
+          font-weight: 600;
           cursor: pointer;
+          transition: background 0.15s;
+        }
+        .aum-login-show:hover {
+          background: #E8F2E7;
         }
         .aum-login-submit {
           width: 100%;
           padding: 14px;
+          margin-top: 8px;
           border: 0;
-          border-radius: 9px;
-          background: #174b3b;
-          color: #fff;
-          font-size: 15px;
+          border-radius: 11px;
+          background: linear-gradient(135deg, #173F1D 0%, #123D2B 100%);
+          color: #FFFFFF;
+          font-size: 14.5px;
           font-weight: 600;
           cursor: pointer;
+          box-shadow: 0 4px 14px rgba(18, 61, 43, 0.22);
+          transition: transform 0.18s, box-shadow 0.18s;
+        }
+        .aum-login-submit:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(18, 61, 43, 0.3);
         }
         .aum-login-submit:disabled {
-          opacity: .65;
+          opacity: 0.65;
           cursor: wait;
         }
         .aum-login-error {
           margin: 0 0 18px;
-          padding: 12px;
-          border-radius: 8px;
-          background: #fff0ef;
-          color: #a12b24;
-          font-size: 14px;
+          padding: 12px 14px;
+          border-radius: 10px;
+          background: #FDF1F0;
+          border: 1px solid #F8CECA;
+          color: #A3332A;
+          font-size: 13px;
           line-height: 1.5;
         }
         .aum-login-footer {
-          margin-top: 26px;
-          color: #7c857e;
-          font-size: 12px;
+          margin-top: 24px;
+          color: #716F68;
+          font-size: 11.5px;
           text-align: center;
+          letter-spacing: 0.2px;
         }
-        @media (max-width: 760px) {
+        @media (max-width: 820px) {
           .aum-login {
             grid-template-columns: 1fr;
           }
           .aum-login-brand {
-            min-height: 160px;
-            padding: 24px;
+            min-height: 220px;
+            padding: 34px 24px;
           }
           .aum-login-brand h1 {
-            margin: 36px 0 8px;
-            font-size: 34px;
-          }
-          .aum-login-brand p {
-            margin-bottom: 0;
+            font-size: 28px;
+            margin: 18px 0 8px;
           }
           .aum-login-panel {
-            padding: 35px 22px;
+            padding: 30px 18px;
+          }
+          .aum-login-card {
+            padding: 28px 20px;
           }
         }
       `}</style>
 
       <section className="aum-login-brand">
-        <div className="aum-login-logo">AUMVEDA</div>
+        <div className="aum-login-logo-wrap">
+          <span className="aum-login-logo-mark">A</span>
+          <span className="aum-login-logo">AUMVEDA</span>
+        </div>
         <div>
+          <span className="aum-login-tagline">AYURVEDIC OPERATIONS CONSOLE</span>
           <h1>Wellness begins with thoughtful care.</h1>
           <p>
-            Manage products, orders, vendors and customer experiences
-            from your AUMVEDA administration workspace.
+            Manage products, orders, vendors, and holistic customer experiences
+            from your dedicated AUMVEDA administration workspace.
           </p>
         </div>
-        <small>© AUMVEDA · Admin workspace</small>
+        <small style={{ color: '#8DA998' }}>© AUMVEDA · Premium Ayurvedic Care Admin</small>
       </section>
 
       <section className="aum-login-panel">
         <form className="aum-login-card" onSubmit={handleSubmit}>
-          <h2>Admin login</h2>
+          <h2>Admin sign in</h2>
           <p className="aum-login-muted">
             Sign in with your authorized administrator account.
           </p>
@@ -261,7 +338,7 @@ const response = await fetch(`${apiBaseUrl}/auth/login`,
           </button>
 
           <div className="aum-login-footer">
-            Authorized administrators only
+            Authorized administrators only · Secured access
           </div>
         </form>
       </section>

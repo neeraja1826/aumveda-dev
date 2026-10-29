@@ -5,6 +5,7 @@ import {
   getInventoryStock,
   adjustInventoryStock,
 } from '../services/adminService.js';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -358,27 +359,41 @@ const [stockFilter, setStockFilter] = useState('all');
 }
 
 .inventory-page .stock-modal-product {
-  padding: 13px;
+  padding: 16px;
   margin-bottom: 18px;
-  border-radius: 10px;
-  background: #f5f7f3;
-  color: #586456;
+  border-radius: 12px;
+  background: #FAF9F4;
+  border: 1px solid #E2ECE0;
+  color: #716F68;
   font-size: 13px;
   line-height: 1.7;
 }
 .inventory-page .transaction-incoming {
-  background: #e7f5eb;
-  color: #216e41;
+  background: #E8F2E7;
+  color: #123D2B;
+  border: 1px solid #CDE2CB;
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-block;
 }
 
 .inventory-page .transaction-outgoing {
-  background: #fff0e8;
-  color: #a34218;
+  background: #FEF7E6;
+  color: #946800;
+  border: 1px solid #F8E2A7;
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-block;
 }
 .inventory-page .stock-modal-product strong {
   display: block;
-  color: #263c30;
+  color: #123D2B;
   font-size: 14px;
+  font-weight: 700;
 }
 
 .inventory-page .stock-modal .adjustment-form {
@@ -389,15 +404,15 @@ const [stockFilter, setStockFilter] = useState('all');
   padding: 0;
   border: none;
   background: transparent;
-  color: #a15c00;
+  color: #D9A52E;
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: underline;
   cursor: pointer;
 }
 
 .inventory-page .inventory-low-stock-link:hover {
-  color: #744200;
+  color: #B5851E;
 }
 
 .inventory-page .stock-modal .adjustment-field {
@@ -451,12 +466,13 @@ const [stockFilter, setStockFilter] = useState('all');
 
       `}</style>
 
-      <div className="module-intro">
-        <div>
-          <h2>Inventory</h2>
-          <p>Track stock movement and review inventory transactions.</p>
-        </div>
-      </div>
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA WAREHOUSE & STOCK"
+        title="Inventory & Stock Movement"
+        description="Track herbal supply levels, adjust batch quantities, monitor threshold alerts, and review movements."
+        badgeText={`${stockItems.length} Variants`}
+        doodle="tonic"
+      />
 
       {adjustmentSuccess && (
         <div className="inventory-success" role="status">

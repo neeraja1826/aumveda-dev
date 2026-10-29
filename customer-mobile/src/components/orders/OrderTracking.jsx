@@ -5,8 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 
 const STEPS = [
-  { key: 'pending', label: 'Order placed', icon: 'receipt-outline' },
-  { key: 'confirmed', label: 'Confirmed', icon: 'checkmark-circle-outline' },
+  { key: 'placed', label: 'Order placed', icon: 'receipt-outline' },
   { key: 'processing', label: 'Processing', icon: 'cube-outline' },
   { key: 'shipped', label: 'Shipped', icon: 'car-outline' },
   { key: 'delivered', label: 'Delivered', icon: 'home-outline' },
@@ -15,7 +14,7 @@ const STEPS = [
 const STEP_ORDER = STEPS.map((step) => step.key);
 
 export default function OrderTracking({ status }) {
-  const currentStatus = String(status || 'pending').toLowerCase();
+  const currentStatus = String(status || 'placed').toLowerCase();
 
   if (currentStatus === 'cancelled' || currentStatus === 'returned') {
     return (

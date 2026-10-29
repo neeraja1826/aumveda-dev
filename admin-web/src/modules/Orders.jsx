@@ -5,10 +5,10 @@ import {
   updateResourceStatus,
   getOrderDetails,
 } from '../services/adminService.js';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 const statuses = [
-  'pending',
-  'confirmed',
+  'placed',
   'processing',
   'shipped',
   'delivered',
@@ -114,12 +114,13 @@ export default function Orders() {
 
   return (
     <section className="module-page orders-page">
-      <div className="module-intro">
-        <div>
-          <h2>Orders</h2>
-          <p>Track customer orders and manage fulfillment.</p>
-        </div>
-      </div>
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA DISPATCH & FULFILLMENT"
+        title="Customer Orders & Delivery Management"
+        description="Monitor prescription and wellness deliveries, process order shipments, and oversee customer fulfillment."
+        badgeText={`${total} Total Orders`}
+        doodle="tonic"
+      />
 
       <div className="module-card">
         <div className="order-summary-grid">

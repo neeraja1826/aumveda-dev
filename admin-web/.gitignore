@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -22,3 +23,46 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+=======
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+dist/
+.expo/
+web-build/
+
+# Secrets and local configuration
+*.pem
+*.key
+secrets/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Operating system
+.DS_Store
+Thumbs.db
+# Editor and IDE files
+.idea/
+.vscode/
+
+# Android backup copies
+android_backup/
+**/android_backup/
+
+# Development keystores
+**/debug.keystore
+
+# Local archive files
+*.zip
+>>>>>>> 0ec30231060e51cabbc96693eec81b531045b324

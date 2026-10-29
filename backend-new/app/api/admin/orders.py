@@ -15,27 +15,29 @@ router = APIRouter(
 )
 
 
+
 class OrderStatusUpdate(BaseModel):
     status: Literal[
-        "pending",
-        "confirmed",
+        "placed",
         "processing",
+        "partially_shipped",
         "shipped",
         "delivered",
         "cancelled",
         "returned",
     ]
 
+
+
 ALLOWED_ORDER_TRANSITIONS = {
-    "placed": {"confirmed", "cancelled"},
-    "confirmed": {"processing", "cancelled"},
-    "processing": {"partially_shipped", "shipped", "cancelled"},
-    "partially_shipped": {"shipped", "cancelled"},
+    "placed": {"processing", "cancelled"},
+    "processing": {"shipped", "cancelled"},
     "shipped": {"delivered"},
     "delivered": set(),
     "cancelled": set(),
     "returned": set(),
 }
+
 
 
 @router.get("")

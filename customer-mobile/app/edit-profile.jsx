@@ -20,8 +20,8 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const { user, token, updateUser } = useAuth();
   const [name, setName] = useState(
-    user?.full_name || user?.name || ''
-  );
+  user?.name || user?.full_name || ''
+);
   const [phone, setPhone] = useState(user?.phone || '');
   const [saving, setSaving] = useState(false);
 
@@ -37,12 +37,28 @@ export default function EditProfileScreen() {
 
     try {
       setSaving(true);
-      const updated = await updateProfile(
-        { full_name: name.trim(), phone: phone.trim() || null },
-        token
-      );
-      updateUser(updated || { full_name: name.trim(), phone: phone.trim() });
-      router.back();
+      const trimmedName = name.trim();
+
+
+
+const trimmedPhone = phone.trim();
+
+const updated = await updateProfile(
+  {
+    full_name: trimmedName,
+    phone: trimmedPhone || null,
+  },
+  token
+);
+
+updateUser({
+  ...user,
+  ...(updated || {}),
+  full_name: trimmedName,
+  phone: trimmedPhone,
+});
+
+router.back();
     } catch (error) {
       console.error('Update profile error:', error);
       Alert.alert(

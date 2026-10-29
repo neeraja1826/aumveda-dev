@@ -1,16 +1,39 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
 import logging
+import time
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 
 from app.api.routes.orders import get_current_customer_id
 from app.core.supabase import supabase
 
 logger = logging.getLogger(__name__)
+def execute_read_with_retry(query_factory, attempts=3):
+    """
+    Retry read-only Supabase queries after transient HTTP failures.
+    Rebuild the query on each attempt.
+    """
+    for attempt in range(attempts):
+        try:
+            return query_factory().execute()
 
+        except (httpx.TransportError, httpx.TimeoutException):
+            if attempt == attempts - 1:
+                raise
+
+            delay = 0.5 * (2 ** attempt)
+            logger.warning(
+                "Supabase read failed; retrying in %.1f seconds "
+                "(attempt %s/%s).",
+                delay,
+                attempt + 1,
+                attempts,
+            )
+            time.sleep(delay)
 router = APIRouter(
     prefix="/returns",
     tags=["Returns"],
@@ -102,7 +125,7 @@ def create_return_request(
         raise
 
     except Exception as exc:
-        logger.exception("Failed to create return request: %s", exc)
+        logger.exception("Failed to create return request")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create return request.",
@@ -122,14 +145,15 @@ def get_customer_return_requests(
 
         if order_id is not None:
             # Verify that the requested order belongs to this customer.
-            order_result = (
-                supabase.table("orders")
-                .select("id")
-                .eq("id", str(order_id))
-                .eq("customer_id", str(customer_id))
-                .limit(1)
-                .execute()
-            )
+            order_result = execute_read_with_retry(
+    lambda: (
+        supabase.table("orders")
+        .select("id")
+        .eq("id", str(order_id))
+        .eq("customer_id", str(customer_id))
+        .limit(1)
+    )
+)
 
             if not order_result.data:
                 raise HTTPException(
@@ -139,9 +163,8 @@ def get_customer_return_requests(
 
             query = query.eq("order_id", str(order_id))
 
-        result = (
-            query.order("created_at", desc=True)
-            .execute()
+        result = execute_read_with_retry(
+            lambda: query.order("created_at", desc=True)
         )
 
         items = result.data or []
@@ -155,7 +178,7 @@ def get_customer_return_requests(
         raise
 
     except Exception as exc:
-        logger.exception("Failed to retrieve customer return requests: %s", exc)
+        logger.exception("Failed to retrieve customer return requests")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to retrieve return requests.",

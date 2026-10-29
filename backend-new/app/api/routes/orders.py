@@ -1,5 +1,6 @@
 import logging
-
+import time
+import httpx
 from typing import Literal
 from uuid import UUID
 
@@ -200,9 +201,8 @@ def create_order(
             if not order:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Order creation returned no data.",
-                )
-
+                    detail="Unable to create order. Please try again.",
+                    )
             order = order[0]
 
         return {
@@ -389,18 +389,35 @@ def get_orders(
     except HTTPException:
         raise
 
-    except Exception as error:
+    except Exception:
         logger.exception("Failed to load customer orders")
-
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to load orders: {str(error)}",
-        )
-
+            detail="Unable to load orders.",
+            )
 
 # ============================================================
 # GET SINGLE ORDER
 # ============================================================
+
+
+def execute_supabase_read(query, retries=3):
+    for attempt in range(retries):
+        try:
+            return query.execute()
+        except (httpx.ReadError, httpx.ConnectError, httpx.TimeoutException):
+            if attempt == retries - 1:
+                raise
+            delay = 0.5 * (2 ** attempt)
+            logger.warning(
+                "Supabase read failed; retrying in %s seconds "
+                "(attempt %s/%s)",
+                delay,
+                attempt + 1,
+                retries,
+            )
+            time.sleep(delay)
+
 
 
 @router.get("/{order_id}")
@@ -409,7 +426,8 @@ def get_order(
     customer_id: str = Depends(get_current_customer_id),
 ):
     try:
-        # 1. Fetch the order belonging to the authenticated customer.
+        logger.info("GET ORDER: Fetching order %s", order_id)
+
         response = (
             supabase
             .table("orders")
@@ -441,6 +459,8 @@ def get_order(
             .execute()
         )
 
+        logger.info("GET ORDER: Order query succeeded")
+
         orders = response.data or []
 
         if not orders:
@@ -451,7 +471,8 @@ def get_order(
 
         order = orders[0]
 
-        # 2. Fetch items belonging to this order.
+        logger.info("GET ORDER: Fetching order items")
+
         items_response = (
             supabase
             .table("order_items")
@@ -462,7 +483,11 @@ def get_order(
 
         order_items = items_response.data or []
 
-        # 3. Collect product and variant IDs.
+        logger.info(
+            "GET ORDER: Loaded %s order items",
+            len(order_items),
+        )
+
         product_ids = list({
             item["product_id"]
             for item in order_items
@@ -475,29 +500,46 @@ def get_order(
             if item.get("variant_id")
         })
 
-        # 4. Fetch product details.
         products = []
-        if product_ids:
-            products_response = (
-    supabase
-    .table("products")
-    .select("*, product_images(*)")
-    .in_("id", product_ids)
-    .execute()
-)
-            products = products_response.data or []
 
-        # 5. Fetch variant details.
-        variants = []
-        if variant_ids:
-            variants_response = (
+        if product_ids:
+            logger.info("GET ORDER: Fetching products")
+
+            products_response = (
                 supabase
-                .table("product_variants")
-                .select("*")
-                .in_("id", variant_ids)
+                .table("products")
+                .select("*, product_images(*)")
+                .in_("id", product_ids)
                 .execute()
             )
+
+            products = products_response.data or []
+
+            logger.info(
+                "GET ORDER: Loaded %s products",
+                len(products),
+            )
+
+        variants = []
+
+        if variant_ids:
+            logger.info("GET ORDER: Fetching variants")
+
+            variants_response = (
+                execute_supabase_read(
+                    supabase
+                    .table("product_variants")
+                    .select("*")
+                    .in_("id", variant_ids)
+                )
+            )
+
             variants = variants_response.data or []
+
+            logger.info(
+                "GET ORDER: Loaded %s variants",
+                len(variants),
+            )
 
         products_by_id = {
             str(product["id"]): product
@@ -509,7 +551,6 @@ def get_order(
             for variant in variants
         }
 
-        # 6. Attach product and variant details to each item.
         for item in order_items:
             item["product"] = products_by_id.get(
                 str(item.get("product_id"))
@@ -519,8 +560,9 @@ def get_order(
                 str(item.get("variant_id"))
             )
 
-        # 7. Include the items in the order response.
         order["items"] = order_items
+
+        logger.info("GET ORDER: Completed successfully")
 
         return {
             "status": "success",
@@ -530,10 +572,14 @@ def get_order(
     except HTTPException:
         raise
 
-    except Exception as error:
-        logger.exception("Failed to load order")
+    except Exception:
+        logger.exception(
+            "GET ORDER FAILED: order_id=%s customer_id=%s",
+            order_id,
+            customer_id,
+        )
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to load order details.",
+            detail="Failed to load order details. Please try again.",
         )

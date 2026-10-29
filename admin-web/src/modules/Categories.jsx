@@ -7,6 +7,7 @@ import {
   updateCategorySettings,
   deleteCategory,
 } from '../services/adminService.js';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 function makeSlug(value) {
   return value
@@ -205,18 +206,13 @@ async function handleDeleteCategory(category) {
 
   return (
     <section className="module-page categories-page">
-      <div className="module-intro">
-        <div>
-          <h2>Categories</h2>
-          <p>
-            Organize the store catalog and browse structure.
-          </p>
-        </div>
-
-        <span className="categories-count">
-          {visibleItems.length} categories
-        </span>
-      </div>
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA BOTANICAL TAXONOMY"
+        title="Categories & Ayurvedic Collections"
+        description="Organize therapeutic remedies into holistic health categories and curated store aisles."
+        badgeText={`${visibleItems.length} Collections`}
+        doodle="tea"
+      />
 
       {error && (
         <div className="error-state" role="alert">
@@ -398,6 +394,7 @@ async function handleDeleteCategory(category) {
                       </td>
                       <td>
                         <input
+                          className="category-sort-input"
                           type="number"
                           min="0"
                           value={item.sort_order ?? 0}
@@ -426,6 +423,7 @@ async function handleDeleteCategory(category) {
 
                       <td>
                         <select
+                          className={`category-status-select category-status-${item.is_active ? 'active' : 'inactive'}`}
                           value={item.is_active ? 'active' : 'inactive'}
                           onChange={(event) =>
                             toggleCategorySetting(
@@ -442,20 +440,22 @@ async function handleDeleteCategory(category) {
                       </td>
 
                       <td>
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() => startEdit(item)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="text-danger-button"
-                          onClick={() => handleDeleteCategory(item)}
-                        >
-                          Delete
-                        </button>
+                        <div className="category-row-actions">
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => startEdit(item)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="text-danger-button"
+                            onClick={() => handleDeleteCategory(item)}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -472,35 +472,37 @@ async function handleDeleteCategory(category) {
         }
 
         .categories-count {
-          color: #77747a;
+          color: #716F68;
           font-size: 13px;
         }
 
         .category-form-card,
         .category-list-card {
-          padding: 20px;
+          padding: 24px;
         }
 
         .category-form-card h3,
         .category-list-toolbar h3 {
           margin: 0;
-          color: #343522;
-          font-size: 16px;
+          color: #123D2B;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 18px;
+          font-weight: 700;
         }
 
         .category-form {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           align-items: end;
-          gap: 14px;
-          margin-top: 16px;
+          gap: 16px;
+          margin-top: 18px;
         }
 
         .category-form label {
           display: flex;
           flex-direction: column;
           gap: 7px;
-          color: #45443d;
+          color: #123D2B;
           font-size: 12px;
           font-weight: 600;
         }
@@ -511,43 +513,68 @@ async function handleDeleteCategory(category) {
           box-sizing: border-box;
           width: 100%;
           min-width: 0;
-          padding: 10px 12px;
-          border: 1px solid #ded9d0;
-          border-radius: 8px;
-          background: #fff;
-          color: #343522;
+          padding: 11px 14px;
+          border: 1px solid #D5E4D2;
+          border-radius: 10px;
+          background: #FFFFFF;
+          color: #123D2B;
           font: inherit;
           font-weight: 400;
+          font-size: 13px;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .category-form input:focus,
+        .category-form select:focus,
+        .category-list-toolbar input:focus {
+          border-color: #276345;
+          box-shadow: 0 0 0 3px rgba(39, 99, 69, 0.14);
+          outline: none;
         }
 
         .category-form-actions {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
+          gap: 10px;
           grid-column: 1 / -1;
           justify-content: flex-end;
+          margin-top: 4px;
         }
 
         .category-form-actions button,
         .category-list-card .secondary-button {
-          padding: 9px 13px;
-          border-radius: 8px;
+          padding: 10px 16px;
+          border-radius: 10px;
           cursor: pointer;
-          font-size: 12px;
+          font-size: 12.5px;
           font-weight: 600;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .category-form-actions .primary-button {
-          border: 1px solid #285447;
-          background: #285447;
-          color: #fff;
+          border: 1px solid #123D2B;
+          background: linear-gradient(135deg, #173F1D 0%, #123D2B 100%);
+          color: #FFFFFF;
+          box-shadow: 0 2px 8px rgba(18, 61, 43, 0.18);
+        }
+
+        .category-form-actions .primary-button:hover {
+          background: #173F1D;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(18, 61, 43, 0.25);
         }
 
         .category-form-actions .secondary-button,
         .category-list-card .secondary-button {
-          border: 1px solid #d9d3c9;
-          background: #fff;
-          color: #343522;
+          border: 1px solid #D5E4D2;
+          background: #FFFFFF;
+          color: #123D2B;
+        }
+
+        .category-form-actions .secondary-button:hover,
+        .category-list-card .secondary-button:hover {
+          background: #F8FAF7;
+          border-color: #276345;
         }
 
         .category-list-toolbar {
@@ -556,7 +583,7 @@ async function handleDeleteCategory(category) {
           align-items: center;
           flex-wrap: wrap;
           gap: 12px;
-          margin-bottom: 16px;
+          margin-bottom: 18px;
         }
 
         .category-list-toolbar input {
@@ -566,48 +593,53 @@ async function handleDeleteCategory(category) {
         .categories-page .category-name-cell {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
           min-width: 190px;
         }
 
         .categories-page .category-thumbnail {
-          width: 42px;
-          height: 42px;
+          width: 44px;
+          height: 44px;
           object-fit: cover;
-          border-radius: 8px;
+          border-radius: 10px;
           flex-shrink: 0;
+          border: 1px solid #E2ECE0;
         }
 
         .categories-page .category-description {
           margin: 4px 0 0;
           font-size: 12px;
-          opacity: .7;
+          color: #716F68;
           max-width: 260px;
           white-space: normal;
         }
 
         .category-status {
           display: inline-block;
-          padding: 5px 9px;
+          padding: 4px 12px;
           border-radius: 20px;
           font-size: 11px;
+          font-weight: 600;
         }
 
         .category-status-active {
-          background: #e7eee5;
-          color: #285447;
+          background: #E8F2E7;
+          color: #123D2B;
+          border: 1px solid #CDE2CB;
         }
 
         .category-status-inactive {
-          background: #f2f0eb;
-          color: #77747a;
+          background: #F5F4E7;
+          color: #716F68;
+          border: 1px solid #E2ECE0;
         }
 
         .category-success {
-          padding: 12px 14px;
-          border-radius: 8px;
-          background: #e7eee5;
-          color: #285447;
+          padding: 13px 16px;
+          border-radius: 10px;
+          background: #E8F2E7;
+          color: #123D2B;
+          border: 1px solid #CDE2CB;
           font-size: 13px;
         }
 

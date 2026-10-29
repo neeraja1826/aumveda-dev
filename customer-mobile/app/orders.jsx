@@ -29,8 +29,7 @@ function formatAmount(value, currency = 'INR') {
 }
 
 function OrderCard({ order, onPress }) {
-  const status = String(order.status || 'pending').replaceAll('_', ' ');
-
+const status = String(order.status || 'placed').replaceAll('_', ' ');
   return (
     <Pressable
       accessibilityRole="button"

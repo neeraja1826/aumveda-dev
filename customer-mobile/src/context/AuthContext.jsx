@@ -129,13 +129,24 @@ export function AuthProvider({ children }) {
 
       try {
         console.log('AUTH DEBUG: Starting profile request');
-        const response = await getProfile(sessionToken);
-        console.log('AUTH DEBUG: Profile request completed');
-        const profile = extractUser(response);
+        
+const response = await getProfile(sessionToken);
+
+
+
+const profile = extractUser(response);
+
+console.log(
+  'AUTH EXTRACTED USER:',
+  JSON.stringify(profile, null, 2)
+);
+console.log(
+  'DEBUG: EXTRACTED PROFILE:',
+  JSON.stringify(profile, null, 2)
+);
         if (profile) {
           activeUser = profile;
           await saveAuthUser(profile);
-          console.log('AUTH: Session profile restored.');
         } else {
           console.warn('AUTH: Profile response was empty; checking stored user.');
         }

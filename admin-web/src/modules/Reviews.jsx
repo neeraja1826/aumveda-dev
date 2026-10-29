@@ -1,6 +1,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getResource, updateResourceStatus } from '../services/adminService.js';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 const statuses = ['pending', 'approved', 'rejected'];
 
@@ -238,7 +239,7 @@ export default function Reviews() {
 
         .reviews-page .review-star {
           margin-right: 4px;
-          color: #b38b38;
+          color: #D9A52E;
         }
 
         .reviews-page .review-comment {
@@ -261,28 +262,31 @@ export default function Reviews() {
         .reviews-page .review-badge {
           display: inline-flex;
           align-items: center;
-          padding: 5px 9px;
+          padding: 4px 12px;
           border-radius: 20px;
-          background: #f0f2ed;
-          color: #5e6c5b;
-          font-size: 11px;
+          background: #F8FAF7;
+          color: #123D2B;
+          font-size: 11.5px;
           font-weight: 600;
           text-transform: capitalize;
         }
 
         .reviews-page .review-badge[data-status="approved"] {
-          background: #e8f1e7;
-          color: #376642;
+          background: #E8F2E7;
+          color: #123D2B;
+          border: 1px solid #CDE2CB;
         }
 
         .reviews-page .review-badge[data-status="pending"] {
-          background: #f7f0df;
-          color: #896b2c;
+          background: #FEF7E6;
+          color: #946800;
+          border: 1px solid #F8E2A7;
         }
 
         .reviews-page .review-badge[data-status="rejected"] {
-          background: #f7e9e7;
-          color: #9b4c45;
+          background: #FDF1F0;
+          color: #A3332A;
+          border: 1px solid #F8CECA;
         }
 
         .reviews-page .review-empty {
@@ -359,12 +363,13 @@ export default function Reviews() {
         }
       `}</style>
 
-      <div className="module-intro">
-        <div>
-          <h2>Reviews</h2>
-          <p>Manage product ratings and customer feedback.</p>
-        </div>
-      </div>
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA CUSTOMER TESTIMONIALS"
+        title="Reviews, Ratings & Herbal Feedback"
+        description="Moderate customer product ratings, efficacy feedback, and verify genuine user experiences."
+        badgeText={`${summary.total} Reviews`}
+        doodle="flower"
+      />
 
       <div className="review-summary">
         <div className="review-stat">

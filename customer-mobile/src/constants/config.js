@@ -7,7 +7,6 @@ const PRODUCTION_API_URL =
   'https://aumveda-customer-backend-2.onrender.com/api/v1';
 
 export const API_BASE_URL = PRODUCTION_API_URL;
-
 export const APP_NAME = 'AUMVEDA';
 export const API_TIMEOUT = 15000;
 
