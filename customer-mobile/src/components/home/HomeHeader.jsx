@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useMemo} from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   Image,
   Modal,
@@ -22,16 +22,185 @@ import * as Location from 'expo-location';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { getAddresses } from '../../services/addressService';
+
 const LOCATION_STORAGE_KEY = '@aumveda_selected_location';
 const DEFAULT_LOCATION = 'Hyderabad, Telangana';
 
+// Curated distinct pastel gradient palettes for categories when selected
+export const CATEGORY_PASTEL_THEMES = [
+  // 0: Fresh Mint & Sage (All / Ayurvedic General)
+  {
+    headerGradient: ['#EAF5EB', '#DEEFE0', '#D3E7D5'],
+    headerBorder: '#B8D8BF',
+    statusBarColor: '#EAF5EB',
+    cardGradient: ['#FFFFFF', '#E3F4E5'],
+    cardBorder: '#2E7D32',
+    accent: '#123D2B',
+  },
+  // 1: Pastel Peach & Blossom (Skin Care / Face / Glow)
+  {
+    headerGradient: ['#FFF1EE', '#FDE4DE', '#FBD6CD'],
+    headerBorder: '#F6BFAF',
+    statusBarColor: '#FFF1EE',
+    cardGradient: ['#FFFFFF', '#FEE9E4'],
+    cardBorder: '#E06D53',
+    accent: '#8C3827',
+  },
+  // 2: Pastel Lavender & Lilac (Hair Care / Scalp / Oils)
+  {
+    headerGradient: ['#F7F1FD', '#EDE1F8', '#E2D0F6'],
+    headerBorder: '#CFBEEC',
+    statusBarColor: '#F7F1FD',
+    cardGradient: ['#FFFFFF', '#EFE7F8'],
+    cardBorder: '#7E57C2',
+    accent: '#48256E',
+  },
+  // 3: Warm Honey & Saffron (Health / Digestion / Immunity)
+  {
+    headerGradient: ['#FFF8EB', '#FFF0D4', '#FDE5B6'],
+    headerBorder: '#F7D48E',
+    statusBarColor: '#FFF8EB',
+    cardGradient: ['#FFFFFF', '#FFF1D6'],
+    cardBorder: '#E5A11F',
+    accent: '#794B00',
+  },
+  // 4: Soft Seafoam Aqua & Sky (Body & Bath / Personal Care)
+  {
+    headerGradient: ['#EEF9FA', '#DDF5F6', '#CCEEF2'],
+    headerBorder: '#9FDDE2',
+    statusBarColor: '#EEF9FA',
+    cardGradient: ['#FFFFFF', '#E1F6F8'],
+    cardBorder: '#1A8F97',
+    accent: '#0C5A60',
+  },
+  // 5: Pastel Matcha & Herbal (Wellness Teas & Infusions)
+  {
+    headerGradient: ['#F6FAEC', '#EDF7DC', '#E0F2C5'],
+    headerBorder: '#C4E698',
+    statusBarColor: '#F6FAEC',
+    cardGradient: ['#FFFFFF', '#EDF7DD'],
+    cardBorder: '#689F38',
+    accent: '#3C5C17',
+  },
+  // 6: Pastel Apricot & Amber (Kits & Combos)
+  {
+    headerGradient: ['#FFF5EB', '#FFEDE0', '#FDE0CB'],
+    headerBorder: '#F8C8A3',
+    statusBarColor: '#FFF5EB',
+    cardGradient: ['#FFFFFF', '#FFEDE0'],
+    cardBorder: '#E67E22',
+    accent: '#894615',
+  },
+  // 7: Pastel Rose Quartz & Blush (Women Care / Feminine Wellness)
+  {
+    headerGradient: ['#FFF0F5', '#FDE2EC', '#FCD2E2'],
+    headerBorder: '#F6B5CF',
+    statusBarColor: '#FFF0F5',
+    cardGradient: ['#FFFFFF', '#FDE8F1'],
+    cardBorder: '#D84A78',
+    accent: '#9C1D4A',
+  },
+];
+
+export function getCategoryPastelTheme(categoryName = '', index = 0) {
+  const norm = (categoryName || '').toLowerCase().trim();
+
+  if (!norm || norm === 'all') {
+    return CATEGORY_PASTEL_THEMES[0];
+  }
+  // Women Care / Feminine Wellness - must be checked before generic personal care
+  if (
+    norm.includes('women') ||
+    norm.includes('woman') ||
+    norm.includes('female') ||
+    norm.includes('fem') ||
+    norm.includes('period') ||
+    norm.includes('intimate') ||
+    norm.includes('maternity')
+  ) {
+    return CATEGORY_PASTEL_THEMES[7];
+  }
+  if (
+    norm.includes('skin') ||
+    norm.includes('face') ||
+    norm.includes('glow') ||
+    norm.includes('beauty')
+  ) {
+    return CATEGORY_PASTEL_THEMES[1];
+  }
+  if (
+    norm.includes('hair') ||
+    norm.includes('scalp') ||
+    norm.includes('oil') ||
+    norm.includes('spa')
+  ) {
+    return CATEGORY_PASTEL_THEMES[2];
+  }
+  if (
+    norm.includes('health') ||
+    norm.includes('digest') ||
+    norm.includes('immunit')
+  ) {
+    return CATEGORY_PASTEL_THEMES[3];
+  }
+  if (
+    norm.includes('personal') ||
+    norm.includes('body') ||
+    norm.includes('bath') ||
+    norm.includes('wash') ||
+    norm.includes('hygiene') ||
+    norm.includes('soap')
+  ) {
+    return CATEGORY_PASTEL_THEMES[4];
+  }
+  if (
+    norm.includes('tea') ||
+    norm.includes('wellness') ||
+    norm.includes('beverage')
+  ) {
+    return CATEGORY_PASTEL_THEMES[5];
+  }
+  if (
+    norm.includes('combo') ||
+    norm.includes('kit') ||
+    norm.includes('bundle')
+  ) {
+    return CATEGORY_PASTEL_THEMES[6];
+  }
+
+  return CATEGORY_PASTEL_THEMES[index % CATEGORY_PASTEL_THEMES.length];
+}
+
 // Doodle icon selector based on category name
-function CategoryDoodleIcon({ name = '', isSelected = false, size = 26 }) {
+function CategoryDoodleIcon({
+  name = '',
+  isSelected = false,
+  size = 21,
+  selectedColor = '#123D2B',
+}) {
   const normalized = name.toLowerCase().trim();
-  const iconColor = isSelected ? '#123D2B' : '#716F68';
+  const iconColor = isSelected ? selectedColor : '#716F68';
 
   if (!normalized || normalized === 'all') {
     return <MaterialCommunityIcons name="leaf" size={size} color={iconColor} />;
+  }
+
+  // Women Care: Floral tulip icon
+  if (
+    normalized.includes('women') ||
+    normalized.includes('woman') ||
+    normalized.includes('female') ||
+    normalized.includes('fem') ||
+    normalized.includes('period') ||
+    normalized.includes('intimate')
+  ) {
+    return (
+      <MaterialCommunityIcons
+        name="flower-tulip-outline"
+        size={size}
+        color={iconColor}
+      />
+    );
   }
 
   if (
@@ -73,14 +242,17 @@ function CategoryDoodleIcon({ name = '', isSelected = false, size = 26 }) {
     );
   }
 
+  // Personal Care: Clean wash icon (avoid bare 'care' check)
   if (
     normalized.includes('personal') ||
     normalized.includes('body') ||
-    normalized.includes('care')
+    normalized.includes('bath') ||
+    normalized.includes('wash') ||
+    normalized.includes('hygiene')
   ) {
     return (
       <MaterialCommunityIcons
-        name="flower-tulip-outline"
+        name="hand-wash-outline"
         size={size}
         color={iconColor}
       />
@@ -132,13 +304,9 @@ export default function HomeHeader({
   const { width } = useWindowDimensions();
   const { cartCount } = useCart();
   const { token, isAuthenticated } = useAuth();
-const [selectedLocation, setSelectedLocation] = useState(
-  DEFAULT_LOCATION
-);
   const [locationText, setLocationText] = useState(DEFAULT_LOCATION);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
-  const [manualLocation, setManualLocation] = useState('');
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
 
@@ -264,41 +432,12 @@ const [selectedLocation, setSelectedLocation] = useState(
   }, [token]);
 
   // --------------------------------------------------------------------------
-  // SELECT A SAVED ADDRESS
-  // --------------------------------------------------------------------------
-  const handleSelectAddress = async (address) => {
-    const formatted = [
-      address.city,
-      address.state,
-    ]
-      .filter(Boolean)
-      .join(', ');
-
-    const chosen =
-      formatted ||
-      address.address_line1 ||
-      DEFAULT_LOCATION;
-
-    setLocationText(chosen);
-
-    try {
-      await AsyncStorage.setItem(
-        LOCATION_STORAGE_KEY,
-        chosen
-      );
-    } catch (_) {}
-
-    setShowLocationModal(false);
-  };
-
-  // --------------------------------------------------------------------------
   // DETECT CURRENT LOCATION
   // --------------------------------------------------------------------------
   const handleSetCurrentLocation = async () => {
     try {
       setDetectingLocation(true);
 
-      // Request permission only when the user taps the location option.
       const { status, canAskAgain } =
         await Location.requestForegroundPermissionsAsync();
 
@@ -325,7 +464,6 @@ const [selectedLocation, setSelectedLocation] = useState(
         return;
       }
 
-      // Check whether the device's location service is enabled.
       const servicesEnabled =
         await Location.hasServicesEnabledAsync();
 
@@ -348,20 +486,16 @@ const [selectedLocation, setSelectedLocation] = useState(
         return;
       }
 
-      // Get the device's current coordinates.
       const position = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
 
-      // Convert the coordinates into a readable address.
       const places = await Location.reverseGeocodeAsync({
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
       });
 
       const place = places?.[0];
-      console.log('GPS coordinates:', position.coords);
-      console.log('Reverse geocoded address:', place);
 
       if (!place) {
         Alert.alert(
@@ -386,8 +520,6 @@ const [selectedLocation, setSelectedLocation] = useState(
         );
         return;
       }
-
-      console.log('Detected location:', detectedLocation);
 
       setLocationText(detectedLocation);
 
@@ -427,6 +559,7 @@ const [selectedLocation, setSelectedLocation] = useState(
         { id: 'health-care', name: 'Health Care' },
         { id: 'skin-care', name: 'Skin Care' },
         { id: 'hair-care', name: 'Hair Care' },
+        { id: 'women-care', name: 'Women Care' },
         { id: 'personal-care', name: 'Personal Care' },
         { id: 'wellness-teas', name: 'Wellness Teas' },
         { id: 'essential-oils', name: 'Essential Oils' },
@@ -455,15 +588,40 @@ const [selectedLocation, setSelectedLocation] = useState(
     return unique;
   }, [categories]);
 
+  // Determine active theme based on selected category so the whole header adapts
+  const activeCategory = useMemo(() => {
+    if (!selectedCategoryId || selectedCategoryId === 'all') {
+      return { id: 'all', name: 'All' };
+    }
+    return (
+      categoryItems.find(
+        (c) => String(c.id) === String(selectedCategoryId)
+      ) || { id: selectedCategoryId, name: '' }
+    );
+  }, [categoryItems, selectedCategoryId]);
+
+  const activeTheme = useMemo(() => {
+    const catIndex = categoryItems.findIndex(
+      (c) => String(c.id) === String(selectedCategoryId)
+    );
+    return getCategoryPastelTheme(
+      activeCategory?.name || '',
+      catIndex >= 0 ? catIndex : 0
+    );
+  }, [categoryItems, selectedCategoryId, activeCategory]);
+
   // --------------------------------------------------------------------------
   // UI
   // --------------------------------------------------------------------------
   return (
     <LinearGradient
-      colors={['#E5F2E4', '#D9EAD7', '#CDE2CB']}
+      colors={activeTheme.headerGradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
-      style={styles.gradientContainer}
+      style={[
+        styles.gradientContainer,
+        { borderColor: activeTheme.headerBorder },
+      ]}
     >
       <StatusBar style="dark" />
 
@@ -500,7 +658,7 @@ const [selectedLocation, setSelectedLocation] = useState(
           >
             <Ionicons
               name="location-sharp"
-              size={16}
+              size={15}
               color="#123D2B"
               style={styles.locationPin}
             />
@@ -514,7 +672,7 @@ const [selectedLocation, setSelectedLocation] = useState(
 
             <Ionicons
               name="chevron-down"
-              size={13}
+              size={12}
               color="#123D2B"
             />
           </Pressable>
@@ -534,7 +692,7 @@ const [selectedLocation, setSelectedLocation] = useState(
           >
             <Ionicons
               name="heart-outline"
-              size={21}
+              size={18}
               color="#123D2B"
             />
           </Pressable>
@@ -551,7 +709,7 @@ const [selectedLocation, setSelectedLocation] = useState(
           >
             <Ionicons
               name="cart-outline"
-              size={22}
+              size={19}
               color="#123D2B"
             />
 
@@ -577,7 +735,7 @@ const [selectedLocation, setSelectedLocation] = useState(
         >
           <Ionicons
             name="search-outline"
-            size={19}
+            size={17}
             color="#123D2B"
           />
 
@@ -646,17 +804,18 @@ const [selectedLocation, setSelectedLocation] = useState(
         )}
       </View>
 
-      {/* CATEGORIES */}
+      {/* CATEGORIES WITH DIFFERENT PASTEL GRADIENT SELECTION */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.categoriesScroll}
       >
-        {categoryItems.map((cat) => {
+        {categoryItems.map((cat, index) => {
           const isSelected =
             String(cat.id) === String(selectedCategoryId);
 
           const isAll = cat.id === 'all';
+          const pastelTheme = getCategoryPastelTheme(cat.name, index);
 
           return (
             <Pressable
@@ -676,36 +835,68 @@ const [selectedLocation, setSelectedLocation] = useState(
               }}
               style={({ pressed }) => [
                 styles.categoryCard,
-                isSelected && styles.categoryCardSelected,
                 pressed && styles.categoryCardPressed,
               ]}
               accessibilityRole="button"
               accessibilityLabel={`Category ${cat.name}`}
             >
-              <View style={styles.doodleWrap}>
-                <CategoryDoodleIcon
-                  name={cat.name}
-                  isSelected={isSelected}
-                  size={isAll ? 26 : 24}
-                />
-              </View>
-
-              <Text
-                style={[
-                  styles.categoryName,
-                  isSelected && styles.categoryNameSelected,
-                ]}
-                numberOfLines={2}
-              >
-                {cat.name}
-              </Text>
-
               {isSelected ? (
-                <View style={styles.activeUnderline} />
+                <LinearGradient
+                  colors={pastelTheme.cardGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={[
+                    styles.categoryCardInner,
+                    styles.categoryCardSelectedGradient,
+                    { borderColor: pastelTheme.cardBorder },
+                  ]}
+                >
+                  <View style={styles.doodleWrap}>
+                    <CategoryDoodleIcon
+                      name={cat.name}
+                      isSelected={true}
+                      selectedColor={pastelTheme.accent}
+                      size={isAll ? 23 : 21}
+                    />
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.categoryName,
+                      styles.categoryNameSelected,
+                      { color: pastelTheme.accent },
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {cat.name}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.activeUnderline,
+                      { backgroundColor: pastelTheme.accent },
+                    ]}
+                  />
+                </LinearGradient>
               ) : (
-                <View
-                  style={styles.inactiveUnderlinePlaceholder}
-                />
+                <View style={styles.categoryCardInner}>
+                  <View style={styles.doodleWrap}>
+                    <CategoryDoodleIcon
+                      name={cat.name}
+                      isSelected={false}
+                      size={isAll ? 23 : 21}
+                    />
+                  </View>
+
+                  <Text
+                    style={styles.categoryName}
+                    numberOfLines={2}
+                  >
+                    {cat.name}
+                  </Text>
+
+                  <View style={styles.inactiveUnderlinePlaceholder} />
+                </View>
               )}
             </Pressable>
           );
@@ -788,7 +979,7 @@ const [selectedLocation, setSelectedLocation] = useState(
                     >
                       <Ionicons
                         name="location-outline"
-                        size={19}
+                        size={17}
                         color="#123D2B"
                       />
 
@@ -924,26 +1115,26 @@ const [selectedLocation, setSelectedLocation] = useState(
 const styles = StyleSheet.create({
   gradientContainer: {
     width: '100%',
-    paddingTop: 10,
-    paddingBottom: 16,
+    paddingTop: 4,
+    paddingBottom: 10,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    borderWidth: 0.2,
-    borderColor: '#276345',
+    borderWidth: 0.5,
+    borderColor: '#B8D8BF',
     shadowColor: '#123D2B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   /* TOP ROW */
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 14,
+    marginBottom: 8,
   },
 
   leftCol: {
@@ -953,20 +1144,20 @@ const styles = StyleSheet.create({
 
   brandLogoRow: {
     alignSelf: 'flex-start',
-    marginBottom: 4,
+    marginBottom: 2,
   },
 
   logoImage: {
-    width: 58,
-    height: 48,
+    width: 48,
+    height: 38,
   },
 
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    marginTop: 2,
-    paddingVertical: 2,
+    marginTop: 1,
+    paddingVertical: 1,
   },
 
   locationPressed: {
@@ -979,7 +1170,7 @@ const styles = StyleSheet.create({
 
   locationText: {
     fontFamily: 'InterSemiBold',
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#123D2B',
     marginRight: 4,
     maxWidth: 200,
@@ -989,22 +1180,22 @@ const styles = StyleSheet.create({
   actionButtonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     marginTop: 2,
   },
 
   circleButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F5F4E7',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#123D2B',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
     position: 'relative',
   },
 
@@ -1017,9 +1208,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -3,
     right: -3,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 8.5,
     backgroundColor: '#173F1D',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1031,7 +1222,7 @@ const styles = StyleSheet.create({
   cartBadgeText: {
     color: '#FFFFFF',
     fontFamily: 'InterSemiBold',
-    fontSize: 9,
+    fontSize: 8.5,
     fontWeight: '800',
     textAlign: 'center',
   },
@@ -1046,18 +1237,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 10,
   },
 
   searchBar: {
     flex: 1,
-    height: 46,
-    borderRadius: 23,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    gap: 9,
+    paddingHorizontal: 14,
+    gap: 8,
     shadowColor: '#123D2B',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -1072,21 +1263,21 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     flex: 1,
     fontFamily: 'InterRegular',
-    fontSize: 12.5,
+    fontSize: 12,
     color: '#716F68',
   },
 
   miniPromoChip: {
-    height: 46,
-    borderRadius: 23,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#FFFFFF',
     borderWidth: 1.2,
-    borderColor: '#399E5B',
+    borderColor: '#8BC399',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 10,
-    paddingRight: 6,
-    gap: 6,
+    paddingLeft: 8,
+    paddingRight: 5,
+    gap: 5,
   },
 
   miniPromoTextCol: {
@@ -1095,7 +1286,7 @@ const styles = StyleSheet.create({
 
   miniPromoEyebrow: {
     fontFamily: 'InterSemiBold',
-    fontSize: 6.8,
+    fontSize: 6.5,
     letterSpacing: 0.8,
     color: '#D9A52E',
     fontWeight: '800',
@@ -1103,8 +1294,8 @@ const styles = StyleSheet.create({
 
   miniPromoTitle: {
     fontFamily: 'InterSemiBold',
-    fontSize: 10.5,
-    lineHeight: 12,
+    fontSize: 9.5,
+    lineHeight: 11,
     color: '#123D2B',
     fontWeight: '700',
   },
@@ -1116,9 +1307,9 @@ const styles = StyleSheet.create({
   },
 
   miniPromoThumb: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 25,
+    height: 25,
+    borderRadius: 12.5,
   },
 
   miniPromoArrow: {
@@ -1127,32 +1318,36 @@ const styles = StyleSheet.create({
 
   /* CATEGORIES */
   categoriesScroll: {
-    paddingHorizontal: 14,
-    gap: 8,
+    paddingHorizontal: 12,
+    gap: 6,
     alignItems: 'center',
   },
 
   categoryCard: {
-    minWidth: 64,
-    maxWidth: 82,
-    paddingHorizontal: 8,
-    paddingTop: 8,
-    paddingBottom: 4,
-    borderRadius: 18,
+    minWidth: 62,
+    maxWidth: 78,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.2,
+  },
+
+  categoryCardInner: {
+    width: '100%',
+    paddingHorizontal: 7,
+    paddingTop: 5,
+    paddingBottom: 4,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
     borderColor: 'transparent',
   },
 
-  categoryCardSelected: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 0.5,
-    borderColor: '#399E5B',
+  categoryCardSelectedGradient: {
     shadowColor: '#123D2B',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
     elevation: 2,
   },
 
@@ -1161,16 +1356,16 @@ const styles = StyleSheet.create({
   },
 
   doodleWrap: {
-    height: 34,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
 
   categoryName: {
     fontFamily: 'InterMedium',
-    fontSize: 11,
-    lineHeight: 13,
+    fontSize: 10.5,
+    lineHeight: 12.5,
     color: '#716F68',
     textAlign: 'center',
     fontWeight: '500',
@@ -1178,23 +1373,20 @@ const styles = StyleSheet.create({
 
   categoryNameSelected: {
     fontFamily: 'InterSemiBold',
-    color: '#123D2B',
     fontWeight: '700',
   },
 
   activeUnderline: {
-    width: 30,
-    height: 3,
+    width: 20,
+    height: 2.5,
     borderRadius: 2,
-    backgroundColor: '#123D2B',
-    marginTop: 6,
+    marginTop: 3,
   },
 
   inactiveUnderlinePlaceholder: {
-    width: 30,
-    height: 3,
-    marginTop: 6,
-    backgroundColor: 'transparent',
+    width: 20,
+    height: 2.5,
+    marginTop: 3,
   },
 
   /* LOCATION MODAL */

@@ -89,11 +89,6 @@ export async function getHomeData({
   }
 }
 
-export const getHomeConcerns = async () => {
-  const response = await apiRequest('/home/concerns');
-  return getArray(response);
-};
-
 export async function recordRecentlyViewed(productId, token) {
   if (!productId || !token) return null;
 

@@ -1,0 +1,761 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
+
+// Organic pastel color palettes for concern tiles
+const CONCERN_THEMES = [
+  {
+    bg: '#F4F8F3', // Soft Sage
+    border: '#DEEBDC',
+    accent: '#123D2B',
+    tagBg: 'rgba(18, 61, 43, 0.08)',
+    tagText: '#123D2B',
+    iconBg: '#E7F2E5',
+  },
+  {
+    bg: '#FAF6ED', // Warm Honey / Herbal
+    border: '#EFE5CE',
+    accent: '#8E6720',
+    tagBg: 'rgba(217, 165, 46, 0.12)',
+    tagText: '#8E6720',
+    iconBg: '#F5ECDA',
+  },
+  {
+    bg: '#F5F7F6', // Eucalyptus Mint
+    border: '#DFEAE5',
+    accent: '#1B563D',
+    tagBg: 'rgba(27, 86, 61, 0.08)',
+    tagText: '#1B563D',
+    iconBg: '#E3EDE8',
+  },
+  {
+    bg: '#FAF4F1', // Rose & Hibiscus
+    border: '#EFE0D9',
+    accent: '#8F4E3F',
+    tagBg: 'rgba(154, 91, 76, 0.09)',
+    tagText: '#8F4E3F',
+    iconBg: '#F3E5DF',
+  },
+  {
+    bg: '#F6F5F8', // Calming Ashwagandha / Lavender
+    border: '#E5E2EC',
+    accent: '#4C4269',
+    tagBg: 'rgba(76, 66, 105, 0.08)',
+    tagText: '#4C4269',
+    iconBg: '#EAE6F0',
+  },
+  {
+    bg: '#F8F6F1', // Sandalwood Ivory
+    border: '#ECE7DC',
+    accent: '#7D5C28',
+    tagBg: 'rgba(140, 104, 48, 0.09)',
+    tagText: '#7D5C28',
+    iconBg: '#EDE7DA',
+  },
+];
+
+// Minimal botanical icons matching common Ayurvedic concerns
+function getConcernIcon(name = '') {
+  const n = String(name || '').toLowerCase();
+  if (
+    n.includes('digest') ||
+    n.includes('gut') ||
+    n.includes('stomach') ||
+    n.includes('acid') ||
+    n.includes('constipat')
+  ) {
+    return 'leaf-outline';
+  }
+  if (
+    n.includes('skin') ||
+    n.includes('glow') ||
+    n.includes('acne') ||
+    n.includes('face') ||
+    n.includes('pigment')
+  ) {
+    return 'sparkles-outline';
+  }
+  if (
+    n.includes('hair') ||
+    n.includes('scalp') ||
+    n.includes('dandruff') ||
+    n.includes('fall')
+  ) {
+    return 'water-outline';
+  }
+  if (
+    n.includes('sleep') ||
+    n.includes('stress') ||
+    n.includes('anxiety') ||
+    n.includes('mind') ||
+    n.includes('calm')
+  ) {
+    return 'moon-outline';
+  }
+  if (
+    n.includes('immunit') ||
+    n.includes('energy') ||
+    n.includes('vital') ||
+    n.includes('stamina') ||
+    n.includes('cold')
+  ) {
+    return 'shield-checkmark-outline';
+  }
+  if (
+    n.includes('joint') ||
+    n.includes('pain') ||
+    n.includes('bone') ||
+    n.includes('arthrit') ||
+    n.includes('muscle')
+  ) {
+    return 'fitness-outline';
+  }
+  if (
+    n.includes('weight') ||
+    n.includes('fat') ||
+    n.includes('detox') ||
+    n.includes('slim')
+  ) {
+    return 'scale-outline';
+  }
+  if (
+    n.includes('diabet') ||
+    n.includes('sugar') ||
+    n.includes('blood') ||
+    n.includes('heart')
+  ) {
+    return 'heart-outline';
+  }
+  if (n.includes('tea') || n.includes('herb')) {
+    return 'cafe-outline';
+  }
+  return 'flower-outline';
+}
+
+// Compute rhythmic asymmetric Bento dimensions (Wide, Tall, 4-Column Compact, Medium)
+function getItemConfig(index, total) {
+  if (total <= 4) {
+    return {
+      width: '48.5%',
+      minHeight: 96,
+      variant: 'medium',
+    };
+  }
+
+  if (total === 5) {
+    if (index === 0) return { width: '58%', minHeight: 110, variant: 'wide' };
+    if (index === 1) return { width: '39%', minHeight: 110, variant: 'tall' };
+    return { width: '31%', minHeight: 88, variant: 'compact' };
+  }
+
+  // 6 or more items: Rhythmic Bento Grid
+  // Items 0, 1: Bento Duo (58% wide + 39% tall)
+  // Items 2, 3, 4, 5: 4-Column Grid Row (23% each)
+  // Items 6, 7: Inverted Bento Duo (39% tall + 58% wide)
+  // Items 8, 9, 10, 11: 4-Column Grid Row (23% each)
+  const cycleIndex = index % 12;
+
+  if (cycleIndex === 0) {
+    return { width: '58%', minHeight: 112, variant: 'wide' };
+  }
+  if (cycleIndex === 1) {
+    return { width: '39%', minHeight: 112, variant: 'tall' };
+  }
+  if (cycleIndex >= 2 && cycleIndex <= 5) {
+    const remainingInGroup = total - Math.floor(index / 12) * 12 - 2;
+    if (remainingInGroup === 1 && cycleIndex === 2) {
+      return { width: '100%', minHeight: 92, variant: 'wide' };
+    }
+    if (remainingInGroup === 2) {
+      return { width: '48.5%', minHeight: 92, variant: 'medium' };
+    }
+    if (remainingInGroup === 3) {
+      return { width: '31%', minHeight: 88, variant: 'compact' };
+    }
+    return { width: '23%', minHeight: 88, variant: 'compact' };
+  }
+  if (cycleIndex === 6) {
+    if (index === total - 1) {
+      return { width: '100%', minHeight: 96, variant: 'wide' };
+    }
+    return { width: '39%', minHeight: 112, variant: 'tall' };
+  }
+  if (cycleIndex === 7) {
+    return { width: '58%', minHeight: 112, variant: 'wide' };
+  }
+  if (cycleIndex >= 8 && cycleIndex <= 11) {
+    const remainingInGroup = total - Math.floor(index / 12) * 12 - 8;
+    if (remainingInGroup === 1 && cycleIndex === 8) {
+      return { width: '100%', minHeight: 92, variant: 'wide' };
+    }
+    if (remainingInGroup === 2) {
+      return { width: '48.5%', minHeight: 92, variant: 'medium' };
+    }
+    if (remainingInGroup === 3) {
+      return { width: '31%', minHeight: 88, variant: 'compact' };
+    }
+    return { width: '23%', minHeight: 88, variant: 'compact' };
+  }
+
+  return { width: '48.5%', minHeight: 96, variant: 'medium' };
+}
+
+export default function ShopByConcern({
+  concerns = [],
+  loading = false,
+  onSelectConcern,
+}) {
+  if (loading || concerns.length === 0) {
+    return null;
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* SECTION HEADER */}
+      <View style={styles.headingRow}>
+        <View style={styles.titleWrap}>
+          <View style={styles.eyebrowRow}>
+            <Text style={styles.eyebrowSparkle}>✦</Text>
+            <Text style={styles.eyebrow}>FIND YOUR WELLNESS</Text>
+          </View>
+          <Text style={styles.title}>Shop by Concern</Text>
+        </View>
+
+        <View style={styles.headerBadge}>
+          <Ionicons name="leaf-outline" size={13} color="#123D2B" />
+          <Text style={styles.headerBadgeText}>Targeted Care</Text>
+        </View>
+      </View>
+
+      {/* ASYMMETRIC BENTO / 4-COLUMN GRID */}
+      <View style={styles.gridContainer}>
+        {concerns.map((item, index) => {
+          const config = getItemConfig(index, concerns.length);
+          const theme = CONCERN_THEMES[index % CONCERN_THEMES.length];
+          const icon = getConcernIcon(item.name);
+
+          // VARIANT 1: WIDE (High Width & Bigger)
+          if (config.variant === 'wide') {
+            return (
+              <Pressable
+                key={item.id}
+                onPress={() => onSelectConcern?.(item)}
+                style={({ pressed }) => [
+                  styles.cardBase,
+                  {
+                    width: config.width,
+                    minHeight: config.minHeight,
+                    backgroundColor: theme.bg,
+                    borderColor: theme.border,
+                  },
+                  pressed && styles.cardPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Shop ${item.name} concern`}
+              >
+                <View style={styles.wideTopRow}>
+                  <View
+                    style={[
+                      styles.concernTag,
+                      { backgroundColor: theme.tagBg },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.concernTagText,
+                        { color: theme.tagText },
+                      ]}
+                    >
+                      AYURVEDIC CARE
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.minimalIconWrap,
+                      { backgroundColor: theme.iconBg },
+                    ]}
+                  >
+                    {item.image_url ? (
+                      <Image
+                        source={{ uri: item.image_url }}
+                        style={styles.minimalImage}
+                        contentFit="cover"
+                        transition={150}
+                      />
+                    ) : (
+                      <Ionicons
+                        name={icon}
+                        size={15}
+                        color={theme.accent}
+                      />
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.wideBottomRow}>
+                  <Text
+                    style={[
+                      styles.wideName,
+                      { color: theme.accent },
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {item.name}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.arrowCircle,
+                      { backgroundColor: theme.iconBg },
+                    ]}
+                  >
+                    <Ionicons
+                      name="arrow-forward"
+                      size={11}
+                      color={theme.accent}
+                    />
+                  </View>
+                </View>
+              </Pressable>
+            );
+          }
+
+          // VARIANT 2: TALL (High Height / Vertical Focus)
+          if (config.variant === 'tall') {
+            return (
+              <Pressable
+                key={item.id}
+                onPress={() => onSelectConcern?.(item)}
+                style={({ pressed }) => [
+                  styles.cardBase,
+                  styles.tallCard,
+                  {
+                    width: config.width,
+                    minHeight: config.minHeight,
+                    backgroundColor: theme.bg,
+                    borderColor: theme.border,
+                  },
+                  pressed && styles.cardPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Shop ${item.name} concern`}
+              >
+                <View style={styles.tallTopRow}>
+                  <View
+                    style={[
+                      styles.minimalIconWrap,
+                      { backgroundColor: theme.iconBg },
+                    ]}
+                  >
+                    {item.image_url ? (
+                      <Image
+                        source={{ uri: item.image_url }}
+                        style={styles.minimalImage}
+                        contentFit="cover"
+                        transition={150}
+                      />
+                    ) : (
+                      <Ionicons
+                        name={icon}
+                        size={15}
+                        color={theme.accent}
+                      />
+                    )}
+                  </View>
+
+                  <Ionicons
+                    name="arrow-forward"
+                    size={11}
+                    color={theme.accent}
+                    style={styles.tallArrow}
+                  />
+                </View>
+
+                <Text
+                  style={[
+                    styles.tallName,
+                    { color: theme.accent },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {item.name}
+                </Text>
+              </Pressable>
+            );
+          }
+
+          // VARIANT 3: COMPACT (4-Column Grid, Smaller)
+          if (config.variant === 'compact') {
+            return (
+              <Pressable
+                key={item.id}
+                onPress={() => onSelectConcern?.(item)}
+                style={({ pressed }) => [
+                  styles.cardBase,
+                  styles.compactCard,
+                  {
+                    width: config.width,
+                    minHeight: config.minHeight,
+                    backgroundColor: theme.bg,
+                    borderColor: theme.border,
+                  },
+                  pressed && styles.cardPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Shop ${item.name} concern`}
+              >
+                <View
+                  style={[
+                    styles.compactIconWrap,
+                    { backgroundColor: theme.iconBg },
+                  ]}
+                >
+                  {item.image_url ? (
+                    <Image
+                      source={{ uri: item.image_url }}
+                      style={styles.compactImage}
+                      contentFit="cover"
+                      transition={150}
+                    />
+                  ) : (
+                    <Ionicons
+                      name={icon}
+                      size={14}
+                      color={theme.accent}
+                    />
+                  )}
+                </View>
+
+                <Text
+                  style={[
+                    styles.compactName,
+                    { color: theme.accent },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {item.name}
+                </Text>
+              </Pressable>
+            );
+          }
+
+          // VARIANT 4: MEDIUM (Half-Width Balanced)
+          return (
+            <Pressable
+              key={item.id}
+              onPress={() => onSelectConcern?.(item)}
+              style={({ pressed }) => [
+                styles.cardBase,
+                styles.mediumCard,
+                {
+                  width: config.width,
+                  minHeight: config.minHeight,
+                  backgroundColor: theme.bg,
+                  borderColor: theme.border,
+                },
+                pressed && styles.cardPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Shop ${item.name} concern`}
+            >
+              <View style={styles.mediumTopRow}>
+                <View
+                  style={[
+                    styles.minimalIconWrap,
+                    { backgroundColor: theme.iconBg },
+                  ]}
+                >
+                  {item.image_url ? (
+                    <Image
+                      source={{ uri: item.image_url }}
+                      style={styles.minimalImage}
+                      contentFit="cover"
+                      transition={150}
+                    />
+                  ) : (
+                    <Ionicons
+                      name={icon}
+                      size={15}
+                      color={theme.accent}
+                    />
+                  )}
+                </View>
+
+                <View
+                  style={[
+                    styles.arrowCircle,
+                    { backgroundColor: theme.iconBg },
+                  ]}
+                >
+                  <Ionicons
+                    name="arrow-forward"
+                    size={11}
+                    color={theme.accent}
+                  />
+                </View>
+              </View>
+
+              <Text
+                style={[
+                  styles.mediumName,
+                  { color: theme.accent },
+                ]}
+                numberOfLines={2}
+              >
+                {item.name}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    paddingTop: 24,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+  },
+
+  // ----------------------------------------------------------
+  // SECTION HEADER
+  // ----------------------------------------------------------
+  headingRow: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  titleWrap: {
+    flex: 1,
+  },
+
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 3,
+  },
+
+  eyebrowSparkle: {
+    color: '#D9A52E',
+    fontSize: 9,
+  },
+
+  eyebrow: {
+    fontFamily: 'InterSemiBold',
+    fontSize: 9,
+    letterSpacing: 1.8,
+    color: '#D9A52E',
+    fontWeight: '700',
+  },
+
+  title: {
+    fontFamily: 'PlayfairSemiBold',
+    fontSize: 22,
+    color: '#123D2B',
+    fontWeight: '700',
+  },
+
+  headerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: '#F3F7F2',
+    borderWidth: 1,
+    borderColor: '#DEEBDC',
+  },
+
+  headerBadgeText: {
+    fontFamily: 'InterMedium',
+    fontSize: 11,
+    color: '#123D2B',
+    fontWeight: '600',
+  },
+
+  // ----------------------------------------------------------
+  // GRID CONTAINER
+  // ----------------------------------------------------------
+  gridContainer: {
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
+  },
+
+  // ----------------------------------------------------------
+  // BASE CARD STYLING
+  // ----------------------------------------------------------
+  cardBase: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 12,
+    justifyContent: 'space-between',
+    shadowColor: '#123D2B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+
+  cardPressed: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.9,
+  },
+
+  // ----------------------------------------------------------
+  // MINIMAL IMAGE & ICON CONTAINERS
+  // ----------------------------------------------------------
+  minimalIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+
+  minimalImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  compactIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    marginBottom: 6,
+  },
+
+  compactImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  arrowCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ----------------------------------------------------------
+  // WIDE CARD (HIGH WIDTH & BIGGER)
+  // ----------------------------------------------------------
+  wideTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+
+  concernTag: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+
+  concernTagText: {
+    fontFamily: 'InterSemiBold',
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+
+  wideBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+
+  wideName: {
+    flex: 1,
+    fontFamily: 'PlayfairSemiBold',
+    fontSize: 14.5,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+
+  // ----------------------------------------------------------
+  // TALL CARD (HIGH HEIGHT)
+  // ----------------------------------------------------------
+  tallCard: {
+    justifyContent: 'space-between',
+  },
+
+  tallTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+
+  tallArrow: {
+    marginTop: 2,
+  },
+
+  tallName: {
+    fontFamily: 'PlayfairSemiBold',
+    fontSize: 13.5,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+
+  // ----------------------------------------------------------
+  // COMPACT CARD (4-COLUMN ROW, SMALLER)
+  // ----------------------------------------------------------
+  compactCard: {
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  compactName: {
+    fontFamily: 'InterMedium',
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 13,
+  },
+
+  // ----------------------------------------------------------
+  // MEDIUM CARD (HALF-WIDTH)
+  // ----------------------------------------------------------
+  mediumCard: {
+    justifyContent: 'space-between',
+  },
+
+  mediumTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+
+  mediumName: {
+    fontFamily: 'PlayfairSemiBold',
+    fontSize: 13.5,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+});

@@ -14,41 +14,58 @@ import { API_BASE_URL } from '../constants/config';
  */
 
 
+
 export async function apiRequest(endpoint, options = {}) {
-  // Avoid duplicate slashes between the base URL and endpoint.
+  // Build the request URL.
   const baseUrl = API_BASE_URL.replace(/\/+$/, '');
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${baseUrl}${path}`;
 
   const method = options.method || 'GET';
+  const timeoutMs = options.timeoutMs ?? 15000;
+  const externalSignal = options.signal;
 
-  // Prepare request headers.
+  // Prepare headers.
   const headers = {
     Accept: 'application/json',
     ...(options.headers || {}),
   };
 
-  // Set JSON content type when sending a body.
   if (options.body !== undefined && options.body !== null) {
     headers['Content-Type'] = 'application/json';
   }
 
-  // Attach authentication only when a token is provided.
   if (options.token) {
     headers.Authorization = `Bearer ${options.token}`;
   }
 
-
-
-  let response;
-
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
+
+  let timedOut = false;
+
+  const handleExternalAbort = () => {
     controller.abort();
-  }, 15000);
+  };
+
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      throw new Error(`Request cancelled: ${endpoint}`);
+    }
+
+    externalSignal.addEventListener(
+      'abort',
+      handleExternalAbort,
+      { once: true }
+    );
+  }
+
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
 
   try {
-    response = await fetch(url, {
+    const response = await fetch(url, {
       method,
       headers,
       body:
@@ -57,65 +74,80 @@ export async function apiRequest(endpoint, options = {}) {
           : undefined,
       signal: controller.signal,
     });
+
+    const text = await response.text();
+
+    let data = null;
+
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          `Invalid JSON response from ${endpoint} (HTTP ${response.status}).`
+        );
+      }
+    }
+
+    if (!response.ok) {
+      const detail = data?.detail ?? data?.message ?? data;
+
+      const message = Array.isArray(detail)
+        ? detail
+            .map((item) => {
+              const field = Array.isArray(item.loc)
+                ? item.loc.join('.')
+                : 'field';
+
+              return `${field}: ${item.msg ?? JSON.stringify(item)}`;
+            })
+            .join('; ')
+        : typeof detail === 'string'
+          ? detail
+          : JSON.stringify(detail);
+
+      throw new Error(
+        `${endpoint}: ${message || `HTTP ${response.status}`}`
+      );
+    }
+
+    return data;
+
   } catch (error) {
+    if (timedOut) {
+      console.error(`API timeout: ${endpoint}`);
+
+      throw new Error(
+        `Request timed out after ${timeoutMs / 1000} seconds: ${endpoint}`
+      );
+    }
+
+    if (externalSignal?.aborted) {
+      console.warn(`Request cancelled externally: ${endpoint}`);
+
+      throw new Error(`Request cancelled: ${endpoint}`);
+    }
+
     console.error(
       `Network error: ${endpoint}`,
       error?.message || String(error)
     );
 
     if (error?.name === 'AbortError') {
-      throw new Error(
-        `Request timed out after 15 seconds: ${endpoint}`
-      );
+      throw new Error(`Request aborted: ${endpoint}`);
     }
 
     throw new Error(
       `Cannot connect to the AUMVEDA backend at ${API_BASE_URL}. ` +
       'Check your internet connection and confirm that the backend is available.'
     );
+
   } finally {
     clearTimeout(timeoutId);
-  }
 
-  // Read the response body.
-  const text = await response.text();
-
-  let data = null;
-
-  if (text) {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error(
-        `Invalid JSON response from ${endpoint} ` +
-        `(HTTP ${response.status}).`
-      );
-    }
-  }
-
-
-  // Handle unsuccessful HTTP responses.
-  if (!response.ok) {
-    const detail = data?.detail ?? data?.message ?? data;
-
-    const message = Array.isArray(detail)
-      ? detail
-          .map((item) => {
-            const field = Array.isArray(item.loc)
-              ? item.loc.join('.')
-              : 'field';
-
-            return `${field}: ${item.msg ?? JSON.stringify(item)}`;
-          })
-          .join('; ')
-      : typeof detail === 'string'
-        ? detail
-        : JSON.stringify(detail);
-
-    throw new Error(
-      `${endpoint}: ${message || `HTTP ${response.status}`}`
+    externalSignal?.removeEventListener(
+      'abort',
+      handleExternalAbort
     );
   }
-
-  return data;
 }

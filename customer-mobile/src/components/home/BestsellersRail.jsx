@@ -79,6 +79,8 @@ function BestsellerCard({
   rank,
   onPress,
 }) {
+  const router = useRouter();
+
   const {
     cartItems,
     addToCart,
@@ -125,6 +127,19 @@ function BestsellerCard({
       ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
       : 0;
 
+  const rating = Number(
+    product?.rating ??
+    product?.average_rating ??
+    4.6
+  );
+
+  const reviews = Number(
+    product?.review_count ??
+    product?.reviews_count ??
+    product?.reviews ??
+    0
+  );
+
   const handleAdd = (e) => {
     e?.stopPropagation?.();
     if (!product?.id) return;
@@ -147,53 +162,61 @@ function BestsellerCard({
     toggleWishlist(product);
   };
 
+  const handleBuyNow = (e) => {
+    e?.stopPropagation?.();
+    if (!product?.id) return;
+    router.push({
+      pathname: '/checkout',
+      params: {
+        buyNow: 'true',
+        productId: String(product.id),
+        productSlug: String(product.slug || ''),
+        variantId: variantId ? String(variantId) : '',
+        quantity: '1',
+      },
+    });
+  };
+
   const wishlisted = isWishlisted(product?.id);
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={styles.card}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
+    >
       {/* =====================================================
-          IMAGE STAGE WITH ALIGNED BADGES & WISHLIST
+          IMAGE AREA (DIRECT ON CARD - NO SEPARATE BOX)
       ===================================================== */}
       <View style={styles.imageStage}>
         {image ? (
-          <Pressable
-            onPress={onPress}
-            accessibilityRole="button"
-            accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
-            style={styles.productImagePressable}
-          >
-            <Image
-              source={{ uri: image }}
-              style={styles.productImage}
-              contentFit="contain"
-              transition={200}
-            />
-          </Pressable>
+          <Image
+            source={{ uri: image }}
+            style={styles.productImage}
+            contentFit="contain"
+            transition={150}
+          />
         ) : (
-          <Pressable
-            onPress={onPress}
-            accessibilityRole="button"
-            accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
-            style={styles.placeholderWrap}
-          >
-            <Ionicons name="leaf-outline" size={30} color="#123D2B" />
-          </Pressable>
+          <View style={styles.placeholderWrap}>
+            <Ionicons name="leaf-outline" size={28} color="#CDE2CB" />
+          </View>
         )}
 
-        {/* TOP-LEFT: RANK BADGE & READABLE DISCOUNT BADGE */}
-        <View style={styles.badgeColumn}>
-          <View style={styles.rankBadge}>
-            <Text style={styles.rankBadgeText}>#{rank} BESTSELLER</Text>
-          </View>
-
-          {discount > 0 && (
+        {/* TOP-LEFT: RANK / DISCOUNT BADGE OVERLAY */}
+        <View style={styles.badgeWrap}>
+          {discount > 0 ? (
             <View style={styles.discountBadge}>
               <Text style={styles.discountBadgeText}>{discount}% OFF</Text>
+            </View>
+          ) : (
+            <View style={styles.rankBadge}>
+              <Text style={styles.rankBadgeText}>#{rank} BESTSELLER</Text>
             </View>
           )}
         </View>
 
-        {/* TOP-RIGHT: PRECISELY ALIGNED WISHLIST BUTTON */}
+        {/* TOP-RIGHT: WISHLIST BUTTON OVERLAY */}
         <Pressable
           style={({ pressed }) => [styles.wishlistBtn, pressed && styles.wishlistBtnPressed]}
           onPress={handleWishlist}
@@ -203,38 +226,41 @@ function BestsellerCard({
         >
           <Ionicons
             name={wishlisted ? 'heart' : 'heart-outline'}
-            size={16}
-            color={wishlisted ? '#B94A48' : '#2D4435'}
+            size={18}
+            color={wishlisted ? '#B94A48' : '#716F68'}
           />
         </Pressable>
       </View>
 
       {/* =====================================================
-          CARD CONTENT
+          CARD CONTENT (DESCRIPTION REMOVED AS REQUESTED)
       ===================================================== */}
       <View style={styles.content}>
-        <Pressable
-          onPress={onPress}
-          accessibilityRole="button"
-          accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
-          style={styles.productInfo}
-        >
-          {/* PRODUCT NAME */}
-          <Text style={styles.productName} numberOfLines={1}>
-            {product?.name || 'Ayurvedic Product'}
-          </Text>
+        {/* PRODUCT NAME */}
+        <Text style={styles.productName} numberOfLines={2}>
+          {product?.name || 'Ayurvedic Product'}
+        </Text>
 
-          {/* PRICE ROW */}
+        {/* PRICE + RATING ROW */}
+        <View style={styles.priceRatingRow}>
           <View style={styles.priceRow}>
             <Text style={styles.price}>₹{price.toLocaleString('en-IN')}</Text>
             {compareAtPrice > price && (
               <Text style={styles.comparePrice}>₹{compareAtPrice.toLocaleString('en-IN')}</Text>
             )}
           </View>
-        </Pressable>
 
-        {/* ACTION BUTTON / STEPPER */}
-        <View style={styles.actionWrap}>
+          <View style={styles.ratingRow}>
+            <Ionicons name="star" size={11} color="#D9A52E" />
+            <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text>
+            {reviews > 0 && (
+              <Text style={styles.reviewText} numberOfLines={1}>{reviews} reviews</Text>
+            )}
+          </View>
+        </View>
+
+        {/* ACTION BUTTONS: ADD TO CART + BUY NOW */}
+        <View style={styles.actionButtonsRow}>
           {!isAdded ? (
             <Pressable
               style={({ pressed }) => [styles.addBtn, pressed && styles.btnPressed]}
@@ -243,37 +269,46 @@ function BestsellerCard({
               accessibilityRole="button"
               accessibilityLabel="Add to cart"
             >
-              <Ionicons name="bag-add-outline" size={14} color="#FFFFFF" />
-              <Text style={styles.addBtnText}>Add to Cart</Text>
+              <Text style={styles.addBtnText} numberOfLines={1} adjustsFontSizeToFit>Add to Cart</Text>
             </Pressable>
           ) : (
             <View style={styles.stepperContainer}>
               <Pressable
-                style={({ pressed }) => [styles.stepperBtn, pressed && styles.btnPressed]}
+                style={styles.stepperBtn}
                 onPress={handleMinus}
                 hitSlop={6}
                 accessibilityRole="button"
                 accessibilityLabel="Decrease quantity"
               >
-                <Ionicons name="remove" size={15} color="#FFFFFF" />
+                <Ionicons name="remove" size={14} color="#123D2B" />
               </Pressable>
 
               <Text style={styles.stepperValue}>{quantity}</Text>
 
               <Pressable
-                style={({ pressed }) => [styles.stepperBtn, pressed && styles.btnPressed]}
+                style={styles.stepperBtn}
                 onPress={handlePlus}
                 hitSlop={6}
                 accessibilityRole="button"
                 accessibilityLabel="Increase quantity"
               >
-                <Ionicons name="add" size={15} color="#FFFFFF" />
+                <Ionicons name="add" size={14} color="#123D2B" />
               </Pressable>
             </View>
           )}
+
+          <Pressable
+            style={({ pressed }) => [styles.buyNowBtn, pressed && styles.btnPressed]}
+            onPress={handleBuyNow}
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel="Buy now"
+          >
+            <Text style={styles.buyNowText} numberOfLines={1} adjustsFontSizeToFit>Buy Now</Text>
+          </Pressable>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -316,30 +351,29 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1.8,
     color: '#D9A52E',
+    fontWeight: '700',
   },
 
   title: {
     fontFamily: 'PlayfairSemiBold',
     fontSize: 23,
     color: '#123D2B',
+    fontWeight: '700',
   },
 
   viewAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5DFD3',
+    paddingVertical: 4,
+    paddingHorizontal: 6,
   },
 
   viewAllText: {
     fontFamily: 'InterSemiBold',
     fontSize: 11,
     color: '#123D2B',
+    fontWeight: '600',
   },
 
   scrollContent: {
@@ -352,187 +386,169 @@ const styles = StyleSheet.create({
   // CARD
   // ----------------------------------------------------------
   card: {
-    width: 164,
+    width: 176,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E5DFD3',
-    overflow: 'hidden',
+    borderColor: '#E8E3D8',
+    padding: 10,
     shadowColor: '#123D2B',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
-    minHeight: 234,
+    justifyContent: 'space-between',
   },
 
+  // ----------------------------------------------------------
+  // IMAGE AREA (NO SEPARATE BOX CONTAINER)
+  // ----------------------------------------------------------
   imageStage: {
-    height: 120,
-    backgroundColor: '#F5F1E8',
+    width: '100%',
+    height: 124,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5DFD3',
-    paddingHorizontal: 10,
-    paddingTop: 14,
-    paddingBottom: 0.5,
   },
 
   productImage: {
-    width: '100%',
-    height: '100%',
-  },
-
-  productImagePressable: {
-    width: '88%',
-    height: '88%',
+    width: '94%',
+    height: '94%',
   },
 
   placeholderWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#E5DFD3',
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  badgeColumn: {
+  badgeWrap: {
     position: 'absolute',
-    top: 7,
-    left: 8,
-    gap: 4,
-    zIndex: 10,
+    top: 2,
+    left: 2,
+    zIndex: 2,
   },
 
   rankBadge: {
     backgroundColor: '#123D2B',
-    paddingHorizontal: 6.5,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#D9A52E',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 8,
   },
 
   rankBadgeText: {
     color: '#FFFFFF',
-    fontFamily: 'InterSemiBold',
-    fontSize: 7.5,
+    fontSize: 8,
     letterSpacing: 0.4,
     fontWeight: '700',
   },
 
   discountBadge: {
-    backgroundColor: '#D9A52E',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: '#E8F2E7',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 10,
   },
 
   discountBadgeText: {
-    color: '#FFFFFF',
-    fontFamily: 'InterSemiBold',
-    fontSize: 9,
-    fontWeight: '800',
+    color: '#123D2B',
+    fontSize: 9.5,
+    fontWeight: '700',
     letterSpacing: 0.2,
   },
 
   wishlistBtn: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5DFD3',
+    top: 2,
+    right: 2,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+    zIndex: 2,
   },
 
   wishlistBtnPressed: {
-    transform: [{ scale: 0.92 }],
-    backgroundColor: '#F5F5F0',
+    transform: [{ scale: 0.9 }],
   },
 
   // ----------------------------------------------------------
   // CONTENT
   // ----------------------------------------------------------
   content: {
-    padding: 11,
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-
-  productInfo: {
-    flex: 1,
-    justifyContent: 'space-between',
+    paddingTop: 4,
   },
 
   productName: {
-    fontFamily: 'InterSemiBold',
     fontSize: 13,
+    lineHeight: 17,
+    fontWeight: '700',
     color: '#123D2B',
-    marginBottom: 4,
-    lineHeight: 16,
+  },
+
+  // ----------------------------------------------------------
+  // PRICE & RATING ROW
+  // ----------------------------------------------------------
+  priceRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
   },
 
   priceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 6,
-    marginBottom: 10,
+    gap: 4,
   },
 
   price: {
-    fontFamily: 'InterSemiBold',
-    fontSize: 15,
+    fontSize: 14.5,
+    fontWeight: '800',
     color: '#123D2B',
-    fontWeight: '700',
   },
 
   comparePrice: {
-    fontFamily: 'InterRegular',
-    fontSize: 11.5,
+    fontSize: 10.5,
+    color: '#8F8D85',
     textDecorationLine: 'line-through',
+  },
+
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+
+  ratingValue: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#123D2B',
+  },
+
+  reviewText: {
+    fontSize: 9.5,
     color: '#716F68',
   },
 
   // ----------------------------------------------------------
-  // ACTION / STEPPER
+  // ACTION BUTTONS: ADD TO CART + BUY NOW
   // ----------------------------------------------------------
-  actionWrap: {
-    width: '100%',
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 7,
   },
 
   addBtn: {
-    width: '100%',
-    height: 35,
-    borderRadius: 18,
+    flex: 1,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#123D2B',
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    paddingHorizontal: 4,
   },
 
   btnPressed: {
@@ -542,35 +558,55 @@ const styles = StyleSheet.create({
 
   addBtnText: {
     color: '#FFFFFF',
-    fontFamily: 'InterSemiBold',
-    fontSize: 11.5,
+    fontSize: 10.5,
     fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  buyNowBtn: {
+    flex: 1,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.2,
+    borderColor: '#123D2B',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+
+  buyNowText: {
+    color: '#123D2B',
+    fontSize: 10.5,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 
   stepperContainer: {
-    width: '100%',
-    height: 35,
-    borderRadius: 18,
-    backgroundColor: '#123D2B',
+    flex: 1,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#E8F2E7',
+    borderWidth: 1,
+    borderColor: '#CDE2CB',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 7,
+    paddingHorizontal: 3,
   },
 
   stepperBtn: {
-    width: 27,
-    height: 27,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   stepperValue: {
-    color: '#FFFFFF',
-    fontFamily: 'InterSemiBold',
-    fontSize: 12.5,
-    fontWeight: '700',
+    color: '#123D2B',
+    fontSize: 11.5,
+    fontWeight: '800',
   },
 });

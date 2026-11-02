@@ -27,6 +27,7 @@ import { useCart } from '../../src/context/CartContext';
 
 import { useWishlist } from '../../src/context/WishlistContext';
 import { colors } from '../../src/theme/colors';
+import ProductCard from '../../src/components/home/ProductCard';
 
 
 export default function CategoryProductsPage() {
@@ -281,7 +282,15 @@ const handleAddToCart = (product) => {
   // PRODUCT CARD
   // ============================================================
 
-  const renderProduct = ({ item }) => {
+  const renderProduct = ({ item }) => (
+    <ProductCard
+      product={item}
+      onPress={() => handleProductPress(item)}
+    />
+  );
+
+  // eslint-disable-next-line no-unused-vars
+  const _oldRenderProduct = ({ item }) => {
 
     const imageUrl =
       getProductImage(item);

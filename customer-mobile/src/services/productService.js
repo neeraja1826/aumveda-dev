@@ -67,51 +67,31 @@ export async function getProducts({
   limit = 20,
   offset = 0,
 } = {}) {
-  // Fetch the complete product list; filter locally because the
-  // backend may ignore category_id and search parameters.
-  const response = await apiRequest('/products?limit=100&offset=0');
+  const params = new URLSearchParams();
 
-  const list =
-    Array.isArray(response) ? response :
-    Array.isArray(response?.data) ? response.data :
-    Array.isArray(response?.products) ? response.products :
-    Array.isArray(response?.data?.products)
-      ? response.data.products
-      : [];
+  params.append('limit', String(limit));
+  params.append('offset', String(offset));
 
-  let products = list.map(normalizeProduct).filter(Boolean);
-
-  // Apply category filtering on the mobile app.
   if (categoryId && String(categoryId).toLowerCase() !== 'all') {
-    const selected = String(categoryId).trim().toLowerCase();
-
-    products = products.filter((product) => {
-      const productCategoryId =
-        product.category_id ??
-        product.categoryId ??
-        product.category?.id ??
-        product.category?.category_id;
-
-      const productCatName =
-        product.category?.name ??
-        product.category_name ??
-        '';
-
-      const productCatSlug =
-        product.category?.slug ??
-        product.category_slug ??
-        '';
-
-      return (
-        (productCategoryId != null && String(productCategoryId).trim().toLowerCase() === selected) ||
-        (productCatSlug && productCatSlug.trim().toLowerCase() === selected) ||
-        (productCatName && productCatName.trim().toLowerCase() === selected) ||
-        (productCatName && productCatName.trim().toLowerCase().includes(selected))
-      );
-    });
+    params.append('category_id', String(categoryId));
   }
+  const response = await apiRequest(
+    `/products?${params.toString()}`
+  );
 
-  // Apply search after category filtering.
+  const list = Array.isArray(response)
+    ? response
+    : Array.isArray(response?.data)
+      ? response.data
+      : Array.isArray(response?.products)
+        ? response.products
+        : [];
+
+  let products = list
+    .map(normalizeProduct)
+    .filter(Boolean);
+
+  // Preserve existing search functionality.
   const term = String(search ?? '').trim().toLowerCase();
 
   if (term) {
@@ -127,8 +107,7 @@ export async function getProducts({
     );
   }
 
-  // Apply pagination after all filters.
-  return products.slice(offset, offset + limit);
+  return products;
 }
 
 export async function getProductBySlug(slug) {

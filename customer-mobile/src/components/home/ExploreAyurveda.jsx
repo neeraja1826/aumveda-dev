@@ -161,7 +161,7 @@ export default function ExploreAyurveda({
         {/* Heading & View All Button Row */}
         <View style={styles.headingRow}>
           <Text style={styles.title}>
-            Explore <Text style={styles.titleGold}>AUMVEDA</Text>
+            Explore <Text style={styles.titleGold}>Wellness</Text>
           </Text>
 
           <Pressable

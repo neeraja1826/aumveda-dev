@@ -65,6 +65,8 @@ export default function FeaturedProducts({
     return null;
   }
 
+  const displayProducts = filteredProducts.length > 0 ? filteredProducts : products;
+
   return (
     <View style={styles.container}>
       {/* SECTION HEADER */}
@@ -87,7 +89,7 @@ export default function FeaturedProducts({
         </Pressable>
       </View>
 
-      {/* FIRSTCLUB-STYLE HORIZONTAL CATEGORY FILTER PILLS */}
+      {/* HORIZONTAL CATEGORY FILTER PILLS */}
       {filterPills.length > 1 && (
         <ScrollView
           horizontal
@@ -120,22 +122,25 @@ export default function FeaturedProducts({
         </ScrollView>
       )}
 
-      {/* 2-COLUMN PRODUCT GRID */}
-      <View style={styles.grid}>
-        {(filteredProducts.length > 0 ? filteredProducts : products).map(
-          (product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onPress={() => {
-                if (product?.slug) {
-                  router.push(`/products/${product.slug}`);
-                }
-              }}
-            />
-          )
-        )}
-      </View>
+      {/* HORIZONTAL PRODUCT CAROUSEL */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.horizontalProductsScroll}
+      >
+        {displayProducts.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            compact={true}
+            onPress={() => {
+              if (product?.slug) {
+                router.push(`/products/${product.slug}`);
+              }
+            }}
+          />
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -143,7 +148,7 @@ export default function FeaturedProducts({
 const styles = StyleSheet.create({
   container: {
     marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 6,
   },
 
   headerRow: {
@@ -233,10 +238,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  grid: {
+  horizontalProductsScroll: {
     paddingHorizontal: 16,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    paddingBottom: 8,
+    gap: 12,
   },
 });

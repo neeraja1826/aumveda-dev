@@ -1,7 +1,9 @@
+
 import React, {
   useCallback,
   useEffect,
   useState,
+  useMemo,
 } from 'react';
 
 import {
@@ -13,21 +15,13 @@ import {
   View,
 } from 'react-native';
 
-import {
-  SafeAreaView,
-} from 'react-native-safe-area-context';
-
-import {
-  useFonts,
-} from 'expo-font';
-
-import {
-  router,
-  useFocusEffect,
-} from 'expo-router';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+
 import ProductCard from '../../src/components/home/ProductCard';
+
 import { getProducts } from '../../src/services/productService';
 
 import {
@@ -47,37 +41,17 @@ import {
   getHomeData,
 } from '../../src/services/homeService';
 
-import LoadingScreen
-  from '../../src/components/common/LoadingScreen';
+import LoadingScreen from '../../src/components/common/LoadingScreen';
+import HomeHeader, { getCategoryPastelTheme } from '../../src/components/home/HomeHeader';
+import AvailableCoupons from '../../src/components/home/AvailableCoupons';
+import DealsOfTheWeek from '../../src/components/home/DealsOfTheWeek';
+import ExploreAyurveda from '../../src/components/home/ExploreAyurveda';
+import FeaturedProducts from '../../src/components/home/FeaturedProducts';
+import WellnessBundles from '../../src/components/home/WellnessBundles';
+import BestsellersRail from '../../src/components/home/BestsellersRail';
 
-import HomeHeader
-  from '../../src/components/home/HomeHeader';
-
-import DealsOfTheWeek
-  from '../../src/components/home/DealsOfTheWeek';
-
-import ExploreAyurveda
-  from '../../src/components/home/ExploreAyurveda';
-
-
-import FeaturedProducts
-  from '../../src/components/home/FeaturedProducts';
-
-import WellnessBundles
-  from '../../src/components/home/WellnessBundles';
-
-import BestsellersRail
-  from '../../src/components/home/BestsellersRail';
-
-
-import {
-  colors,
-} from '../../src/theme/colors';
-
-import {
-  useAuth,
-} from '../../src/context/AuthContext';
-
+import { colors } from '../../src/theme/colors';
+import { useAuth } from '../../src/context/AuthContext';
 
 export default function HomeScreen() {
 
@@ -85,40 +59,22 @@ export default function HomeScreen() {
   // AUTH
   // ============================================================
 
-  const {
-    token,
-  } = useAuth();
+  const { token } = useAuth();
 
 
   // ============================================================
   // FONTS
   // ============================================================
 
-  const [
-    fontsLoaded,
-  ] = useFonts({
+  const [fontsLoaded] = useFonts({
+    PlayfairRegular: PlayfairDisplay_400Regular,
+    PlayfairMedium: PlayfairDisplay_500Medium,
+    PlayfairSemiBold: PlayfairDisplay_600SemiBold,
+    PlayfairItalic: PlayfairDisplay_500Medium_Italic,
 
-    PlayfairRegular:
-      PlayfairDisplay_400Regular,
-
-    PlayfairMedium:
-      PlayfairDisplay_500Medium,
-
-    PlayfairSemiBold:
-      PlayfairDisplay_600SemiBold,
-
-    PlayfairItalic:
-      PlayfairDisplay_500Medium_Italic,
-
-    InterRegular:
-      Inter_400Regular,
-
-    InterMedium:
-      Inter_500Medium,
-
-    InterSemiBold:
-      Inter_600SemiBold,
-
+    InterRegular: Inter_400Regular,
+    InterMedium: Inter_500Medium,
+    InterSemiBold: Inter_600SemiBold,
   });
 
 
@@ -126,41 +82,55 @@ export default function HomeScreen() {
   // HOME DATA
   // ============================================================
 
-  const [
-    data,
-    setData,
-  ] = useState({
-
+  const [data, setData] = useState({
     hero: null,
-
     categories: [],
-
-
-
     featuredProducts: [],
-
     bundles: [],
-
     decorations: [],
-
   });
 
+
+  // ============================================================
+  // CATEGORY FILTERING
+  // ============================================================
+
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedCategoryName, setSelectedCategoryName] = useState('All');
+
+  const [selectedCategoryName, setSelectedCategoryName] =
+    useState('All');
+
   const [categoryProducts, setCategoryProducts] = useState([]);
-  const [loadingCategoryProducts, setLoadingCategoryProducts] = useState(false);
+
+  const [loadingCategoryProducts, setLoadingCategoryProducts] =
+    useState(false);
+
+
+  const activeHeaderTheme = useMemo(() => {
+    return getCategoryPastelTheme(selectedCategoryName, 0);
+  }, [selectedCategoryName]);
 
   const handleSelectCategory = (category) => {
-    const catId = category?.id ? String(category.id) : 'all';
-    setSelectedCategory(catId);
-    setSelectedCategoryName(category?.name || 'Category');
-    if (catId === 'all') {
+    const categoryId = category?.id
+      ? String(category.id)
+      : 'all';
+
+    setSelectedCategory(categoryId);
+
+    setSelectedCategoryName(category?.name || 'All');
+
+    if (categoryId === 'all') {
       setCategoryProducts([]);
       setLoadingCategoryProducts(false);
     } else {
       setLoadingCategoryProducts(true);
     }
   };
+
+
+  // ============================================================
+  // FETCH PRODUCTS FOR SELECTED CATEGORY
+  // ============================================================
 
   useEffect(() => {
     if (selectedCategory === 'all') {
@@ -169,175 +139,115 @@ export default function HomeScreen() {
 
     let isMounted = true;
 
-    getProducts({ categoryId: selectedCategory, limit: 100 })
-      .then((items) => {
-        if (!isMounted) return;
-        const list = Array.isArray(items) ? items : [];
-        if (list.length > 0) {
-          setCategoryProducts(list);
-        } else {
-          const sel = String(selectedCategory).toLowerCase();
-          const fallback = (data.featuredProducts || []).filter((p) => {
-            const pId = String(p.category_id ?? p.category?.id ?? '').toLowerCase();
-            const pName = (p.category?.name ?? p.category_name ?? '').toLowerCase();
-            return pId === sel || pName === sel || pName.includes(sel);
-          });
-          setCategoryProducts(fallback);
-        }
-      })
-      .catch((err) => {
-        console.error('Error fetching category products on Home:', err);
-        if (!isMounted) return;
-        const sel = String(selectedCategory).toLowerCase();
-        const fallback = (data.featuredProducts || []).filter((p) => {
-          const pId = String(p.category_id ?? p.category?.id ?? '').toLowerCase();
-          const pName = (p.category?.name ?? p.category_name ?? '').toLowerCase();
-          return pId === sel || pName === sel || pName.includes(sel);
+    const fetchCategoryProducts = async () => {
+      try {
+        setLoadingCategoryProducts(true);
+
+        const items = await getProducts({
+          categoryId: selectedCategory,
+          limit: 100,
         });
-        setCategoryProducts(fallback);
-      })
-      .finally(() => {
+
+        if (!isMounted) return;
+
+        setCategoryProducts(
+          Array.isArray(items) ? items : []
+        );
+
+      } catch (error) {
+        console.error(
+          'Error fetching category products:',
+          error
+        );
+
+        if (isMounted) {
+          setCategoryProducts([]);
+        }
+
+      } finally {
         if (isMounted) {
           setLoadingCategoryProducts(false);
         }
-      });
+      }
+    };
+
+    fetchCategoryProducts();
 
     return () => {
       isMounted = false;
     };
-  }, [selectedCategory, data.featuredProducts]);
 
-
+  }, [selectedCategory]);
   // ============================================================
   // LOADING
   // ============================================================
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [loading, setLoading] = useState(true);
 
 
   // ============================================================
   // ERROR
   // ============================================================
 
-  const [
-    error,
-    setError,
-  ] = useState(null);
+  const [error, setError] = useState(null);
 
 
   // ============================================================
-  // LOAD HOME
+  // LOAD HOME DATA
   // ============================================================
 
-  const loadHome =
-    useCallback(
-      async () => {
+  const loadHome = useCallback(async () => {
+    try {
+      setError(null);
 
-        try {
+      console.log('LOADING HOME DATA');
 
-          setError(null);
+      console.log('HOME AUTH:', {
+        loggedIn: Boolean(token),
+        hasToken: Boolean(token),
+      });
 
+      const response = await getHomeData({
+        token,
+      });
 
-          console.log(
-            'LOADING HOME DATA'
-          );
+      console.log(
+        'HOME DATA:',
+        JSON.stringify(response, null, 2)
+      );
 
+      console.log('HOME DATA COUNTS:', {
+        categories: response.categories?.length,
+        featuredProducts: response.featuredProducts?.length,
+        bundles: response.bundles?.length,
+        decorations: response.decorations?.length,
+        heroAvailable: Boolean(response.hero),
+      });
 
-          console.log(
-            'HOME AUTH:',
-            {
-              loggedIn:
-                Boolean(token),
+      setData(response);
 
-              hasToken:
-                Boolean(token),
-            }
-          );
+    } catch (error) {
+      console.error('Home API Error:', error);
 
+      setError(
+        error?.message || 'Unable to load home.'
+      );
 
-          const response =
-            await getHomeData({
-              token,
-            });
+    } finally {
+      setLoading(false);
+    }
 
-
-          console.log(
-            'HOME DATA:',
-            JSON.stringify(
-              response,
-              null,
-              2
-            )
-          );
-
-
-          console.log('HOME DATA COUNTS:', {
-  categories: response.categories?.length,
-  featuredProducts: response.featuredProducts?.length,
-  bundles: response.bundles?.length,
-  decorations: response.decorations?.length,
-  heroAvailable: Boolean(response.hero),
-});
-
-setData(response);
-
-        } catch (error) {
-
-          console.error(
-            'Home API Error:',
-            error
-          );
-
-
-          setError(
-            error?.message ||
-              'Unable to load home.'
-          );
-
-        } finally {
-
-          setLoading(false);
-
-        }
-
-      },
-      [token]
-    );
+  }, [token]);
 
 
   // ============================================================
   // REFRESH HOME WHEN SCREEN GETS FOCUS
-  //
-  // This is important for Recently Viewed.
-  //
-  // Example:
-  //
-  // Home
-  //   ↓
-  // Product A
-  //   ↓
-  // Product B
-  //   ↓
-  // Back
-  //   ↓
-  // Home gets focus
-  //   ↓
-  // Recently Viewed refreshes
-  //
   // ============================================================
 
   useFocusEffect(
-    useCallback(
-      () => {
-
-        loadHome();
-
-      },
-      [loadHome]
-    )
+    useCallback(() => {
+      loadHome();
+    }, [loadHome])
   );
 
 
@@ -355,8 +265,8 @@ setData(response);
     error,
   });
 
-  if (!fontsLoaded) {
 
+  if (!fontsLoaded) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
@@ -366,7 +276,6 @@ setData(response);
         </View>
       </SafeAreaView>
     );
-
   }
 
 
@@ -375,16 +284,17 @@ setData(response);
   // ============================================================
 
   if (loading) {
-
     return (
       <SafeAreaView
-        style={styles.safeArea}
+        style={[
+        styles.safeArea,
+        { backgroundColor: activeHeaderTheme.statusBarColor },
+      ]}
         edges={['top', 'bottom']}
       >
         <LoadingScreen />
       </SafeAreaView>
     );
-
   }
 
 
@@ -393,34 +303,21 @@ setData(response);
   // ============================================================
 
   return (
-
     <SafeAreaView
-      style={
-        styles.safeArea
-      }
+      style={[
+        styles.safeArea,
+        { backgroundColor: activeHeaderTheme.statusBarColor },
+      ]}
       edges={['top', 'bottom']}
     >
-
-      <View
-        style={
-          styles.container
-        }
-      >
+      <View style={styles.container}>
 
         <ScrollView
-
-          showsVerticalScrollIndicator={
-            false
-          }
-
-          contentContainerStyle={
-            styles.scroll
-          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scroll}
         >
 
-          {/* =================================================
-              HEADER
-          ================================================= */}
+          {/* HEADER */}
 
           <HomeHeader
             categories={data.categories}
@@ -429,47 +326,38 @@ setData(response);
           />
 
 
-          {/* =================================================
-              ERROR
-          ================================================= */}
+          {/* ERROR */}
 
           {error ? (
-
-            <View
-              style={
-                styles.error
-              }
-            >
-
-              <Text
-                style={
-                  styles.errorText
-                }
-              >
+            <View style={styles.error}>
+              <Text style={styles.errorText}>
                 {error}
               </Text>
-
             </View>
-
           ) : null}
 
 
+          {/* CATEGORY VIEW */}
+
           {selectedCategory !== 'all' ? (
-            /* =================================================
-               CATEGORY VIEW (DISPLAY PRODUCTS IN SELECTED CATEGORY)
-            ================================================= */
+
             <View style={styles.categoryViewContainer}>
-              <View style={styles.categoryViewHeader}>
-              </View>
 
               {loadingCategoryProducts ? (
+
                 <View style={styles.categoryLoadingWrap}>
-                  <ActivityIndicator size="large" color="#123D2B" />
+                  <ActivityIndicator
+                    size="large"
+                    color="#123D2B"
+                  />
+
                   <Text style={styles.categoryLoadingText}>
                     Loading {selectedCategoryName} products...
                   </Text>
                 </View>
+
               ) : categoryProducts.length > 0 ? (
+
                 <View style={styles.categoryGrid}>
                   {categoryProducts.map((product) => (
                     <ProductCard
@@ -477,47 +365,82 @@ setData(response);
                       product={product}
                       onPress={() => {
                         if (product?.slug) {
-                          router.push(`/products/${product.slug}`);
+                          router.push(
+                            `/products/${product.slug}`
+                          );
                         }
                       }}
                     />
                   ))}
                 </View>
+
               ) : (
+
                 <View style={styles.categoryEmptyWrap}>
-                  <Ionicons name="leaf-outline" size={42} color="#716F68" />
-                  <Text style={styles.categoryEmptyTitle}>No products found</Text>
-                  <Text style={styles.categoryEmptySub}>
-                    We are currently restocking Ayurvedic {selectedCategoryName} essentials.
+                  <Ionicons
+                    name="leaf-outline"
+                    size={42}
+                    color="#716F68"
+                  />
+
+                  <Text style={styles.categoryEmptyTitle}>
+                    No products found
                   </Text>
+
+                  <Text style={styles.categoryEmptySub}>
+                    We are currently restocking Ayurvedic{' '}
+                    {selectedCategoryName} essentials.
+                  </Text>
+
                   <Pressable
                     style={styles.categoryBackHomeBtn}
-                    onPress={() => setSelectedCategory('all')}
+                    onPress={() =>
+                      handleSelectCategory({
+                        id: 'all',
+                        name: 'All',
+                      })
+                    }
                   >
-                    <Text style={styles.categoryBackHomeText}>View All Products</Text>
+                    <Text style={styles.categoryBackHomeText}>
+                      View All Products
+                    </Text>
                   </Pressable>
                 </View>
+
               )}
+
             </View>
+
           ) : (
-            /* =================================================
-               NORMAL HOME TAB CONTENT (WHEN "ALL" IS CLICKED)
-            ================================================= */
+
+            /* NORMAL HOME CONTENT */
+
             <>
-              {/* DEALS OF THE WEEK TICKET BANNER */}
+
+              {/* DEALS OF THE WEEK */}
+
               <DealsOfTheWeek />
 
-              {/* EXPLORE AYURVEDA (BOTANICAL DISCS) */}
+
+              {/* EXPLORE AYURVEDA */}
+
               <ExploreAyurveda
                 categories={data.categories}
               />
 
-              {/* 1. CLUB BESTSELLERS (FIRSTCLUB-STYLE HORIZONTAL RAIL) */}
+
+              {/* BESTSELLERS */}
+
               <BestsellersRail
                 products={data.featuredProducts}
               />
 
-              {/* 3. CATEGORY FILTER SHELF + 2-COLUMN PRODUCT GRID */}
+
+              
+
+
+              {/* FEATURED PRODUCTS */}
+
               <FeaturedProducts
                 products={data.featuredProducts}
                 categories={data.categories}
@@ -525,27 +448,25 @@ setData(response);
                 onFilterChange={setSelectedCategory}
               />
 
-              {/* 4. WELLNESS BUNDLES & REGIMEN PACKS */}
+
+              {/* AVAILABLE COUPONS */}
+
+              <AvailableCoupons />
+
+
+              {/* WELLNESS BUNDLES */}
+
               <WellnessBundles
                 bundles={data.bundles}
               />
+
             </>
           )}
 
-
         </ScrollView>
 
-
-        {/* ===================================================
-            BOTTOM NAVIGATION
-        =================================================== */}
-
-    
-
       </View>
-
     </SafeAreaView>
-
   );
 }
 
@@ -554,137 +475,94 @@ setData(response);
 // STYLES
 // ============================================================
 
-const styles =
-  StyleSheet.create({
+const styles = StyleSheet.create({
 
-    safeArea: {
-      flex: 1,
-      backgroundColor: '#E5F2E4',
-    },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#EAF5EB',
+  },
 
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
 
-    scroll: {
-      paddingBottom: 20,
-    },
+  scroll: {
+    paddingBottom: 20,
+  },
 
-    error: {
-      margin: 16,
-      padding: 12,
-      borderRadius: 10,
-      backgroundColor: '#F7E5E1',
-    },
+  error: {
+    margin: 16,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#F7E5E1',
+  },
 
-    errorText: {
-      textAlign: 'center',
-      color: '#914D43',
-      fontSize: 12,
-    },
+  errorText: {
+    textAlign: 'center',
+    color: '#914D43',
+    fontSize: 12,
+  },
 
-    /* CATEGORY VIEW ON HOME */
-    categoryViewContainer: {
-      paddingTop: 16,
-      paddingBottom: 24,
-    },
+  categoryViewContainer: {
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
 
-    categoryViewHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 18,
-      marginBottom: 14,
-    },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
 
-    categoryViewEyebrow: {
-      fontFamily: 'InterSemiBold',
-      fontSize: 9.5,
-      letterSpacing: 1.5,
-      color: '#716F68',
-      marginBottom: 2,
-    },
+  categoryLoadingWrap: {
+    paddingVertical: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-    categoryViewTitle: {
-      fontFamily: 'PlayfairSemiBold',
-      fontSize: 22,
-      color: '#123D2B',
-      fontWeight: '700',
-    },
+  categoryLoadingText: {
+    marginTop: 12,
+    fontFamily: 'InterMedium',
+    fontSize: 13,
+    color: '#716F68',
+  },
 
-    categoryClearBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-      paddingVertical: 6,
-      paddingHorizontal: 11,
-      borderRadius: 16,
-      backgroundColor: '#E8F2E7',
-      borderWidth: 1,
-      borderColor: 'rgba(18, 61, 43, 0.12)',
-    },
+  categoryEmptyWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
 
-    categoryClearText: {
-      fontFamily: 'InterSemiBold',
-      fontSize: 11.5,
-      color: '#123D2B',
-    },
+  categoryEmptyTitle: {
+    fontFamily: 'PlayfairSemiBold',
+    fontSize: 18,
+    color: '#123D2B',
+    marginTop: 12,
+    marginBottom: 4,
+  },
 
-    categoryGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-    },
+  categoryEmptySub: {
+    fontFamily: 'InterRegular',
+    fontSize: 12.5,
+    color: '#716F68',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
 
-    categoryLoadingWrap: {
-      paddingVertical: 56,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
+  categoryBackHomeBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 16,
+    backgroundColor: '#123D2B',
+  },
 
-    categoryLoadingText: {
-      marginTop: 12,
-      fontFamily: 'InterMedium',
-      fontSize: 13,
-      color: '#716F68',
-    },
+  categoryBackHomeText: {
+    fontFamily: 'InterSemiBold',
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
 
-    categoryEmptyWrap: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 48,
-      paddingHorizontal: 24,
-    },
-
-    categoryEmptyTitle: {
-      fontFamily: 'PlayfairSemiBold',
-      fontSize: 18,
-      color: '#123D2B',
-      marginTop: 12,
-      marginBottom: 4,
-    },
-
-    categoryEmptySub: {
-      fontFamily: 'InterRegular',
-      fontSize: 12.5,
-      color: '#716F68',
-      textAlign: 'center',
-      marginBottom: 16,
-    },
-
-    categoryBackHomeBtn: {
-      paddingHorizontal: 18,
-      paddingVertical: 9,
-      borderRadius: 16,
-      backgroundColor: '#123D2B',
-    },
-
-    categoryBackHomeText: {
-      fontFamily: 'InterSemiBold',
-      fontSize: 12,
-      color: '#FFFFFF',
-    },
-
-  });
+});

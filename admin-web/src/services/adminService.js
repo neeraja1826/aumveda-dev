@@ -198,3 +198,64 @@ export const updateReturnRequestStatus = (
     }
   );
 };
+export const replaceProductImage = (productId, imageId, file) => {
+  const body = new FormData();
+  body.append('file', file);
+
+  return apiRequest(
+    `/admin/products/${encodeURIComponent(productId)}/images/${encodeURIComponent(imageId)}/replace`,
+    {
+      method: 'POST',
+      body,
+    }
+  );
+};
+
+export const addProductImage = (productId, image, file) => {
+  const body = new FormData();
+
+  body.append('file', file);
+  body.append('alt_text', image.alt_text || '');
+  body.append('sort_order', String(image.sort_order ?? 0));
+  body.append('is_primary', String(Boolean(image.is_primary)));
+
+  if (image.variant_id) {
+    body.append('variant_id', image.variant_id);
+  }
+
+  return apiRequest(
+    `/admin/products/${encodeURIComponent(productId)}/images`,
+    {
+      method: 'POST',
+      body,
+    }
+  );
+};
+
+/* Admin Coupons */
+
+export const getCoupons = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+
+  return apiRequest(
+    `/admin/coupons${query ? `?${query}` : ''}`
+  );
+};
+
+export const createCoupon = (coupon) =>
+  apiRequest('/admin/coupons', {
+    method: 'POST',
+    body: JSON.stringify(coupon),
+  });
+
+export const updateCoupon = (couponId, coupon) =>
+  apiRequest(`/admin/coupons/${encodeURIComponent(couponId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(coupon),
+  });
+
+export const updateCouponActiveStatus = (couponId, isActive) =>
+  apiRequest(
+    `/admin/coupons/${encodeURIComponent(couponId)}/active?is_active=${isActive}`,
+    { method: 'PATCH' }
+  );

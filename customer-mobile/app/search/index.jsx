@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '../../src/theme/colors';
+import ProductCard from '../../src/components/home/ProductCard';
 
 // Replace this import with your existing API configuration if available.
 
@@ -113,6 +114,14 @@ export default function SearchScreen() {
 
   
 const renderProduct = ({ item }) => (
+  <ProductCard
+    product={item}
+    onPress={() => openProduct(item)}
+  />
+);
+
+// eslint-disable-next-line no-unused-vars
+const _oldRenderProduct = ({ item }) => (
   <Pressable
     style={styles.productCard}
     onPress={() => openProduct(item)}
@@ -276,6 +285,8 @@ const renderProduct = ({ item }) => (
                 String(item.id ?? item.slug ?? index)
               }
               renderItem={renderProduct}
+              numColumns={2}
+              columnWrapperStyle={styles.columnWrapper}
               contentContainerStyle={styles.resultsList}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
@@ -384,6 +395,10 @@ const styles = StyleSheet.create({
   },
   resultsList: {
     paddingBottom: 24,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 14,
   },
   productCard: {
     flexDirection: 'row',

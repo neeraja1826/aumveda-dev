@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   archiveProduct,
+  addProductImage,
   createProduct,
   getProduct,
   getResource,
+  replaceProductImage,
   updateProduct,
   updateResourceStatus,
 } from '../services/adminService.js';
@@ -29,6 +31,8 @@ const blankVariant = () => ({
 });
 
 const blankImage = () => ({
+  id: null,
+  variant_id: null,
   image_url: '',
   alt_text: '',
   sort_order: '0',
@@ -63,36 +67,28 @@ function makeSlug(value) {
 function toForm(product) {
   const form = blankForm();
 
-  const variants = (
-    product.product_variants ||
-    product.variants ||
-    []
-  ).map((variant) => ({
-    sku: variant.sku || '',
-    name: variant.name || '',
-    price: String(variant.price ?? ''),
-    compare_at_price:
-      variant.compare_at_price == null
-        ? ''
-        : String(variant.compare_at_price),
-    cost_price:
-      variant.cost_price == null
-        ? ''
-        : String(variant.cost_price),
-    stock_quantity: String(variant.stock_quantity ?? 0),
-    attributesText: JSON.stringify(
-      variant.attributes || {},
-      null,
-      2
-    ),
-    is_active: variant.is_active !== false,
-  }));
+  const variants = (product.product_variants || product.variants || []).map(
+    (variant) => ({
+      ...variant,
+      id: variant.id,
+      sku: variant.sku ?? '',
+      name: variant.name ?? '',
+      price: String(variant.price ?? ''),
+      compare_at_price: String(variant.compare_at_price ?? ''),
+      cost_price: String(variant.cost_price ?? ''),
+      stock_quantity: String(variant.stock_quantity ?? 0),
+      attributesText: JSON.stringify(variant.attributes ?? {}, null, 2),
+      is_active: variant.is_active ?? true,
+    })
+  );
 
   const images = (
     product.product_images ||
     product.images ||
     []
   ).map((image) => ({
+    id: image.id || null,
+    variant_id: image.variant_id || null,
     image_url: image.image_url || '',
     alt_text: image.alt_text || '',
     sort_order: String(image.sort_order ?? 0),
@@ -109,20 +105,22 @@ function toForm(product) {
   };
 }
 
+
 function normalizePayload(form, includeVendor) {
-  const variants = form.variants
-    .filter(
-      (variant) =>
-        variant.price !== '' ||
-        variant.sku.trim() ||
-        variant.name.trim()
+  const cleanText = (value) => String(value ?? '').trim();
+
+  const variants = (form.variants || [])
+    .filter((variant) =>
+      cleanText(variant.price) !== '' ||
+      cleanText(variant.sku) ||
+      cleanText(variant.name)
     )
     .map((variant) => {
       let attributes;
 
       try {
         attributes = JSON.parse(
-          variant.attributesText || '{}'
+          cleanText(variant.attributesText) || '{}'
         );
       } catch {
         throw new Error(
@@ -140,23 +138,25 @@ function normalizePayload(form, includeVendor) {
         );
       }
 
-      if (variant.price === '') {
+      const priceText = cleanText(variant.price);
+      const compareText = cleanText(variant.compare_at_price);
+      const costText = cleanText(variant.cost_price);
+
+      if (!priceText) {
         throw new Error(
           'Enter a price for every variant you add.'
         );
       }
 
-      const price = Number(variant.price);
-      const compareAtPrice =
-        variant.compare_at_price === ''
-          ? null
-          : Number(variant.compare_at_price);
-      const costPrice =
-        variant.cost_price === ''
-          ? null
-          : Number(variant.cost_price);
+      const price = Number(priceText);
+      const compareAtPrice = compareText
+        ? Number(compareText)
+        : null;
+      const costPrice = costText
+        ? Number(costText)
+        : null;
       const stockQuantity = Number(
-        variant.stock_quantity || 0
+        variant.stock_quantity ?? 0
       );
 
       if (!Number.isFinite(price) || price < 0) {
@@ -190,8 +190,9 @@ function normalizePayload(form, includeVendor) {
       }
 
       return {
-        sku: variant.sku.trim() || null,
-        name: variant.name.trim() || null,
+        id: variant.id || null,
+        sku: cleanText(variant.sku) || null,
+        name: cleanText(variant.name) || null,
         price,
         compare_at_price: compareAtPrice,
         cost_price: costPrice,
@@ -201,10 +202,10 @@ function normalizePayload(form, includeVendor) {
       };
     });
 
-  const images = form.images
-    .filter((image) => image.image_url.trim())
+  const images = (form.images || [])
+    .filter((image) => cleanText(image.image_url))
     .map((image) => {
-      const imageUrl = image.image_url.trim();
+      const imageUrl = cleanText(image.image_url);
 
       if (!/^https?:\/\//i.test(imageUrl)) {
         throw new Error(
@@ -214,7 +215,7 @@ function normalizePayload(form, includeVendor) {
 
       return {
         image_url: imageUrl,
-        alt_text: image.alt_text.trim() || null,
+        alt_text: cleanText(image.alt_text) || null,
         sort_order: Number(image.sort_order || 0),
         is_primary: Boolean(image.is_primary),
       };
@@ -226,15 +227,15 @@ function normalizePayload(form, includeVendor) {
 
   const payload = {
     category_id: form.category_id,
-    name: form.name.trim(),
-    slug: form.slug.trim().toLowerCase(),
+    name: cleanText(form.name),
+    slug: cleanText(form.slug).toLowerCase(),
     short_description:
-      form.short_description.trim() || null,
-    description: form.description.trim() || null,
-    ingredients: form.ingredients.trim() || null,
-    benefits: form.benefits.trim() || null,
-    directions: form.directions.trim() || null,
-    warnings: form.warnings.trim() || null,
+      cleanText(form.short_description) || null,
+    description: cleanText(form.description) || null,
+    ingredients: cleanText(form.ingredients) || null,
+    benefits: cleanText(form.benefits) || null,
+    directions: cleanText(form.directions) || null,
+    warnings: cleanText(form.warnings) || null,
     status: form.status,
     is_featured: Boolean(form.is_featured),
     variants,
@@ -247,6 +248,7 @@ function normalizePayload(form, includeVendor) {
 
   return payload;
 }
+
 
 function getCollection(result) {
   if (Array.isArray(result)) return result;
@@ -274,6 +276,7 @@ export default function Products() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [loadingProduct, setLoadingProduct] = useState(false);
+  const [imageBusyIndex, setImageBusyIndex] = useState(-1);
 
   const visibleCount = useMemo(
     () => items.length,
@@ -414,6 +417,89 @@ export default function Products() {
     }));
   }
 
+  async function handleImageFile(index, file) {
+    if (!file) return;
+
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setFormError('Choose a valid JPG, PNG, or WebP image.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setFormError('Image must be 5 MB or smaller.');
+      return;
+    }
+
+    if (imageBusyIndex !== -1) return;
+
+    if (!editingId) {
+      setFormError('Save the product before uploading images.');
+      return;
+    }
+
+    setImageBusyIndex(index);
+    setFormError('');
+
+    try {
+      const image = form.images[index];
+
+      const result = image.id
+        ? await replaceProductImage(editingId, image.id, file)
+        : await addProductImage(editingId, image, file);
+
+      const savedImage = result?.image;
+
+      if (!savedImage?.image_url) {
+        throw new Error(
+          'The backend did not return the updated image URL.'
+        );
+      }
+
+      setForm((current) => {
+        const nextImages = [...current.images];
+
+        if (savedImage.is_primary) {
+          nextImages.forEach((item, i) => {
+            if (i !== index) {
+              nextImages[i] = {
+                ...item,
+                is_primary: false,
+              };
+            }
+          });
+        }
+
+        nextImages[index] = {
+          ...nextImages[index],
+          ...savedImage,
+          sort_order: String(
+            savedImage.sort_order ??
+            nextImages[index].sort_order ??
+            0
+          ),
+          is_primary: Boolean(savedImage.is_primary),
+        };
+
+        return {
+          ...current,
+          images: nextImages,
+        };
+      });
+    } catch (error) {
+      setFormError(
+        error.message || 'Unable to upload product image.'
+      );
+    } finally {
+      setImageBusyIndex(-1);
+    }
+  }
+
   async function changeStatus(product, newStatus) {
     if (newStatus === product.status) return;
 
@@ -452,55 +538,68 @@ export default function Products() {
     }
   }
 
-  async function saveProduct(event) {
-    event.preventDefault();
-    setFormError('');
+ 
+async function saveProduct(event) {
 
-    if (
-      !form.name.trim() ||
-      !form.slug.trim() ||
-      !form.category_id
-    ) {
-      setFormError(
-        'Product name, slug, and category are required.'
-      );
-      return;
-    }
+  event.preventDefault();
+  setFormError('');
 
-    if (!editingId && !form.vendor_id) {
-      setFormError('Select a vendor for this product.');
-      return;
-    }
+  if (
+    !form.name.trim() ||
+    !form.slug.trim() ||
+    !form.category_id
+  ) {
+    console.log('2. Product validation failed');
 
-    let payload;
-
-    try {
-      payload = normalizePayload(form, !editingId);
-    } catch (validationError) {
-      setFormError(validationError.message);
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      if (editingId) {
-        await updateProduct(editingId, payload);
-      } else {
-        await createProduct(payload);
-      }
-
-      setModalOpen(false);
-      setReload((current) => current + 1);
-    } catch (requestError) {
-      setFormError(
-        requestError.message ||
-          'Unable to save product.'
-      );
-    } finally {
-      setSaving(false);
-    }
+    setFormError(
+      'Product name, slug, and category are required.'
+    );
+    return;
   }
+
+  if (!editingId && !form.vendor_id) {
+    setFormError('Select a vendor for this product.');
+    return;
+  }
+
+  let payload;
+
+  try {
+
+    payload = normalizePayload(form, !editingId);
+
+
+  } catch (validationError) {
+    console.error('Payload validation failed:', validationError);
+
+    setFormError(validationError.message);
+    return;
+  }
+
+  setSaving(true);
+  try {
+    if (editingId) {
+
+      await updateProduct(editingId, payload);
+
+    } else {
+      await createProduct(payload);
+    }
+
+    setModalOpen(false);
+    setReload((current) => current + 1);
+
+  } catch (requestError) {
+    console.error('Product save failed:', requestError);
+
+    setFormError(
+      requestError.message || 'Unable to save product.'
+    );
+  } finally {
+    setSaving(false);
+  }
+}
+
 
   async function handleArchive(product) {
     const confirmed = window.confirm(
@@ -767,7 +866,7 @@ export default function Products() {
                 type="button"
                 className="modal-close-button"
                 onClick={() => setModalOpen(false)}
-                disabled={saving}
+                disabled={saving || imageBusyIndex !== -1}
                 aria-label="Close product form"
               >
                 ×
@@ -1187,14 +1286,15 @@ export default function Products() {
                   <div>
                     <h4>Product images</h4>
                     <p>
-                      Paste publicly accessible image URLs.
-                      File uploads are not included in this form.
+                      Paste an image URL or upload an image file.
+                      Save the product before uploading files.
                     </p>
                   </div>
 
                   <button
                     type="button"
                     className="secondary-button"
+                    disabled={imageBusyIndex !== -1}
                     onClick={() =>
                       setForm((current) => ({
                         ...current,
@@ -1220,6 +1320,7 @@ export default function Products() {
                       <button
                         type="button"
                         className="text-danger-button"
+                        disabled={imageBusyIndex !== -1}
                         onClick={() =>
                           setForm((current) => ({
                             ...current,
@@ -1248,6 +1349,40 @@ export default function Products() {
                           }
                           placeholder="https://..."
                         />
+                      </label>
+
+                      <label className="product-image-upload-label">
+                        {image.id
+                          ? 'Replace image file'
+                          : 'Upload new image file'}
+
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          disabled={imageBusyIndex !== -1 || !editingId}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            handleImageFile(index, file);
+                            event.target.value = '';
+                          }}
+                        />
+
+                        {imageBusyIndex === index && (
+                          <small role="status">
+                            Uploading image and updating product record...
+                          </small>
+                        )}
+
+                        {image.image_url && (
+                          <img
+                            className="product-image-preview"
+                            src={image.image_url}
+                            alt={
+                              image.alt_text ||
+                              `Product image ${index + 1}`
+                            }
+                          />
+                        )}
                       </label>
 
                       <label>
@@ -1304,7 +1439,7 @@ export default function Products() {
                     type="button"
                     className="secondary-button"
                     onClick={() => setModalOpen(false)}
-                    disabled={saving}
+                    disabled={saving || imageBusyIndex !== -1}
                   >
                     Cancel
                   </button>
@@ -1312,7 +1447,7 @@ export default function Products() {
                   <button
                     type="submit"
                     className="primary-button"
-                    disabled={saving}
+                    disabled={saving || imageBusyIndex !== -1}
                   >
                     {saving
                       ? 'Saving...'
@@ -1667,6 +1802,36 @@ export default function Products() {
           border: 1px solid #E2ECE0;
           border-radius: 14px;
           background: #FAF9F4;
+        }
+
+        .product-image-upload-label {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .product-image-upload-label input[type="file"] {
+          width: 100%;
+          padding: 10px;
+          border: 1px dashed #c8c8c8;
+          border-radius: 8px;
+          background: #fafafa;
+          cursor: pointer;
+        }
+
+        .product-image-preview {
+          width: 120px;
+          height: 120px;
+          object-fit: contain;
+          padding: 6px;
+          border: 1px solid #e5e5e5;
+          border-radius: 8px;
+          background: #fff;
+        }
+
+        .product-image-upload-label small {
+          color: #777;
+          font-size: 12px;
         }
 
         .product-editor-card-heading {

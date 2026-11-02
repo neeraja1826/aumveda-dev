@@ -12,12 +12,14 @@ import {
   Wallet,
   Warehouse,
   RotateCcw,
+  TicketPercent,
 } from 'lucide-react';
 
 export const ADMIN_PAGES = {
   DASHBOARD: 'Dashboard',
   PRODUCTS: 'Products',
   CATEGORIES: 'Categories',
+  COUPONS: 'Coupons',
   VENDORS: 'Vendors',
   CUSTOMERS: 'Customers',
   ORDERS: 'Orders',
@@ -33,6 +35,7 @@ const links = [
   [ADMIN_PAGES.DASHBOARD, LayoutDashboard],
   [ADMIN_PAGES.PRODUCTS, Package],
   [ADMIN_PAGES.CATEGORIES, Boxes],
+  [ADMIN_PAGES.COUPONS, TicketPercent],
   [ADMIN_PAGES.VENDORS, Store],
   [ADMIN_PAGES.CUSTOMERS, Users],
   [ADMIN_PAGES.ORDERS, ShoppingBag],

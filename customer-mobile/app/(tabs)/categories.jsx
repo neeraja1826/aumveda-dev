@@ -16,7 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { getProducts } from '../../src/services/productService';
-import { apiRequest } from '../../src/services/api';
+import { getCategories } from '../../src/services/categoryService';
 import HomeHeader from '../../src/components/home/HomeHeader';
 import ProductCard from '../../src/components/home/ProductCard';
 import { colors } from '../../src/theme/colors';
@@ -73,12 +73,11 @@ export default function CategoriesScreen() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const response = await apiRequest('/home/categories');
-        const data = response?.data ?? [];
+        const data = await getCategories();
 
         setCategories(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.log('Products categories error:', err);
+        console.log('Categories loading error:', err);
         setCategories([]);
       }
     };
