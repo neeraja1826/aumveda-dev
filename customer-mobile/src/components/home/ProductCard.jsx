@@ -17,6 +17,7 @@ export default function ProductCard({
   product,
   onPress,
   compact = false,
+  theme = null,
 }) {
   const router = useRouter();
 
@@ -291,9 +292,17 @@ export default function ProductCard({
         <View style={styles.actionButtonsRow}>
           {/* ADD TO CART / STEPPER */}
           {isAdded ? (
-            <View style={styles.quantityContainer}>
+            <View
+              style={[
+                styles.quantityContainer,
+                theme?.accent && { borderColor: theme.accent },
+              ]}
+            >
               <Pressable
-                style={styles.quantityButton}
+                style={[
+                  styles.quantityButton,
+                  theme?.accentLight && { backgroundColor: theme.accentLight },
+                ]}
                 onPress={handleDecrease}
                 hitSlop={6}
                 accessibilityRole="button"
@@ -302,16 +311,24 @@ export default function ProductCard({
                 <Ionicons
                   name="remove"
                   size={14}
-                  color={colors.primary}
+                  color={theme?.accent || colors.primary}
                 />
               </Pressable>
 
-              <Text style={styles.quantityText}>
+              <Text
+                style={[
+                  styles.quantityText,
+                  theme?.accent && { color: theme.accent },
+                ]}
+              >
                 {quantity}
               </Text>
 
               <Pressable
-                style={styles.quantityButton}
+                style={[
+                  styles.quantityButton,
+                  theme?.accentLight && { backgroundColor: theme.accentLight },
+                ]}
                 onPress={handleIncrease}
                 hitSlop={6}
                 accessibilityRole="button"
@@ -320,7 +337,7 @@ export default function ProductCard({
                 <Ionicons
                   name="add"
                   size={14}
-                  color={colors.primary}
+                  color={theme?.accent || colors.primary}
                 />
               </Pressable>
             </View>
@@ -328,6 +345,7 @@ export default function ProductCard({
             <Pressable
               style={({ pressed }) => [
                 styles.addToCartButton,
+                theme?.accent && { backgroundColor: theme.accent },
                 pressed && styles.buttonPressed,
               ]}
               onPress={handleAddToCart}
@@ -348,6 +366,12 @@ export default function ProductCard({
           <Pressable
             style={({ pressed }) => [
               styles.buyNowButton,
+              {
+                borderColor: theme?.accent || colors.primary,
+                backgroundColor: pressed
+                  ? (theme?.accentLight || '#F2F2F2')
+                  : '#FFFFFF',
+              },
               pressed && styles.buttonPressed,
             ]}
             onPress={handleBuyNow}
@@ -355,7 +379,10 @@ export default function ProductCard({
             accessibilityLabel="Buy Now"
           >
             <Text
-              style={styles.buyNowText}
+              style={[
+                styles.buyNowText,
+                theme?.accent && { color: theme.accent },
+              ]}
               numberOfLines={1}
               adjustsFontSizeToFit
             >
@@ -539,14 +566,14 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#123D2B',
+    backgroundColor: '#2E5A34',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
 
   addToCartText: {
-    fontSize: 10.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
@@ -558,14 +585,14 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     borderWidth: 1.2,
     borderColor: '#123D2B',
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
 
   buyNowText: {
-    fontSize: 10.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#123D2B',
     textAlign: 'center',

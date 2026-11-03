@@ -331,10 +331,10 @@ export default function HomeScreen() {
                 <View style={styles.categoryLoadingWrap}>
                   <ActivityIndicator
                     size="large"
-                    color="#123D2B"
+                    color={activeHeaderTheme.accent}
                   />
 
-                  <Text style={styles.categoryLoadingText}>
+                  <Text style={[styles.categoryLoadingText, { color: activeHeaderTheme.accent }]}>
                     Loading {selectedCategoryName} products...
                   </Text>
                 </View>
@@ -346,6 +346,7 @@ export default function HomeScreen() {
                     <ProductCard
                       key={product.id}
                       product={product}
+                      theme={activeHeaderTheme}
                       onPress={() => {
                         if (product?.slug) {
                           router.push(
@@ -363,10 +364,10 @@ export default function HomeScreen() {
                   <Ionicons
                     name="leaf-outline"
                     size={42}
-                    color="#716F68"
+                    color={activeHeaderTheme.accent}
                   />
 
-                  <Text style={styles.categoryEmptyTitle}>
+                  <Text style={[styles.categoryEmptyTitle, { color: activeHeaderTheme.accent }]}>
                     No products found
                   </Text>
 
@@ -376,7 +377,7 @@ export default function HomeScreen() {
                   </Text>
 
                   <Pressable
-                    style={styles.categoryBackHomeBtn}
+                    style={[styles.categoryBackHomeBtn, { backgroundColor: activeHeaderTheme.accent }]}
                     onPress={() =>
                       handleSelectCategory({
                         id: 'all',
@@ -493,7 +494,16 @@ const styles = StyleSheet.create({
 
   categoryViewContainer: {
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 24, // end
+  },
+
+
+
+
+
+
+
+
   },
 
   categoryGrid: {
@@ -548,6 +558,7 @@ const styles = StyleSheet.create({
 
   categoryBackHomeText: {
     fontFamily: 'InterSemiBold',
+
     fontSize: 12,
     color: '#FFFFFF',
   },

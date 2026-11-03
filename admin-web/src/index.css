@@ -90,8 +90,9 @@ button:disabled {
 
 /* App Shell */
 .admin-shell {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
+  overflow: hidden;
   background: #F8FAF7;
 }
 
@@ -103,6 +104,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   width: 260px;
+  height: 100vh;
   padding: 24px 16px 20px;
   color: #FFFFFF;
   background: linear-gradient(180deg, #123D2B 0%, #173F1D 45%, #0B2419 100%);
@@ -175,8 +177,14 @@ button:disabled {
   flex-direction: column;
   gap: 5px;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding-right: 4px;
   flex: 1;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .sidebar-link {
@@ -221,7 +229,6 @@ button:disabled {
 }
 
 .sidebar {
-  position: relative;
   overflow: hidden;
 }
 
@@ -288,10 +295,13 @@ button:disabled {
 /* Main Content Area */
 .admin-main {
   width: calc(100% - 260px);
-  min-height: 100vh;
-  margin-left: 2px;
+  height: 100vh;
+  min-height: 0;
+  min-width: 0;
+  margin-left: 260px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   background: #F8FAF7;
 }
 
@@ -310,7 +320,6 @@ button:disabled {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 4px 20px rgba(18, 61, 43, 0.025);
-  position: relative;
   overflow: hidden;
 }
 
@@ -464,8 +473,8 @@ button:disabled {
 
 /* Page Content Container */
 .page-content {
-  max-width: 1540px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 30px 34px 48px;
   width: 100%;
 }

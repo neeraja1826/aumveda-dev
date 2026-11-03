@@ -19,7 +19,7 @@ import {
 } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 import { getProducts } from '../../src/services/productService';
 
@@ -28,6 +28,7 @@ import { useCart } from '../../src/context/CartContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { colors } from '../../src/theme/colors';
 import ProductCard from '../../src/components/home/ProductCard';
+import { getCategoryPastelTheme } from '../../src/components/home/HomeHeader';
 
 
 export default function CategoryProductsPage() {
@@ -47,6 +48,10 @@ export default function CategoryProductsPage() {
     categoryId,
     categoryName,
   } = useLocalSearchParams();
+
+  const activeTheme = useMemo(() => {
+    return getCategoryPastelTheme(String(categoryName || ''));
+  }, [categoryName]);
 
 
   const {
@@ -257,7 +262,7 @@ const handleAddToCart = (product) => {
 
     return (
       <SafeAreaView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: activeTheme.screenBackground }]}
         edges={['top']}
       >
         <View style={styles.loadingContainer}>
@@ -285,6 +290,7 @@ const handleAddToCart = (product) => {
   const renderProduct = ({ item }) => (
     <ProductCard
       product={item}
+      theme={activeTheme}
       onPress={() => handleProductPress(item)}
     />
   );
@@ -530,11 +536,11 @@ const handleAddToCart = (product) => {
 
     return (
       <SafeAreaView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: activeTheme.screenBackground }]}
         edges={['top']}
       >
 
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: activeTheme.headerGradient[0], borderBottomColor: activeTheme.headerBorder }]}>
 
           <Pressable
             style={styles.backButton}
@@ -551,7 +557,7 @@ const handleAddToCart = (product) => {
 
 
           <Text
-            style={styles.headerTitle}
+            style={[styles.headerTitle, { color: activeTheme.accent }]}
             numberOfLines={1}
           >
             {categoryName || 'Category'}
@@ -596,7 +602,7 @@ const handleAddToCart = (product) => {
 
   return (
     <SafeAreaView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: activeTheme.screenBackground }]}
       edges={['top']}
     >
 
@@ -604,7 +610,7 @@ const handleAddToCart = (product) => {
           HEADER
       ====================================================== */}
 
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: activeTheme.headerGradient[0], borderBottomColor: activeTheme.headerBorder }]}>
 
         <Pressable
           style={styles.backButton}
@@ -624,14 +630,14 @@ const handleAddToCart = (product) => {
         <View style={styles.headerText}>
 
           <Text
-            style={styles.headerTitle}
+            style={[styles.headerTitle, { color: activeTheme.accent }]}
             numberOfLines={1}
           >
             {categoryName || 'Products'}
           </Text>
 
 
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerSubtitle, { color: activeTheme.accent + 'B3' }]}>
             {products.length}{' '}
             {products.length === 1
               ? 'Product'

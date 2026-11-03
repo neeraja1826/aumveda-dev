@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 import {
   ActivityIndicator,
@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { getProducts } from '../../src/services/productService';
 import { getCategories } from '../../src/services/categoryService';
-import HomeHeader from '../../src/components/home/HomeHeader';
+import HomeHeader, { getCategoryPastelTheme } from '../../src/components/home/HomeHeader';
 import ProductCard from '../../src/components/home/ProductCard';
 import { colors } from '../../src/theme/colors';
 
@@ -50,6 +50,10 @@ export default function CategoriesScreen() {
 
   const [selectedCategoryName, setSelectedCategoryName] =
     useState(paramCategoryName || 'All Products');
+
+  const activeTheme = useMemo(() => {
+    return getCategoryPastelTheme(selectedCategoryName, 0);
+  }, [selectedCategoryName]);
 
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [error, setError] = useState('');
@@ -193,7 +197,13 @@ export default function CategoriesScreen() {
                 key={String(id ?? index)}
                 style={({ pressed }) => [
                   styles.filterChip,
-                  isSelected && styles.filterChipActive,
+                  isSelected && [
+                    styles.filterChipActive,
+                    {
+                      backgroundColor: activeTheme.accent,
+                      borderColor: activeTheme.accent,
+                    },
+                  ],
                   pressed && styles.filterChipPressed,
                 ]}
                 onPress={() => selectCategory(category)}
@@ -218,14 +228,36 @@ export default function CategoriesScreen() {
       {/* 3. Results Header & Count Badge */}
       <View style={styles.resultsHeader}>
         <View style={styles.resultsLeft}>
-          <Ionicons name="leaf" size={13} color="#C89B48" />
-          <Text style={styles.resultsTitle}>
+          <Ionicons
+            name="leaf"
+            size={13}
+            color={selectedCategoryId ? activeTheme.accent : '#C89B48'}
+          />
+          <Text
+            style={[
+              styles.resultsTitle,
+              selectedCategoryId && { color: activeTheme.accent },
+            ]}
+          >
             {selectedCategoryName || 'All Products'}
           </Text>
         </View>
 
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>
+        <View
+          style={[
+            styles.countBadge,
+            selectedCategoryId && {
+              backgroundColor: activeTheme.accentLight,
+              borderColor: activeTheme.accent,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.countText,
+              selectedCategoryId && { color: activeTheme.accent },
+            ]}
+          >
             {loadingProducts
               ? 'Loading...'
               : `${products.length} Products`}
@@ -238,6 +270,7 @@ export default function CategoriesScreen() {
   const renderProduct = ({ item }) => (
     <ProductCard
       product={item}
+      theme={selectedCategoryId ? activeTheme : null}
       onPress={() => {
         if (item?.slug) {
           router.push(`/products/${item.slug}`);
@@ -247,8 +280,20 @@ export default function CategoriesScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <HomeHeader />
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        selectedCategoryId && {
+          backgroundColor: activeTheme.statusBarColor,
+        },
+      ]}
+      edges={['top']}
+    >
+      <HomeHeader
+        categories={categories}
+        selectedCategoryId={selectedCategoryId || 'all'}
+        onSelectCategory={(cat) => selectCategory(cat)}
+      />
 
       <FlatList
         key="products-grid"
@@ -260,7 +305,12 @@ export default function CategoriesScreen() {
         }
         numColumns={2}
         columnWrapperStyle={styles.productRow}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          selectedCategoryId && {
+            backgroundColor: activeTheme.screenBackground,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={

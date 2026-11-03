@@ -36,6 +36,9 @@ export const CATEGORY_PASTEL_THEMES = [
     cardGradient: ['#FFFFFF', '#E3F4E5'],
     cardBorder: '#2E7D32',
     accent: '#123D2B',
+    screenBackground: '#F4F8F4',
+    accentLight: '#E5F2E7',
+    badgeBg: '#E0F2E3',
   },
   // 1: Pastel Peach & Blossom (Skin Care / Face / Glow)
   {
@@ -45,6 +48,9 @@ export const CATEGORY_PASTEL_THEMES = [
     cardGradient: ['#FFFFFF', '#FEE9E4'],
     cardBorder: '#E06D53',
     accent: '#8C3827',
+    screenBackground: '#FFF7F5',
+    accentLight: '#FDE8E3',
+    badgeBg: '#FDE4DE',
   },
   // 2: Pastel Lavender & Lilac (Hair Care / Scalp / Oils)
   {
@@ -54,6 +60,9 @@ export const CATEGORY_PASTEL_THEMES = [
     cardGradient: ['#FFFFFF', '#EFE7F8'],
     cardBorder: '#7E57C2',
     accent: '#48256E',
+    screenBackground: '#FAF6FD',
+    accentLight: '#EFE6F7',
+    badgeBg: '#EDE1F8',
   },
   // 3: Warm Honey & Saffron (Health / Digestion / Immunity)
   {
@@ -63,6 +72,9 @@ export const CATEGORY_PASTEL_THEMES = [
     cardGradient: ['#FFFFFF', '#FFF1D6'],
     cardBorder: '#E5A11F',
     accent: '#794B00',
+    screenBackground: '#FFFBF2',
+    accentLight: '#FEF2DC',
+    badgeBg: '#FFF0D4',
   },
   // 4: Soft Seafoam Aqua & Sky (Body & Bath / Personal Care)
   {
@@ -72,6 +84,9 @@ export const CATEGORY_PASTEL_THEMES = [
     cardGradient: ['#FFFFFF', '#E1F6F8'],
     cardBorder: '#1A8F97',
     accent: '#0C5A60',
+    screenBackground: '#F3FAFB',
+    accentLight: '#E2F4F6',
+    badgeBg: '#DDF5F6',
   },
   // 5: Pastel Matcha & Herbal (Wellness Teas & Infusions)
   {
@@ -81,6 +96,9 @@ export const CATEGORY_PASTEL_THEMES = [
     cardGradient: ['#FFFFFF', '#EDF7DD'],
     cardBorder: '#689F38',
     accent: '#3C5C17',
+    screenBackground: '#F8FAF2',
+    accentLight: '#EDF5DE',
+    badgeBg: '#EDF7DC',
   },
   // 6: Pastel Apricot & Amber (Kits & Combos)
   {
@@ -90,6 +108,9 @@ export const CATEGORY_PASTEL_THEMES = [
     cardGradient: ['#FFFFFF', '#FFEDE0'],
     cardBorder: '#E67E22',
     accent: '#894615',
+    screenBackground: '#FFF7F0',
+    accentLight: '#FDEEE2',
+    badgeBg: '#FFEDE0',
   },
   // 7: Pastel Rose Quartz & Blush (Women Care / Feminine Wellness)
   {
@@ -99,6 +120,9 @@ export const CATEGORY_PASTEL_THEMES = [
     cardGradient: ['#FFFFFF', '#FDE8F1'],
     cardBorder: '#D84A78',
     accent: '#9C1D4A',
+    screenBackground: '#FFF4F8',
+    accentLight: '#FDE6F0',
+    badgeBg: '#FDE2EC',
   },
 ];
 

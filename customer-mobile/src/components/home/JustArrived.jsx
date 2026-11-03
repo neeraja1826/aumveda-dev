@@ -150,9 +150,9 @@ export default function JustArrived({ products = [] }) {
 
   return (
     <View style={styles.sectionContainer}>
-      {/* BOTANICAL LUXURY IVORY/CREAM GRADIENT BACKGROUND */}
+      {/* ROYAL LAVENDER DUSK GRADIENT BACKGROUND */}
       <LinearGradient
-        colors={['#FAF7F0', '#F6F0E4', '#F0E8DC']}
+        colors={['#F2E8F7', '#E5D2F0', '#D6BBE6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={styles.gradientSurface}
@@ -162,13 +162,13 @@ export default function JustArrived({ products = [] }) {
           <MaterialCommunityIcons
             name="leaf"
             size={56}
-            color="#8DB895"
+            color="#996DAE"
             style={styles.foliageLeafOne}
           />
           <MaterialCommunityIcons
             name="leaf"
             size={36}
-            color="#A8CCA9"
+            color="#B894CB"
             style={styles.foliageLeafTwo}
           />
         </View>
@@ -557,10 +557,13 @@ const styles = StyleSheet.create({
 
   gradientSurface: {
     width: '100%',
-    paddingTop: 12,
+    paddingTop: 14,
     paddingBottom: 16,
     position: 'relative',
     overflow: 'hidden',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#CAA5DA',
   },
 
   /* TOP RIGHT BOTANICAL FOLIAGE OVERHANG */
@@ -618,7 +621,7 @@ const styles = StyleSheet.create({
   eyebrowLine: {
     width: 18,
     height: 1,
-    backgroundColor: '#8FA893',
+    backgroundColor: '#d6766fff',
   },
 
   eyebrowText: {
@@ -830,7 +833,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
-    backgroundColor: '#173F1D',
+    backgroundColor: '#2E5A34',
     height: 28,
     borderRadius: 14,
     paddingHorizontal: 2,
@@ -860,7 +863,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.1,
     borderColor: '#173F1D',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#884129',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 2,
@@ -876,7 +879,7 @@ const styles = StyleSheet.create({
     fontFamily: 'InterSemiBold',
     fontSize: 9,
     fontWeight: '700',
-    color: '#173F1D',
+    color: '#FFFFFF',
     letterSpacing: 0,
   },
 
@@ -931,7 +934,7 @@ const styles = StyleSheet.create({
 
   inactiveDot: {
     width: 5,
-    backgroundColor: '#C8D7C9',
+    backgroundColor: '#BF9ECC',
   },
 
   /* BOTTOM BOTANICAL WAVE SEPARATOR */
@@ -949,7 +952,7 @@ const styles = StyleSheet.create({
     left: '-10%',
     height: 28,
     borderRadius: 20,
-    backgroundColor: 'rgba(189, 212, 193, 0.4)',
+    backgroundColor: 'rgba(178, 134, 201, 0.38)',
     transform: [{ rotate: '-1.2deg' }],
   },
 });

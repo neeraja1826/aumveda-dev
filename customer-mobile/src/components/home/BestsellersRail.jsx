@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#123D2B',
+    backgroundColor: '#2E5A34',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
 
   addBtnText: {
     color: '#FFFFFF',
-    fontSize: 10.5,
+    fontSize: 12.5,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -568,16 +568,16 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     borderWidth: 1.2,
-    borderColor: '#123D2B',
-    backgroundColor: 'transparent',
+    borderColor: '#2E5A34',
+    backgroundColor: '#884129',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
 
   buyNowText: {
-    color: '#123D2B',
-    fontSize: 10.5,
+    color: '#FFFFFF',
+    fontSize: 12.5,
     fontWeight: '700',
     textAlign: 'center',
   },
