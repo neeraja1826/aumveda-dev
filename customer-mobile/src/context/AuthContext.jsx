@@ -89,8 +89,6 @@ export function AuthProvider({ children }) {
 
   const restoreSession = useCallback(async () => {
     try {
-      console.log('=================================');
-      console.log('AUTH: Restoring session...');
 
       const storedToken = await getAuthToken();
       const storedUser = await getAuthUser();
@@ -113,7 +111,6 @@ export function AuthProvider({ children }) {
       const sessionToken = supabaseSession?.access_token || storedToken;
 
       console.log(
-        'AUTH: Stored token exists:',
         !!sessionToken
       );
 
@@ -128,7 +125,6 @@ export function AuthProvider({ children }) {
       let activeUser = storedUser;
 
       try {
-        console.log('AUTH DEBUG: Starting profile request');
         
 const response = await getProfile(sessionToken);
 
@@ -136,14 +132,6 @@ const response = await getProfile(sessionToken);
 
 const profile = extractUser(response);
 
-console.log(
-  'AUTH EXTRACTED USER:',
-  JSON.stringify(profile, null, 2)
-);
-console.log(
-  'DEBUG: EXTRACTED PROFILE:',
-  JSON.stringify(profile, null, 2)
-);
         if (profile) {
           activeUser = profile;
           await saveAuthUser(profile);
@@ -193,8 +181,6 @@ console.log(
       setIsAuthenticated(false);
     } finally {
       setLoading(false);
-      console.log('AUTH: Restore complete');
-      console.log('=================================');
     }
   }, []);
 

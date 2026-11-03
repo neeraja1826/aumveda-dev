@@ -20,6 +20,7 @@ let homeCache = null;
 let homeCacheTime = 0;
 let homeRequest = null;
 
+
 export async function getHomeData({
   token = null,
   forceRefresh = false,
@@ -56,10 +57,14 @@ export async function getHomeData({
       categoriesResponse,
       productsResponse,
       bundlesResponse,
+      couponsResponse,
+      newArrivalsResponse,
     ] = await Promise.all([
       safeRequest('/home/categories', []),
       safeRequest('/home/featured-products', []),
       safeRequest('/home/bundles', []),
+      safeRequest('/home/coupons', []),
+      safeRequest("/home/new-arrivals"),
     ]);
 
     const result = {
@@ -68,6 +73,8 @@ export async function getHomeData({
       featuredProducts: getArray(productsResponse),
       decorations: [],
       bundles: getArray(bundlesResponse),
+      coupons: getArray(couponsResponse),
+      newArrivals: getArray(newArrivalsResponse),
     };
 
     homeCache = result;
@@ -86,14 +93,6 @@ export async function getHomeData({
     if (homeRequest === request) {
       homeRequest = null;
     }
+
   }
-}
-
-export async function recordRecentlyViewed(productId, token) {
-  if (!productId || !token) return null;
-
-  return apiRequest(`/recently-viewed/${productId}`, {
-    method: 'POST',
-    token,
-  });
 }

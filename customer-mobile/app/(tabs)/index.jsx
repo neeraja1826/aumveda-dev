@@ -43,16 +43,15 @@ import {
 
 import LoadingScreen from '../../src/components/common/LoadingScreen';
 import HomeHeader, { getCategoryPastelTheme } from '../../src/components/home/HomeHeader';
-import AvailableCoupons from '../../src/components/home/AvailableCoupons';
 import DealsOfTheWeek from '../../src/components/home/DealsOfTheWeek';
 import ExploreAyurveda from '../../src/components/home/ExploreAyurveda';
 import FeaturedProducts from '../../src/components/home/FeaturedProducts';
 import WellnessBundles from '../../src/components/home/WellnessBundles';
 import BestsellersRail from '../../src/components/home/BestsellersRail';
-
+import CouponsOffers from '../../src/components/home/CouponsOffers';
 import { colors } from '../../src/theme/colors';
 import { useAuth } from '../../src/context/AuthContext';
-
+import JustArrived from '../../src/components/home/JustArrived';
 export default function HomeScreen() {
 
   // ============================================================
@@ -200,7 +199,6 @@ export default function HomeScreen() {
     try {
       setError(null);
 
-      console.log('LOADING HOME DATA');
 
       console.log('HOME AUTH:', {
         loggedIn: Boolean(token),
@@ -212,17 +210,11 @@ export default function HomeScreen() {
       });
 
       console.log(
-        'HOME DATA:',
-        JSON.stringify(response, null, 2)
-      );
+  'JUST ARRIVED PRODUCTS:',
+  response.newArrivals
+);
 
-      console.log('HOME DATA COUNTS:', {
-        categories: response.categories?.length,
-        featuredProducts: response.featuredProducts?.length,
-        bundles: response.bundles?.length,
-        decorations: response.decorations?.length,
-        heroAvailable: Boolean(response.hero),
-      });
+   
 
       setData(response);
 
@@ -255,16 +247,7 @@ export default function HomeScreen() {
   // FONT LOADING
   // ============================================================
 
-  console.log('HOME RENDER STATUS:', {
-    fontsLoaded,
-    loading,
-    hasToken: Boolean(token),
-    categories: data.categories.length,
-    featuredProducts: data.featuredProducts.length,
-    bundles: data.bundles.length,
-    error,
-  });
-
+  
 
   if (!fontsLoaded) {
     return (
@@ -436,7 +419,9 @@ export default function HomeScreen() {
               />
 
 
-              
+
+ {/* AVAILABLE COUPONS (CHIPS) */}
+              <CouponsOffers coupons={data.coupons || []} />
 
 
               {/* FEATURED PRODUCTS */}
@@ -449,10 +434,12 @@ export default function HomeScreen() {
               />
 
 
-              {/* AVAILABLE COUPONS */}
+         <JustArrived products={data.newArrivals || []} />
 
-              <AvailableCoupons />
+             
 
+
+             
 
               {/* WELLNESS BUNDLES */}
 

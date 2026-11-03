@@ -39,12 +39,7 @@ function AppNavigator() {
     const currentGroup = segments[0];
     const isInAuthGroup = currentGroup === '(auth)';
 
-    console.log('ROUTER AUTH STATE:', {
-      loading,
-      isAuthenticated,
-      currentGroup,
-      segments,
-    });
+    
 
     // Logged-in users should not remain on login/ screens.
     if (isAuthenticated && isInAuthGroup) {

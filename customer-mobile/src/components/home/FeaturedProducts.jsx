@@ -73,55 +73,17 @@ export default function FeaturedProducts({
       <View style={styles.headerRow}>
         <View>
           <View style={styles.eyebrowRow}>
-            <Text style={styles.sparkle}>✦</Text>
-            <Text style={styles.eyebrow}>CURATED BOTANICAL APOTHECARY</Text>
           </View>
-          <Text style={styles.title}>Featured Products</Text>
         </View>
 
         <Pressable
-          style={styles.viewAllBtn}
           onPress={() => router.push('/(tabs)/categories')}
           hitSlop={8}
         >
-          <Text style={styles.viewAllText}>View All</Text>
-          <Ionicons name="arrow-forward" size={13} color="#123D2B" />
         </Pressable>
       </View>
 
-      {/* HORIZONTAL CATEGORY FILTER PILLS */}
-      {filterPills.length > 1 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.pillsScroll}
-        >
-          {filterPills.map((pill) => {
-            const isSelected = selectedFilter === pill.id;
-            return (
-              <Pressable
-                key={pill.id}
-                style={[
-                  styles.pill,
-                  isSelected && styles.pillActive,
-                ]}
-                onPress={() => handleSelectFilter(pill.id)}
-                hitSlop={4}
-              >
-                <Text
-                  style={[
-                    styles.pillText,
-                    isSelected && styles.pillTextActive,
-                  ]}
-                >
-                  {pill.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      )}
-
+     
       {/* HORIZONTAL PRODUCT CAROUSEL */}
       <ScrollView
         horizontal
@@ -147,7 +109,7 @@ export default function FeaturedProducts({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 20,
+    marginTop: 10,
     marginBottom: 6,
   },
 

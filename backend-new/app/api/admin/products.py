@@ -162,6 +162,7 @@ def create_product(payload: AdminProductCreate):
         raise _database_error(exc) from exc
 
 
+
 @router.patch("/{product_id}")
 def update_product(
     product_id: UUID,
@@ -182,29 +183,45 @@ def update_product(
                     422, f"{field} cannot be null"
                 )
 
+        # Prepare variants and images BEFORE using them
+        variants_payload = (
+            [
+                item.model_dump(mode="json")
+                for item in payload.variants
+            ]
+            if "variants" in payload.model_fields_set
+            else None
+        )
+
+        images_payload = (
+            [
+                item.model_dump(mode="json")
+                for item in payload.images
+            ]
+            if "images" in payload.model_fields_set
+            else None
+        )
+
+        print("========== PRODUCT UPDATE DEBUG ==========")
+        print("Product ID:", product_id)
+        print("Variants received:", variants_payload)
+        print(
+            "Variants field supplied:",
+            "variants" in payload.model_fields_set
+        )
+        print("==========================================")
+
         result = supabase.rpc(
             "admin_update_product",
             {
                 "p_product_id": str(product_id),
                 "p_changes": changes,
-                "p_variants": (
-                    [
-                        item.model_dump(mode="json")
-                        for item in payload.variants
-                    ]
-                    if "variants" in payload.model_fields_set
-                    else None
-                ),
-                "p_images": (
-                    [
-                        item.model_dump(mode="json")
-                        for item in payload.images
-                    ]
-                    if "images" in payload.model_fields_set
-                    else None
-                ),
+                "p_variants": variants_payload,
+                "p_images": images_payload,
             },
         ).execute()
+
+        print("RPC RESPONSE:", result.data)
 
         if not result.data:
             raise HTTPException(
@@ -215,10 +232,12 @@ def update_product(
             "message": "Product updated successfully",
             **result.data,
         }
+
     except HTTPException:
         raise
     except Exception as exc:
         raise _database_error(exc) from exc
+
 
 
 @router.patch("/{product_id}/status")
