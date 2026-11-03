@@ -85,7 +85,7 @@ export default function JustArrived({ products = [] }) {
   const initialIndex = N > 1 ? CENTER_SET * N : 0;
   const initialOffset = initialIndex * SNAP_INTERVAL;
 
-  const scrollX = useRef(new Animated.Value(initialOffset)).current;
+  const [scrollX] = useState(() => new Animated.Value(initialOffset));
 
   // Build the looped array of products
   const loopedProducts = useMemo(() => {
@@ -150,46 +150,29 @@ export default function JustArrived({ products = [] }) {
 
   return (
     <View style={styles.sectionContainer}>
-      {/* ROYAL LAVENDER DUSK GRADIENT BACKGROUND */}
+      {/* SEAMLESS WARM SANDSTONE EARTH CLAY PANEL (MATCHING WEBSITE SECTION DIFFERENTIATION) */}
       <LinearGradient
-        colors={['#F2E8F7', '#E5D2F0', '#D6BBE6']}
+        colors={[
+          '#F5F1E8', // Blends seamlessly into page background (no hard top border)
+          '#F6ECE2', // Gentle warm sandstone dawn
+          '#F4E4D7', // Soft warm almond clay
+          '#EFE0D1', // Core warm sandstone center
+          '#F4E4D7', // Soft warm almond clay
+          '#F6ECE2', // Gentle warm sandstone dawn
+          '#F5F1E8', // Blends seamlessly back into page background (no hard bottom border)
+        ]}
+        locations={[0, 0.12, 0.28, 0.5, 0.72, 0.88, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={styles.gradientSurface}
       >
-        {/* TOP-RIGHT BOTANICAL LEAF OVERHANG */}
-        <View style={styles.foliageWrap} pointerEvents="none">
-          <MaterialCommunityIcons
-            name="leaf"
-            size={56}
-            color="#996DAE"
-            style={styles.foliageLeafOne}
-          />
-          <MaterialCommunityIcons
-            name="leaf"
-            size={36}
-            color="#B894CB"
-            style={styles.foliageLeafTwo}
-          />
-        </View>
+        {/* TOP-RIGHT SUBTLE BOTANICAL SANDSTONE FOLIAGE WATERMARK */}
+
 
         {/* SECTION HEADER - CENTERED */}
         <View style={styles.header}>
-          {/* CENTER BOTANICAL MOTIF */}
-          <View style={styles.motifRow}>
-            <MaterialCommunityIcons
-              name="leaf"
-              size={14}
-              color="#173F1D"
-              style={styles.motifLeftLeaf}
-            />
-            <MaterialCommunityIcons
-              name="leaf"
-              size={14}
-              color="#173F1D"
-              style={styles.motifRightLeaf}
-            />
-          </View>
+          {/* CENTER BOTANICAL MOTIF (WARM TERRACOTTA) */}
+
 
           {/* EYEBROW */}
           <View style={styles.eyebrowRow}>
@@ -198,8 +181,7 @@ export default function JustArrived({ products = [] }) {
             <View style={styles.eyebrowLine} />
           </View>
 
-          {/* MAIN TITLE */}
-          <Text style={styles.title}>Just Arrived</Text>
+          {/* MAIN TITLE (DEEP AYURVEDIC FOREST GREEN) */}
         </View>
 
         {/* FOCUSED COVERFLOW CAROUSEL (INFINITE LOOP) */}
@@ -279,11 +261,6 @@ export default function JustArrived({ products = [] }) {
             ))}
           </View>
         )}
-
-        {/* BOTTOM ORGANIC BOTANICAL WAVE SEPARATOR */}
-        <View style={styles.bottomWaveWrap} pointerEvents="none">
-          <View style={styles.bottomWaveLayer} />
-        </View>
       </LinearGradient>
     </View>
   );
@@ -395,7 +372,7 @@ function NewArrivalCard({ product, onPress }) {
       accessibilityRole="button"
       accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
     >
-      {/* UPPER IMAGE CONTAINER BOX (MATCHING REFERENCE UI) */}
+      {/* UPPER IMAGE CONTAINER BOX */}
       <View style={styles.imageBox}>
         {/* TOP OVERLAYS: NEW PILL BADGE & WISHLIST HEART */}
         <View style={styles.topBadgeRow}>
@@ -552,26 +529,23 @@ const styles = StyleSheet.create({
   sectionContainer: {
     width: '100%',
     marginTop: 6,
-    marginBottom: 4,
+    marginBottom: 6,
   },
 
   gradientSurface: {
     width: '100%',
-    paddingTop: 14,
-    paddingBottom: 16,
+    paddingTop: 18,
+    paddingBottom: 20,
     position: 'relative',
     overflow: 'hidden',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#CAA5DA',
   },
 
-  /* TOP RIGHT BOTANICAL FOLIAGE OVERHANG */
+  /* TOP RIGHT BOTANICAL SANDSTONE FOLIAGE WATERMARK */
   foliageWrap: {
     position: 'absolute',
     top: -10,
     right: -10,
-    opacity: 0.32,
+    opacity: 0.35,
     transform: [{ rotate: '15deg' }],
   },
 
@@ -619,16 +593,16 @@ const styles = StyleSheet.create({
   },
 
   eyebrowLine: {
-    width: 18,
-    height: 1,
-    backgroundColor: '#d6766fff',
+    width: 22,
+    height: 1.2,
+    backgroundColor: '#8C4E3A',
   },
 
   eyebrowText: {
     fontFamily: 'InterSemiBold',
-    fontSize: 9.5,
+    fontSize: 18.5,
     letterSpacing: 1.8,
-    color: '#173F1D',
+    color: '#8C4E3A',
     fontWeight: '700',
   },
 
@@ -657,16 +631,16 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#EAE5DC',
+    borderColor: '#E7DAD0',
     padding: 8,
     paddingBottom: 10,
-    shadowColor: '#123D2B',
+    shadowColor: '#3A2016',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 2.5,
+    elevation: 3,
   },
 
   cardPressed: {
@@ -674,11 +648,11 @@ const styles = StyleSheet.create({
     opacity: 0.95,
   },
 
-  /* IMAGE BOX (LIKE UI REFERENCE CARD) */
+  /* IMAGE BOX */
   imageBox: {
     width: '100%',
     height: 104,
-    backgroundColor: '#F9F7F2',
+    backgroundColor: '#FAF7F2',
     borderRadius: 12,
     position: 'relative',
     overflow: 'hidden',
@@ -721,7 +695,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -833,7 +807,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
-    backgroundColor: '#2E5A34',
+    backgroundColor: '#173F1D',
     height: 28,
     borderRadius: 14,
     paddingHorizontal: 2,
@@ -862,7 +836,7 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 1.1,
-    borderColor: '#173F1D',
+    borderColor: '#884129',
     backgroundColor: '#884129',
     alignItems: 'center',
     justifyContent: 'center',
@@ -871,12 +845,12 @@ const styles = StyleSheet.create({
 
   buyNowBtnPressed: {
     opacity: 0.85,
-    backgroundColor: '#EAF3EC',
+    backgroundColor: '#FAF5ED',
     transform: [{ scale: 0.98 }],
   },
 
   buyNowText: {
-    fontFamily: 'InterSemiBold',
+    fontFamily: 'InterRegular',
     fontSize: 9,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -917,8 +891,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    marginTop: 6,
+    gap: 6,
+    marginTop: 8,
     zIndex: 2,
   },
 
@@ -928,31 +902,12 @@ const styles = StyleSheet.create({
   },
 
   activeDot: {
-    width: 14,
-    backgroundColor: '#173F1D',
+    width: 16,
+    backgroundColor: '#123D2B',
   },
 
   inactiveDot: {
     width: 5,
-    backgroundColor: '#BF9ECC',
-  },
-
-  /* BOTTOM BOTANICAL WAVE SEPARATOR */
-  bottomWaveWrap: {
-    position: 'absolute',
-    bottom: -14,
-    left: 0,
-    right: 0,
-    height: 20,
-    overflow: 'hidden',
-  },
-
-  bottomWaveLayer: {
-    width: '120%',
-    left: '-10%',
-    height: 28,
-    borderRadius: 20,
-    backgroundColor: 'rgba(178, 134, 201, 0.38)',
-    transform: [{ rotate: '-1.2deg' }],
+    backgroundColor: '#D1BEAF',
   },
 });

@@ -34,7 +34,9 @@ import {
   getProductReviews,
   submitProductReview,
 } from '../../src/services/reviewService';
-
+import {
+  recordProductView,
+} from '../../src/services/recentlyViewedService';
 import { useAuth } from '../../src/context/AuthContext';
 import {
   useCart,
@@ -221,7 +223,16 @@ useEffect(() => {
   // ==========================================================
   // PRODUCT DATA
   // ==========================================================
+// Record product view for authenticated customers
+useEffect(() => {
+  if (!product?.id || !token || !isAuthenticated) {
+    return;
+  }
 
+  recordProductView(product.id, token).catch((error) => {
+    console.warn('Unable to record product view:', error?.message);
+  });
+}, [product?.id, token, isAuthenticated]);
   const variantId =
     product?.variant?.id ??
     null;

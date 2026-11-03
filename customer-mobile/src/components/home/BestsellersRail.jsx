@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
 
   addBtnText: {
     color: '#FFFFFF',
-    fontSize: 12.5,
+    fontSize: 10.5,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     borderWidth: 1.2,
-    borderColor: '#2E5A34',
+    borderColor: '#884129',
     backgroundColor: '#884129',
     alignItems: 'center',
     justifyContent: 'center',
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
 
   buyNowText: {
     color: '#FFFFFF',
-    fontSize: 12.5,
+    fontSize: 10.5,
     fontWeight: '700',
     textAlign: 'center',
   },

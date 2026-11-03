@@ -16,6 +16,13 @@ import {
   updateCouponActiveStatus,
 } from '../services/adminService.js';
 
+const COUPON_PLACEMENTS = [
+  { value: 'home', label: 'Home Page' },
+  { value: 'cart', label: 'Shopping Cart' },
+  { value: 'checkout', label: 'Checkout' },
+  { value: 'product_details', label: 'Product Details' },
+];
+
 const emptyForm = {
   code: '',
   description: '',
@@ -29,6 +36,7 @@ const emptyForm = {
   per_customer_limit: '1',
   first_order_only: false,
   is_active: true,
+  display_locations: [],
 };
 
 function getLocalDateTime(value) {
@@ -124,6 +132,19 @@ export default function Coupons() {
     }));
   }
 
+  function togglePlacement(value) {
+    setForm((current) => {
+      const selected = current.display_locations || [];
+
+      return {
+        ...current,
+        display_locations: selected.includes(value)
+          ? selected.filter((item) => item !== value)
+          : [...selected, value],
+      };
+    });
+  }
+
   function openCreateForm() {
     setEditingId(null);
     setForm({
@@ -157,6 +178,7 @@ export default function Coupons() {
       per_customer_limit: String(coupon.per_customer_limit ?? 1),
       first_order_only: Boolean(coupon.first_order_only),
       is_active: Boolean(coupon.is_active),
+      display_locations: coupon.display_locations || [],
     });
 
     setError('');
@@ -197,6 +219,11 @@ export default function Coupons() {
       return;
     }
 
+    if (!form.display_locations.length) {
+      setError('Please select at least one display location.');
+      return;
+    }
+
     const payload = {
       code: form.code.trim().toUpperCase(),
       description: form.description.trim() || null,
@@ -214,6 +241,7 @@ export default function Coupons() {
       per_customer_limit: Number(form.per_customer_limit || 1),
       first_order_only: Boolean(form.first_order_only),
       is_active: Boolean(form.is_active),
+      display_locations: form.display_locations,
     };
 
     setSaving(true);
@@ -548,6 +576,24 @@ export default function Coupons() {
                     required
                   />
                 </label>
+              </div>
+
+              <div className="coupon-placement-section">
+                <h4>Where should this coupon appear? *</h4>
+                <p>Select one or more locations in the customer app.</p>
+
+                <div className="coupon-placement-grid">
+                  {COUPON_PLACEMENTS.map((placement) => (
+                    <label key={placement.value}>
+                      <input
+                        type="checkbox"
+                        checked={form.display_locations.includes(placement.value)}
+                        onChange={() => togglePlacement(placement.value)}
+                      />
+                      <span>{placement.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="coupon-checkboxes">

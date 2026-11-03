@@ -381,7 +381,7 @@ export default function ProductCard({
             <Text
               style={[
                 styles.buyNowText,
-                theme?.accent && { color: theme.accent },
+                { color: theme?.accent || colors.primary },
               ]}
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   },
 
   addToCartText: {
-    fontSize: 12.5,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
@@ -584,17 +584,17 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     borderWidth: 1.2,
-    borderColor: '#123D2B',
-    backgroundColor: '#FFFFFF',
+    borderColor: '#884129',
+    backgroundColor: '#884129',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
 
   buyNowText: {
-    fontSize: 12.5,
+    fontSize: 10.5,
     fontWeight: '700',
-    color: '#123D2B',
+    color: '#FFFFFF',
     textAlign: 'center',
   },
 

@@ -2247,6 +2247,43 @@ button.inventory-refresh:hover:not(:disabled) {
   grid-column: 1 / -1;
 }
 
+.coupon-placement-section {
+  margin-top: 20px;
+}
+
+.coupon-placement-section h4 {
+  margin: 0;
+  color: #43564a;
+  font-size: 13px;
+}
+
+.coupon-placement-section p {
+  margin: 5px 0 12px;
+  color: #718076;
+  font-size: 11px;
+}
+
+.coupon-placement-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.coupon-placement-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #edf0ed;
+  border-radius: 8px;
+  color: #536459;
+  font-size: 12px;
+}
+
+.coupon-placement-grid input {
+  accent-color: #24563b;
+}
+
 .coupon-checkboxes {
   display: flex;
   flex-wrap: wrap;
@@ -2301,6 +2338,10 @@ button.inventory-refresh:hover:not(:disabled) {
 
   .coupon-field.full-width {
     grid-column: auto;
+  }
+
+  .coupon-placement-grid {
+    grid-template-columns: 1fr;
   }
 
   .coupon-modal {

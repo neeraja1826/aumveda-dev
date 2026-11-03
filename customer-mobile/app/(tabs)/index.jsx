@@ -1,4 +1,3 @@
-
 import React, {
   useCallback,
   useEffect,
@@ -21,7 +20,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import ProductCard from '../../src/components/home/ProductCard';
-
+import RecentlyViewed from '../../src/components/home/RecentlyViewed';
 import { getProducts } from '../../src/services/productService';
 
 import {
@@ -412,12 +411,12 @@ export default function HomeScreen() {
                 categories={data.categories}
               />
 
-
               {/* BESTSELLERS */}
 
               <BestsellersRail
                 products={data.featuredProducts}
               />
+              <RecentlyViewed products={data.featuredProducts || []} />
 
 
 
@@ -437,7 +436,7 @@ export default function HomeScreen() {
 
          <JustArrived products={data.newArrivals || []} />
 
-             
+
 
 
              
@@ -494,16 +493,7 @@ const styles = StyleSheet.create({
 
   categoryViewContainer: {
     paddingTop: 16,
-    paddingBottom: 24, // end
-  },
-
-
-
-
-
-
-
-
+    paddingBottom: 24,
   },
 
   categoryGrid: {
@@ -558,7 +548,6 @@ const styles = StyleSheet.create({
 
   categoryBackHomeText: {
     fontFamily: 'InterSemiBold',
-
     fontSize: 12,
     color: '#FFFFFF',
   },

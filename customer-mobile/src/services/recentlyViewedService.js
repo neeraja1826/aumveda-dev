@@ -1,52 +1,24 @@
 import { apiRequest } from './api';
 
+export async function recordProductView(productId, token) {
+  if (!productId || !token) return null;
 
-// ============================================================
-// RECORD PRODUCT VIEW
-// ============================================================
-
-export async function recordRecentlyViewed(
-  productId,
-  token
-) {
-  if (!productId || !token) {
-    return null;
-  }
-
-  return apiRequest(
-    '/recently-viewed',
-    {
-      method: 'POST',
-
-      token,
-
-      body: {
-        product_id: String(productId),
-      },
-    }
-  );
+  return apiRequest(`/products/${encodeURIComponent(productId)}/view`, {
+    method: 'POST',
+    token,
+  });
 }
 
+export async function getRecentlyViewed(token) {
+  if (!token) return [];
 
-// ============================================================
-// GET RECENTLY VIEWED
-// ============================================================
+  const response = await apiRequest(
+    '/products/recently-viewed?limit=10',
+    {
+      method: 'GET',
+      token,
+    }
+  );
 
-export async function getRecentlyViewed(
-  token
-) {
-  if (!token) {
-    return [];
-  }
-
-  const response =
-    await apiRequest(
-      '/recently-viewed',
-      {
-        method: 'GET',
-        token,
-      }
-    );
-
-  return response?.data ?? [];
+  return Array.isArray(response?.data) ? response.data : [];
 }
