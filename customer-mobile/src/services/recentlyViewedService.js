@@ -9,11 +9,11 @@ export async function recordProductView(productId, token) {
   });
 }
 
-export async function getRecentlyViewed(token) {
+export async function getRecentlyViewed(token, limit = 10) {
   if (!token) return [];
 
   const response = await apiRequest(
-    '/products/recently-viewed?limit=10',
+    `/products/recently-viewed?limit=${encodeURIComponent(limit)}`,
     {
       method: 'GET',
       token,

@@ -5,6 +5,7 @@ import React, {
 } from 'react';
 
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -38,6 +39,7 @@ export default function CartScreen() {
     cartCount,
     subtotal,
     isEmpty,
+    isCartLoaded,
     increaseQuantity,
     decreaseQuantity,
     removeFromCart,
@@ -205,6 +207,20 @@ export default function CartScreen() {
   // -----------------------------------------
   // EMPTY CART
   // -----------------------------------------
+  if (!isCartLoaded) {
+    return (
+      <SafeAreaView
+        style={styles.emptyContainer}
+        edges={['top', 'bottom']}
+      >
+        <ActivityIndicator
+          size="large"
+          color="#0F442C"
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (isEmpty) {
     return (
       <SafeAreaView style={styles.emptyContainer} edges={['top', 'bottom']}>

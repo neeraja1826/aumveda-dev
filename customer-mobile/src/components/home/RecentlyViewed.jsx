@@ -8,76 +8,103 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { useAuth } from '../../context/AuthContext';
 import {
   getRecentlyViewed,
-  getLocalRecentlyViewed,
 } from '../../services/recentlyViewedService';
+import { getBuyAgainProducts } from '../../services/orderService';
 
 export default function RecentlyViewed({ products: fallbackProducts = [] }) {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, isAuthenticated, loading: authLoading } = useAuth();
 
+  const [activeTab, setActiveTab] = useState('recent');
   const [products, setProducts] = useState([]);
+  const [buyAgainProducts, setBuyAgainProducts] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const loadRecentlyViewed = useCallback(async () => {
+  const loadProducts = useCallback(async () => {
+    if (authLoading || !isAuthenticated || !token) {
+      setProducts([]);
+      setBuyAgainProducts([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      let items = [];
 
-      // 1. Try fetching from backend if authenticated
-      if (token) {
+      let recentItems = [];
+
+      try {
         const remote = await getRecentlyViewed(token);
-        if (Array.isArray(remote) && remote.length > 0) {
-          items = remote;
+
+        if (Array.isArray(remote)) {
+          recentItems = remote;
         }
+      } catch (error) {
+        console.log('Recently Viewed API error:', error.message);
       }
 
-      // 2. Fetch from local storage (actual viewed products in this app session)
-      const local = await getLocalRecentlyViewed();
-      if (Array.isArray(local) && local.length > 0) {
-        const seen = new Set(items.map((x) => String(x.id || x.slug)));
-        local.forEach((loc) => {
-          const key = String(loc.id || loc.slug);
-          if (!seen.has(key)) {
-            items.push(loc);
-            seen.add(key);
-          }
-        });
+      if (recentItems.length === 0 && fallbackProducts.length > 0) {
+        recentItems = fallbackProducts.slice(0, 8);
       }
 
-      // 3. If user has viewed products, show them. Otherwise use existing products from app.
-      if (items.length > 0) {
-        setProducts(items);
-      } else if (Array.isArray(fallbackProducts) && fallbackProducts.length > 0) {
-        setProducts(fallbackProducts.slice(0, 6));
-      } else {
-        setProducts([]);
+      setProducts(recentItems.slice(0, 8));
+
+      try {
+        const previousPurchases = await getBuyAgainProducts(token);
+
+        setBuyAgainProducts(
+          Array.isArray(previousPurchases)
+            ? previousPurchases
+                .filter((item) => item?.product)
+                .map((item) => ({
+                  ...item.product,
+                  image_url:
+                    item.product.image_url ||
+                    item.product.image ||
+                    item.product.thumbnail ||
+                    item.product.images?.[0] ||
+                    null,
+                  variant: item.variant,
+                  last_purchased_at: item.last_purchased_at,
+                  purchase_count: item.purchase_count,
+                }))
+                .slice(0, 8)
+            : []
+        );
+      } catch (error) {
+        console.log('Buy Again API error:', error.message);
+        setBuyAgainProducts([]);
       }
-    } catch {
-      if (Array.isArray(fallbackProducts) && fallbackProducts.length > 0) {
-        setProducts(fallbackProducts.slice(0, 6));
-      } else {
-        setProducts([]);
-      }
+    } catch (error) {
+      console.log('Continue Shopping error:', error.message);
+      setProducts([]);
+      setBuyAgainProducts([]);
     } finally {
       setLoading(false);
     }
-  }, [token, fallbackProducts]);
+  }, [token, isAuthenticated, authLoading, fallbackProducts]);
 
-  // Refresh whenever Home screen becomes active
   useFocusEffect(
     useCallback(() => {
-      loadRecentlyViewed();
-    }, [loadRecentlyViewed])
+      loadProducts();
+    }, [loadProducts])
   );
 
-  // If still loading and no products yet
-  if (loading && products.length === 0) {
+  if (authLoading || !isAuthenticated) {
+    return null;
+  }
+
+  const activeProducts =
+    activeTab === 'recent' ? products : buyAgainProducts;
+
+  if (loading && products.length === 0 && buyAgainProducts.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator color="#123D2B" size="small" />
@@ -85,109 +112,212 @@ export default function RecentlyViewed({ products: fallbackProducts = [] }) {
     );
   }
 
-  // If there are no products at all, return null
-  if (!products.length) {
+  if (!products.length && !buyAgainProducts.length) {
     return null;
   }
 
   return (
-    <View style={styles.container}>
-      {/* SECTION HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headingWrap}>
-          <View style={styles.eyebrowRow}>
-            <Ionicons name="time-outline" size={11} color="#8C5338" />
-            <Text style={styles.eyebrow}>RECENTLY VIEWED</Text>
+    <View style={styles.outerContainer}>
+      <LinearGradient
+        colors={['#EDF6ED', '#E5F2E5', '#DFEEDF']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.gradientSurface}
+      >
+        {/* HEADER ROW: CLOCK ICON + "Recently Viewed" + "View All →" BUTTON */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <Ionicons
+              name="time-outline"
+              size={24}
+              color="#2E7D32"
+              style={styles.clockIcon}
+            />
+            <Text style={styles.title}>Recently Viewed</Text>
           </View>
 
-          <Text style={styles.title}>Recently Viewed</Text>
-          <Text style={styles.subtitle}>Pick up where you left off</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              activeTab === 'buyAgain'
+                ? 'View all orders'
+                : 'View all recently viewed products'
+            }
+            onPress={() =>
+              router.push(
+                activeTab === 'buyAgain' ? '/orders' : '/recently-viewed'
+              )
+            }
+            style={({ pressed }) => [
+              styles.viewAllBtn,
+              pressed && styles.cubeCardPressed,
+            ]}
+          >
+            <Text style={styles.viewAllText}>View All</Text>
+            <Ionicons name="arrow-forward" size={12} color="#123D2B" />
+          </Pressable>
         </View>
 
-        <Pressable
-          onPress={loadRecentlyViewed}
-          style={styles.refreshButton}
-          hitSlop={6}
-          accessibilityRole="button"
-          accessibilityLabel="Refresh recently viewed"
-        >
-          <Ionicons name="refresh-outline" size={16} color="#123D2B" />
-        </Pressable>
-      </View>
-
-      {/* HORIZONTAL CUBES CAROUSEL */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {products.map((product) => {
-          // Resolve image directly from existing product data
-          const image =
-            product?.image_url ??
-            product?.image ??
-            product?.thumbnail ??
-            product?.images?.[0] ??
-            product?.image_urls?.[0] ??
-            product?.product_images?.find((img) => img?.is_primary)?.image_url ??
-            product?.product_images?.[0]?.image_url ??
-            null;
-
-          return (
+        {/* TAB SWITCHER (ONLY IF BUY AGAIN ITEMS EXIST) */}
+        {buyAgainProducts.length > 0 && (
+          <View style={styles.tabContainer}>
             <Pressable
-              key={product.id || product.slug}
-              style={({ pressed }) => [
-                styles.cubeCard,
-                pressed && styles.cubeCardPressed,
+              onPress={() => setActiveTab('recent')}
+              style={[
+                styles.tabButton,
+                activeTab === 'recent' && styles.activeTabButton,
               ]}
-              onPress={() => {
-                if (product.slug) {
-                  router.push(`/products/${product.slug}`);
-                } else if (product.id) {
-                  router.push(`/products/${product.id}`);
-                }
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={product.name}
             >
-              {/* CUBE IMAGE BOX (1:1 RATIO) */}
-              <View style={styles.imageBox}>
-                {image ? (
-                  <Image
-                    source={{ uri: image }}
-                    style={styles.productImage}
-                    contentFit="contain"
-                    cachePolicy="memory-disk"
-                    transition={150}
-                  />
-                ) : (
-                  <View style={styles.imageFallback}>
-                    <MaterialCommunityIcons
-                      name="leaf"
-                      size={28}
-                      color="#B8CEBA"
-                    />
-                  </View>
-                )}
-              </View>
-
-              {/* ONLY PRODUCT NAME */}
-              <Text style={styles.productName} numberOfLines={2}>
-                {product.name}
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color={activeTab === 'recent' ? '#FFFFFF' : '#45634C'}
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'recent' && styles.activeTabText,
+                ]}
+              >
+                Recently Viewed
               </Text>
             </Pressable>
-          );
-        })}
-      </ScrollView>
+
+            <Pressable
+              onPress={() => setActiveTab('buyAgain')}
+              style={[
+                styles.tabButton,
+                activeTab === 'buyAgain' && styles.activeTabButton,
+              ]}
+            >
+              <Ionicons
+                name="refresh-outline"
+                size={14}
+                color={activeTab === 'buyAgain' ? '#FFFFFF' : '#45634C'}
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'buyAgain' && styles.activeTabText,
+                ]}
+              >
+                Buy Again
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* HORIZONTAL SCROLL OF SMALL WHITE CUBE CARDS */}
+        {loading && activeProducts.length === 0 ? (
+          <ActivityIndicator
+            color="#123D2B"
+            size="small"
+            style={{ paddingVertical: 20 }}
+          />
+        ) : activeProducts.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {activeProducts.map((product, index) => {
+              const image =
+                product?.image_url ??
+                product?.image ??
+                product?.thumbnail ??
+                product?.images?.[0] ??
+                product?.image_urls?.[0] ??
+                product?.product_images?.find(
+                  (img) => img?.is_primary
+                )?.image_url ??
+                product?.product_images?.[0]?.image_url ??
+                null;
+
+              const productName =
+                product.name || product.product_name || 'Product';
+
+              return (
+                <Pressable
+                  key={product.id || product.slug || index}
+                  style={({ pressed }) => [
+                    styles.cubeCard,
+                    pressed && styles.cubeCardPressed,
+                  ]}
+                  onPress={() => {
+                    if (product.slug) {
+                      router.push(`/products/${product.slug}`);
+                    } else if (product.id) {
+                      router.push(`/products/${product.id}`);
+                    }
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={productName}
+                >
+                  <View style={styles.imageWrap}>
+                    {image ? (
+                      <Image
+                        source={{ uri: image }}
+                        style={styles.productImage}
+                        contentFit="contain"
+                        cachePolicy="memory-disk"
+                        transition={150}
+                      />
+                    ) : (
+                      <View style={styles.imageFallback}>
+                        <Ionicons
+                          name="leaf-outline"
+                          size={26}
+                          color="#C0DCC0"
+                        />
+                      </View>
+                    )}
+                  </View>
+
+                  <Text style={styles.productName} numberOfLines={2}>
+                    {productName}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : (
+          <Text style={styles.emptyText}>
+            {activeTab === 'recent'
+              ? 'Your recently viewed products will appear here.'
+              : 'Your previously purchased products will appear here.'}
+          </Text>
+        )}
+      </LinearGradient>
     </View>
   );
 }
 
+// ============================================================
+// STYLES
+// ============================================================
+
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
     width: '100%',
-    marginTop: 14,
-    marginBottom: 10,
+    paddingHorizontal: 12,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+
+  gradientSurface: {
+    width: '100%',
+    borderRadius: 24,
+    paddingTop: 14,
+    paddingBottom: 16,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#D4E9D5',
+    shadowColor: '#123D2B',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    overflow: 'hidden',
   },
 
   loadingContainer: {
@@ -196,85 +326,81 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  header: {
-    paddingHorizontal: 16,
-    marginBottom: 10,
+  /* HEADER ROW */
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
 
-  headingWrap: {
-    flex: 1,
-  },
-
-  eyebrowRow: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 2,
+    gap: 8,
   },
 
-  eyebrow: {
-    fontFamily: 'InterSemiBold',
-    fontSize: 9,
-    letterSpacing: 1.2,
-    color: '#8C5338',
-    fontWeight: '700',
+  clockIcon: {
+    marginRight: 0,
   },
 
   title: {
-    fontFamily: 'PlayfairSemiBold',
-    fontSize: 20,
+    fontFamily: 'InterSemiBold',
+    fontSize: 18.5,
+    fontWeight: '800',
     color: '#123D2B',
-    fontStyle: 'italic',
-    lineHeight: 24,
+    letterSpacing: -0.2,
   },
 
-  subtitle: {
-    fontFamily: 'InterRegular',
-    fontSize: 11,
-    color: '#6E6A60',
-    marginTop: 1,
-  },
-
-  refreshButton: {
-    width: 32,
-    height: 32,
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E8DEC8',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: '#D8EBD9',
     shadowColor: '#123D2B',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
   },
 
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingRight: 8,
-    gap: 10,
-    alignItems: 'flex-start',
+  viewAllText: {
+    fontFamily: 'InterSemiBold',
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#123D2B',
   },
 
-  /* SMALL CUBE CARD */
-  cubeCard: {
-    width: 96,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#EAE1D3',
-    padding: 6,
+  /* HORIZONTAL SCROLL */
+  scrollContent: {
+    paddingRight: 6,
+    gap: 10,
     alignItems: 'center',
+  },
+
+  /* SMALL CUBE CARD (PURE WHITE WITH NAME & IMAGE ONLY) */
+  cubeCard: {
+    width: 88,
+    height: 118,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2EBE2',
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
     shadowColor: '#123D2B',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1.5,
   },
 
   cubeCardPressed: {
@@ -282,21 +408,16 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
 
-  /* 1:1 SQUARE IMAGE BOX */
-  imageBox: {
-    width: 82,
-    height: 82,
-    backgroundColor: '#FAF8F4',
-    borderRadius: 10,
+  imageWrap: {
+    width: 66,
+    height: 66,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    padding: 4,
   },
 
   productImage: {
-    width: '92%',
-    height: '92%',
+    width: '100%',
+    height: '100%',
   },
 
   imageFallback: {
@@ -306,15 +427,55 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  /* ONLY PRODUCT NAME */
+  /* PRODUCT NAME ONLY (2 LINES MAX) */
   productName: {
-    marginTop: 6,
-    fontFamily: 'InterMedium',
+    fontFamily: 'InterSemiBold',
     fontSize: 10,
-    lineHeight: 13.5,
-    color: '#123D2B',
+    lineHeight: 13,
+    fontWeight: '700',
+    color: '#1B2E24',
     textAlign: 'center',
     paddingHorizontal: 2,
-    minHeight: 27,
+    minHeight: 26,
+  },
+
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#DCEBDD',
+    padding: 3,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 8,
+    borderRadius: 11,
+  },
+
+  activeTabButton: {
+    backgroundColor: '#245B38',
+  },
+
+  tabText: {
+    fontFamily: 'InterSemiBold',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#45634C',
+  },
+
+  activeTabText: {
+    color: '#FFFFFF',
+  },
+
+  emptyText: {
+    textAlign: 'center',
+    color: '#718276',
+    fontSize: 12,
+    paddingVertical: 20,
   },
 });

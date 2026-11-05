@@ -11,11 +11,6 @@ import {
   addToWishlist,
   removeFromWishlist,
 } from '../services/wishlistService';
-import {
-  clearGuestWishlist,
-  getGuestWishlist,
-  saveGuestWishlist,
-} from '../utils/storage';
 import { useAuth } from './AuthContext';
 
 const WishlistContext = createContext(null);
@@ -54,45 +49,18 @@ export function WishlistProvider({ children }) {
     if (authLoading) return;
 
     if (!isAuthenticated || !token) {
-      const guestProducts = await getGuestWishlist();
-      setWishlist(guestProducts);
+      setWishlist([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      const [serverProducts, guestProducts] = await Promise.all([
-        getWishlist(token),
-        getGuestWishlist(),
-      ]);
-      const mergedProducts = Array.isArray(serverProducts)
-        ? [...serverProducts]
-        : [];
-      const uploadedIds = new Set(mergedProducts.map((product) => product?.id));
-      let allGuestProductsSynced = true;
-
-      for (const product of guestProducts) {
-        if (!product?.id || uploadedIds.has(product.id)) continue;
-        try {
-          await addToWishlist(product.id, token);
-          uploadedIds.add(product.id);
-          mergedProducts.push(product);
-        } catch (error) {
-          allGuestProductsSynced = false;
-          console.error('Guest wishlist sync failed:', error);
-          mergedProducts.push(product);
-        }
-      }
-
-      if (allGuestProductsSynced && guestProducts.length > 0) {
-        await clearGuestWishlist();
-      }
-      setWishlist(mergedProducts);
+      const products = await getWishlist(token);
+      setWishlist(Array.isArray(products) ? products : []);
     } catch (error) {
       console.error('WISHLIST: Failed to load:', error);
-      const guestProducts = await getGuestWishlist();
-      setWishlist(guestProducts);
+      setWishlist([]);
     } finally {
       setLoading(false);
     }
@@ -112,32 +80,29 @@ export function WishlistProvider({ children }) {
   );
 
   const addProduct = useCallback(async (productOrId, productData) => {
-    const product = normalizeProduct(productOrId, productData);
-    if (!product) {
-      return { success: false, error: new Error('A product ID is required.') };
+    if (!isAuthenticated || !token) {
+      return {
+        success: false,
+        requiresLogin: true,
+      };
     }
 
-    if (!isAuthenticated || !token) {
-      try {
-        const current = await getGuestWishlist();
-        const next = current.some((item) => item?.id === product.id)
-          ? current
-          : [...current, product];
-        await saveGuestWishlist(next);
-        setWishlist(next);
-        return { success: true, wishlisted: true };
-      } catch (error) {
-        return { success: false, error };
-      }
+    const product = normalizeProduct(productOrId, productData);
+
+    if (!product) {
+      return {
+        success: false,
+        error: new Error('A product ID is required.'),
+      };
     }
 
     try {
       await addToWishlist(product.id, token);
-      setWishlist((current) => (
+      setWishlist((current) =>
         current.some((item) => item?.id === product.id)
           ? current
           : [...current, product]
-      ));
+      );
       return { success: true, wishlisted: true };
     } catch (error) {
       console.error('WISHLIST: Add failed:', error);
@@ -146,27 +111,25 @@ export function WishlistProvider({ children }) {
   }, [isAuthenticated, token]);
 
   const removeProduct = useCallback(async (productId) => {
-    if (!productId) {
-      return { success: false, error: new Error('A product ID is required.') };
+    if (!isAuthenticated || !token) {
+      return {
+        success: false,
+        requiresLogin: true,
+      };
     }
 
-    if (!isAuthenticated || !token) {
-      try {
-        const next = (await getGuestWishlist())
-          .filter((product) => product?.id !== productId);
-        await saveGuestWishlist(next);
-        setWishlist(next);
-        return { success: true };
-      } catch (error) {
-        return { success: false, error };
-      }
+    if (!productId) {
+      return {
+        success: false,
+        error: new Error('A product ID is required.'),
+      };
     }
 
     try {
       await removeFromWishlist(productId, token);
-      setWishlist((current) => current.filter(
-        (product) => product?.id !== productId
-      ));
+      setWishlist((current) =>
+        current.filter((product) => product?.id !== productId)
+      );
       return { success: true };
     } catch (error) {
       console.error('WISHLIST: Remove failed:', error);

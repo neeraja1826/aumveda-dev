@@ -97,6 +97,19 @@ export async function getOrders(token) {
   return response.data;
 }
 
+export async function getBuyAgainProducts(token) {
+  
+  const response = await apiRequest('/orders/buy-again', { token });
+
+  if (!Array.isArray(response?.data)) {
+    throw new Error(
+      'The Buy Again products response was not in the expected format.'
+    );
+  }
+
+  return response.data;
+}
+
 export async function getOrder(token, orderId) {
   if (!token) {
     throw new Error('Sign in to view this order.');

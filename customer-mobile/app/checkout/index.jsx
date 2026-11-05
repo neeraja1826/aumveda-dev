@@ -49,6 +49,7 @@ const {
     cartItems,
     subtotal: cartSubtotal,
     isEmpty: cartIsEmpty,
+    isCartLoaded,
     clearCart,
   } = useCart();
 
@@ -577,6 +578,23 @@ setSelectedAddressId(addressToSelect?.id ?? null);
           ]}
         >
           Loading checkout...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!isBuyNow && !isCartLoaded) {
+    return (
+      <SafeAreaView
+        style={styles.emptyContainer}
+        edges={['top', 'bottom']}
+      >
+        <ActivityIndicator
+          size="large"
+          color={colors.primary}
+        />
+        <Text style={styles.emptyTitle}>
+          Loading your cart...
         </Text>
       </SafeAreaView>
     );

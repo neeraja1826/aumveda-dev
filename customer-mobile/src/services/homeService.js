@@ -59,12 +59,14 @@ export async function getHomeData({
       bundlesResponse,
       couponsResponse,
       newArrivalsResponse,
+      campaignsResponse,
     ] = await Promise.all([
       safeRequest('/home/categories', []),
       safeRequest('/home/featured-products', []),
       safeRequest('/home/bundles', []),
       safeRequest('/home/coupons', []),
-      safeRequest("/home/new-arrivals"),
+      safeRequest('/home/new-arrivals', []),
+      safeRequest('/home/category-campaigns', []),
     ]);
 
     const result = {
@@ -75,6 +77,7 @@ export async function getHomeData({
       bundles: getArray(bundlesResponse),
       coupons: getArray(couponsResponse),
       newArrivals: getArray(newArrivalsResponse),
+      categoryCampaigns: getArray(campaignsResponse),
     };
 
     homeCache = result;

@@ -122,7 +122,7 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      let activeUser = storedUser;
+      let activeUser = storedUser || supabaseSession?.user || null;
 
       try {
         
@@ -223,15 +223,6 @@ const profile = extractUser(response);
           password
         );
 
-      console.log(
-        'AUTH: Login response:',
-        JSON.stringify(
-          response,
-          null,
-          2
-        )
-      );
-
       const newToken =
         extractToken(response);
       const refreshToken = extractRefreshToken(response);
@@ -242,17 +233,18 @@ const profile = extractUser(response);
         );
       }
 
-      if (refreshToken) {
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: newToken,
-          refresh_token: refreshToken,
-        });
-        if (sessionError) {
-          console.warn(
-            'AUTH: Could not persist refresh session:',
-            sessionError.message
-          );
-        }
+      if (!refreshToken) {
+        throw new Error(
+          'Login succeeded but no refresh token was returned, so the session cannot be persisted.'
+        );
+      }
+
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: newToken,
+        refresh_token: refreshToken,
+      });
+      if (sessionError) {
+        throw sessionError;
       }
 
       // ----------------------------------------------
@@ -355,15 +347,6 @@ const profile = extractUser(response);
           password
         );
 
-      console.log(
-        'AUTH: Register response:',
-        JSON.stringify(
-          response,
-          null,
-          2
-        )
-      );
-
       const newToken =
         extractToken(response);
       const refreshToken = extractRefreshToken(response);
@@ -376,17 +359,18 @@ const profile = extractUser(response);
       // ----------------------------------------------
 
       if (newToken) {
-        if (refreshToken) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: newToken,
-            refresh_token: refreshToken,
-          });
-          if (sessionError) {
-            console.warn(
-              'AUTH: Could not persist registration refresh session:',
-              sessionError.message
-            );
-          }
+        if (!refreshToken) {
+          throw new Error(
+            'Registration succeeded but no refresh token was returned, so the session cannot be persisted.'
+          );
+        }
+
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: newToken,
+          refresh_token: refreshToken,
+        });
+        if (sessionError) {
+          throw sessionError;
         }
 
         await saveAuthToken(
@@ -425,6 +409,7 @@ const profile = extractUser(response);
         setUser(
           registeredUser
         );
+        await saveAuthUser(registeredUser);
       }
 
       return {
@@ -516,6 +501,10 @@ const profile = extractUser(response);
 
       setToken(session.access_token);
       setUser({
+        id: session.user.id,
+        email: session.user.email,
+      });
+      await saveAuthUser({
         id: session.user.id,
         email: session.user.email,
       });

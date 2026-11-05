@@ -28,6 +28,8 @@ const emptyForm = {
   name: '',
   slug: '',
   parent_id: '',
+  description: '',
+  image_url: '',
 };
 
 export default function Categories() {
@@ -95,15 +97,19 @@ export default function Categories() {
   }
 
   function startEdit(category) {
-    setEditingId(category.id);
-    setForm({
-      name: category.name || '',
-      slug: category.slug || '',
-      parent_id: category.parent_id || '',
-    });
-    setError('');
-    setSuccess('');
-  }
+  setEditingId(category.id);
+
+  setForm({
+    name: category.name || '',
+    slug: category.slug || '',
+    parent_id: category.parent_id || '',
+    description: category.description || '',
+    image_url: category.image_url || '',
+  });
+
+  setError('');
+  setSuccess('');
+}
 
   function cancelEdit() {
     setEditingId(null);
@@ -175,11 +181,12 @@ async function handleDeleteCategory(category) {
 
     try {
       const payload = {
-        name,
-        slug,
-        parent_id: form.parent_id || null,
-      };
-
+  name,
+  slug,
+  parent_id: form.parent_id || null,
+  description: form.description.trim() || null,
+  image_url: form.image_url.trim() || null,
+};
       if (editingId) {
         await updateCategory(editingId, payload);
         setSuccess('Category updated successfully.');
@@ -279,6 +286,49 @@ async function handleDeleteCategory(category) {
               ))}
             </select>
           </label>
+
+          <label>
+            Description
+            <textarea
+              value={form.description}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+              placeholder="Enter category description"
+              rows={3}
+              maxLength={500}
+            />
+          </label>
+
+          <label>
+            Category image URL
+            <input
+              type="url"
+              value={form.image_url}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  image_url: event.target.value,
+                }))
+              }
+              placeholder="https://example.com/category-image.jpg"
+            />
+          </label>
+
+          {form.image_url && (
+            <div className="category-image-preview">
+              <img
+                src={form.image_url}
+                alt="Category preview"
+                onError={(event) => {
+                  event.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
 
           <div className="category-form-actions">
             {editingId && (
@@ -509,6 +559,7 @@ async function handleDeleteCategory(category) {
 
         .category-form input,
         .category-form select,
+        .category-form textarea,
         .category-list-toolbar input {
           box-sizing: border-box;
           width: 100%;
@@ -524,12 +575,31 @@ async function handleDeleteCategory(category) {
           transition: border-color 0.15s, box-shadow 0.15s;
         }
 
+        .category-form textarea {
+          resize: vertical;
+        }
+
         .category-form input:focus,
         .category-form select:focus,
+        .category-form textarea:focus,
         .category-list-toolbar input:focus {
           border-color: #276345;
           box-shadow: 0 0 0 3px rgba(39, 99, 69, 0.14);
           outline: none;
+        }
+
+        .category-image-preview {
+          grid-column: 1 / -1;
+          margin-top: 8px;
+        }
+
+        .category-image-preview img {
+          width: 110px;
+          height: 110px;
+          object-fit: cover;
+          border-radius: 12px;
+          border: 1px solid #D5E4D2;
+          background: #F8FAF7;
         }
 
         .category-form-actions {

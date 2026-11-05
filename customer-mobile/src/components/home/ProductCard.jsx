@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -9,6 +9,8 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import AuthRequiredModal from '../common/AuthRequiredModal';
+import { useAuth } from '../../context/AuthContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
 import { colors } from '../../theme/colors';
@@ -20,6 +22,23 @@ export default function ProductCard({
   theme = null,
 }) {
   const router = useRouter();
+  const {
+    isAuthenticated,
+    loading: authLoading,
+  } = useAuth();
+
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const requireLogin = () => {
+    if (authLoading) return false;
+
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return false;
+    }
+
+    return true;
+  };
 
   // --------------------------------------------------
   // CART
@@ -132,30 +151,42 @@ export default function ProductCard({
   // --------------------------------------------------
   const handleAddToCart = (event) => {
     event?.stopPropagation?.();
+
+    if (!requireLogin()) return;
     if (!product?.id) return;
+
     addToCart(product, 1, variant);
   };
 
   const handleIncrease = (event) => {
     event?.stopPropagation?.();
-    if (!product?.id) return;
+
+    if (!requireLogin()) return;
+
     increaseQuantity(itemKey);
   };
 
   const handleDecrease = (event) => {
     event?.stopPropagation?.();
-    if (!product?.id) return;
+
+    if (!requireLogin()) return;
+
     decreaseQuantity(itemKey);
   };
 
   const handleWishlist = async (event) => {
     event?.stopPropagation?.();
+
+    if (!requireLogin()) return;
     if (!product?.id) return;
+
     await toggleWishlist(product);
   };
 
   const handleBuyNow = (event) => {
     event?.stopPropagation?.();
+
+    if (!requireLogin()) return;
     if (!product?.id) return;
 
     router.push({
@@ -173,15 +204,16 @@ export default function ProductCard({
   const wishlisted = isWishlisted(product?.id);
 
   return (
-    <Pressable
-      style={[
-        styles.card,
-        compact && styles.compactCard,
-      ]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
-    >
+    <>
+      <Pressable
+        style={[
+          styles.card,
+          compact && styles.compactCard,
+        ]}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${product?.name || 'Product'}, ₹${price}`}
+      >
       {/* ==========================================
           IMAGE AREA (DIRECT ON CARD - NO SEPARATE CONTAINER BOX)
       ========================================== */}
@@ -269,10 +301,10 @@ export default function ProductCard({
           </View>
 
           {/* RATING (RIGHT) */}
-          <View style={styles.ratingRow}>
+          <View style={styles.ratingBadge}>
             <Ionicons
               name="star"
-              size={11}
+              size={10}
               color="#D9A52E"
             />
             <Text style={styles.ratingValue}>
@@ -280,7 +312,7 @@ export default function ProductCard({
             </Text>
             {reviews > 0 && (
               <Text style={styles.reviewText} numberOfLines={1}>
-                {reviews} reviews
+                ({reviews})
               </Text>
             )}
           </View>
@@ -367,10 +399,10 @@ export default function ProductCard({
             style={({ pressed }) => [
               styles.buyNowButton,
               {
-                borderColor: theme?.accent || colors.primary,
+                borderColor: theme?.accent || '#884129',
                 backgroundColor: pressed
-                  ? (theme?.accentLight || '#F2F2F2')
-                  : '#FFFFFF',
+                  ? (theme?.accentLight || '#6F3421')
+                  : (theme?.accent || '#884129'),
               },
               pressed && styles.buttonPressed,
             ]}
@@ -381,7 +413,7 @@ export default function ProductCard({
             <Text
               style={[
                 styles.buyNowText,
-                { color: theme?.accent || colors.primary },
+                { color: '#FFFFFF' },
               ]}
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -391,7 +423,12 @@ export default function ProductCard({
           </Pressable>
         </View>
       </View>
-    </Pressable>
+      </Pressable>
+      <AuthRequiredModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
+    </>
   );
 }
 
@@ -535,20 +572,28 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
 
-  ratingRow: {
+  ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 2.5,
+    backgroundColor: '#FFF8E7',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 0.8,
+    borderColor: '#F3E5C8',
   },
 
   ratingValue: {
+    fontFamily: 'InterSemiBold',
     fontSize: 10.5,
     fontWeight: '700',
     color: '#123D2B',
   },
 
   reviewText: {
-    fontSize: 9.5,
+    fontFamily: 'InterMedium',
+    fontSize: 9,
     color: '#716F68',
   },
 

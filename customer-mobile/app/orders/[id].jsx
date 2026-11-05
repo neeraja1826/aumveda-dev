@@ -625,10 +625,15 @@ export default function OrderDetailsScreen() {
                     item.total_price == null
                       ? unitPrice * quantity
                       : Number(item.total_price);
+                  const productImages = item.product?.product_images || [];
                   const imageUrl =
-                    typeof item.image_url === 'string'
-                      ? item.image_url.trim()
-                      : '';
+                    item.image_url ||
+                    item.product?.image_url ||
+                    productImages.find((image) => image.is_primary)?.image_url ||
+                    productImages[0]?.image_url ||
+                    '';
+                  const productSlug =
+                    item.product?.slug || item.product_slug || item.slug;
 
                   const existingRequest = returnRequests.find(
                     (request) => String(request.order_item_id) === String(item.id)
@@ -648,35 +653,57 @@ export default function OrderDetailsScreen() {
                       ]}
                     >
                       <View style={styles.itemRow}>
-                        {imageUrl ? (
-                          <Image
-                            source={{ uri: imageUrl }}
-                            style={styles.productImage}
-                          />
-                        ) : (
-                          <View style={styles.productPlaceholder}>
-                            <Ionicons
-                              name="leaf-outline"
-                              size={22}
-                              color="#123D2B"
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.productDetailsLink,
+                            pressed && productSlug && styles.buttonPressed,
+                          ]}
+                          disabled={!productSlug}
+                          onPress={() => {
+                            if (productSlug) {
+                              router.push({
+                                pathname: '/products/[slug]',
+                                params: { slug: String(productSlug) },
+                              });
+                            }
+                          }}
+                          accessibilityRole={productSlug ? 'button' : undefined}
+                          accessibilityLabel={
+                            productSlug
+                              ? `View details for ${item.product_name || 'this product'}`
+                              : undefined
+                          }
+                        >
+                          {imageUrl ? (
+                            <Image
+                              source={{ uri: imageUrl }}
+                              style={styles.productImage}
                             />
-                          </View>
-                        )}
-                        <View style={styles.itemDescription}>
-                          <Text style={styles.itemName}>
-                            {item.product_name || item.product_id || 'Botanical Product'}
-                          </Text>
-                          {item.variant_name ? (
-                            <View style={styles.variantBadge}>
-                              <Text style={styles.variantText}>
-                                {item.variant_name}
-                              </Text>
+                          ) : (
+                            <View style={styles.productPlaceholder}>
+                              <Ionicons
+                                name="leaf-outline"
+                                size={22}
+                                color="#123D2B"
+                              />
                             </View>
-                          ) : null}
-                          <Text style={styles.itemMeta}>
-                            {quantity} × {formatAmount(unitPrice, currency)}
-                          </Text>
-                        </View>
+                          )}
+                          <View style={styles.itemDescription}>
+                            <Text style={styles.itemName}>
+                              {item.product_name || item.product_id || 'Botanical Product'}
+                            </Text>
+                            {item.variant_name ? (
+                              <View style={styles.variantBadge}>
+                                <Text style={styles.variantText}>
+                                  {item.variant_name}
+                                </Text>
+                              </View>
+                            ) : null}
+                            <Text style={styles.itemMeta}>
+                              {quantity} × {formatAmount(unitPrice, currency)}
+                            </Text>
+                          </View>
+                        </Pressable>
                         <Text style={styles.lineTotal}>
                           {formatAmount(lineTotal, currency)}
                         </Text>
@@ -1293,6 +1320,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 6,
+  },
+  productDetailsLink: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   itemDivider: {
     paddingTop: 14,

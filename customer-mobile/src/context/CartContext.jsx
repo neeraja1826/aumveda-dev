@@ -148,6 +148,10 @@ export function CartProvider({ children }) {
     quantity = 1,
     variant = null
   ) => {
+    if (!isAuthenticated || isAuthLoading) {
+      return false;
+    }
+
     if (!product?.id) {
       console.warn(
         'Cannot add product without id'
@@ -274,6 +278,10 @@ export function CartProvider({ children }) {
     itemKey,
     quantity
   ) => {
+    if (!isAuthenticated || isAuthLoading) {
+      return false;
+    }
+
     const newQuantity =
       Number(quantity || 0);
 
@@ -303,6 +311,10 @@ export function CartProvider({ children }) {
   const increaseQuantity = (
     itemKey
   ) => {
+    if (!isAuthenticated || isAuthLoading) {
+      return false;
+    }
+
     setCartItems(
       (currentItems) =>
         currentItems.map((item) =>
@@ -326,6 +338,10 @@ export function CartProvider({ children }) {
   const decreaseQuantity = (
     itemKey
   ) => {
+    if (!isAuthenticated || isAuthLoading) {
+      return false;
+    }
+
     setCartItems(
       (currentItems) =>
         currentItems
@@ -356,6 +372,10 @@ export function CartProvider({ children }) {
   const removeFromCart = (
     itemKey
   ) => {
+    if (!isAuthenticated || isAuthLoading) {
+      return false;
+    }
+
     setCartItems(
       (currentItems) =>
         currentItems.filter(

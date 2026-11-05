@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { setAdminToken } from '../services/api.js';
+import { apiRequest, setAdminToken } from '../services/api.js';
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -21,30 +21,13 @@ export default function Login({ onLogin }) {
     setLoading(true);
 
     try {
-      // Replace this placeholder with your confirmed login endpoint.
-      const apiBaseUrl = (
-  import.meta.env.VITE_API_BASE_URL ||
-  'http://127.0.0.1:8001/api/v1'
-).replace(/\/+$/, '');
-
-const response = await fetch(`${apiBaseUrl}/auth/login`, 
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: email.trim(),
-            password,
-          }),
-        }
-      );
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          result.detail || result.message || 'Login failed. Check your credentials.'
-        );
-      }
+      const result = await apiRequest('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
 
       if (!result.access_token) {
         throw new Error('The login response did not contain an access token.');

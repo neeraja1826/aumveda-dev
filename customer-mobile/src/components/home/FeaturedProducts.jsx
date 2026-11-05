@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,201 +8,143 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import ProductCard from './ProductCard';
 
 export default function FeaturedProducts({
   products = [],
-  categories = [],
-  selectedFilter: externalFilter,
-  onFilterChange,
 }) {
   const router = useRouter();
-  const [internalFilter, setInternalFilter] = useState('all');
-  const selectedFilter = externalFilter !== undefined ? externalFilter : internalFilter;
 
-  const handleSelectFilter = (id) => {
-    setInternalFilter(id);
-    onFilterChange?.(id);
-  };
-
-  // Build filter pills from available categories or defaults
-  const filterPills = useMemo(() => {
-    const list = [{ id: 'all', name: 'Featured Products' }];
-
-    if (Array.isArray(categories) && categories.length > 0) {
-      categories.forEach((cat) => {
-        if (cat?.name && !list.some((item) => item.name === cat.name)) {
-          list.push({
-            id: String(cat.id || cat.slug || cat.name),
-            name: cat.name,
-            slug: cat.slug,
-          });
-        }
-      });
-    }
-
-    return list.slice(0, 7);
-  }, [categories]);
-
-  // Filter products based on selected pill
-  const filteredProducts = useMemo(() => {
-    if (selectedFilter === 'all') {
-      return products;
-    }
-
-    const activePill = filterPills.find((p) => p.id === selectedFilter);
-    const filterName = activePill?.name?.toLowerCase() || '';
-
-    return products.filter((p) => {
-      const pCatName = (p?.category?.name || p?.category_name || '').toLowerCase();
-      const pName = (p?.name || '').toLowerCase();
-      return pCatName.includes(filterName) || pName.includes(filterName);
-    });
-  }, [products, selectedFilter, filterPills]);
-
-  if (!products.length) {
+  if (!products || !products.length) {
     return null;
   }
 
-  const displayProducts = filteredProducts.length > 0 ? filteredProducts : products;
-
   return (
-    <View style={styles.container}>
-      {/* SECTION HEADER */}
-      <View style={styles.headerRow}>
-        <View>
-          <View style={styles.eyebrowRow}>
-          </View>
-        </View>
-
-        <Pressable
-          onPress={() => router.push('/(tabs)/categories')}
-          hitSlop={8}
-        >
-        </Pressable>
-      </View>
-
-     
-      {/* HORIZONTAL PRODUCT CAROUSEL */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.horizontalProductsScroll}
+    <View style={styles.outerContainer}>
+      {/* CLEAN LUXURY IVORY / SILK SURFACE (NO TITLE) */}
+      <LinearGradient
+        colors={['#FCFAF7', '#F7F3EC', '#F2ECE2']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.gradientSurface}
       >
-        {displayProducts.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            compact={true}
-            onPress={() => {
-              if (product?.slug) {
-                router.push(`/products/${product.slug}`);
-              }
-            }}
-          />
-        ))}
-      </ScrollView>
+        {/* HORIZONTAL PRODUCT CAROUSEL */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalProductsScroll}
+        >
+          {products.map((product) => (
+            <ProductCard
+              key={product.id || product.slug}
+              product={product}
+              compact={true}
+              onPress={() => {
+                if (product?.slug) {
+                  router.push(`/products/${product.slug}`);
+                }
+              }}
+            />
+          ))}
+
+          {/* VIEW ALL END CARD */}
+          <Pressable 
+            style={({ pressed }) => [
+              styles.viewAllEndCard,
+              pressed && styles.cardPressed,
+            ]}
+            onPress={() => router.push('/(tabs)/categories')}
+            accessibilityRole="button"
+            accessibilityLabel="Explore all products"
+          >
+            <View style={styles.viewAllIconCircle}>
+              <Ionicons name="arrow-forward" size={18} color="#123D2B" />
+            </View>
+            <Text style={styles.viewAllEndTitle}>View All</Text>
+            <Text style={styles.viewAllEndSub}>Products</Text>
+          </Pressable>
+        </ScrollView>
+      </LinearGradient>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
+    width: '100%',
+    paddingHorizontal: 12,
     marginTop: 10,
-    marginBottom: 6,
+    marginBottom: 10,
   },
 
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 14,
-  },
-
-  eyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 3,
-  },
-
-  sparkle: {
-    color: '#D9A52E',
-    fontSize: 10,
-  },
-
-  eyebrow: {
-    fontFamily: 'InterSemiBold',
-    fontSize: 9,
-    letterSpacing: 1.8,
-    color: '#D9A52E',
-  },
-
-  title: {
-    fontFamily: 'PlayfairSemiBold',
-    fontSize: 22,
-    color: '#123D2B',
-  },
-
-  viewAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+  /* CLEAN LUXURY SURFACE - FRAMES CARDS BEAUTIFULLY WITHOUT TITLE CLUTTER */
+  gradientSurface: {
+    width: '100%',
+    borderRadius: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5DFD3',
-  },
-
-  viewAllText: {
-    fontFamily: 'InterSemiBold',
-    fontSize: 11,
-    color: '#123D2B',
-  },
-
-  pillsScroll: {
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    gap: 8,
-  },
-
-  pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5DFD3',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    borderColor: '#EDE5D8',
+    shadowColor: '#123D2B',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-
-  pillActive: {
-    backgroundColor: '#123D2B',
-    borderColor: '#123D2B',
-  },
-
-  pillText: {
-    fontFamily: 'InterMedium',
-    fontSize: 12,
-    color: '#716F68',
-  },
-
-  pillTextActive: {
-    fontFamily: 'InterSemiBold',
-    color: '#FFFFFF',
+    shadowRadius: 6,
+    elevation: 2,
+    overflow: 'hidden',
   },
 
   horizontalProductsScroll: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingHorizontal: 12,
     gap: 12,
+    alignItems: 'center',
+  },
+
+  /* VIEW ALL END CARD MATCHING COMPACT PRODUCT CARDS */
+  viewAllEndCard: {
+    width: 124,
+    minHeight: 240,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E8E3D8',
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#123D2B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  cardPressed: {
+    transform: [{ scale: 0.985 }],
+    opacity: 0.95,
+  },
+
+  viewAllIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EAF3EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+
+  viewAllEndTitle: {
+    fontFamily: 'InterSemiBold',
+    fontSize: 13,
+    color: '#123D2B',
+    fontWeight: '700',
+  },
+
+  viewAllEndSub: {
+    fontFamily: 'InterMedium',
+    fontSize: 10.5,
+    color: '#8C4E3A',
+    marginTop: 2,
   },
 });

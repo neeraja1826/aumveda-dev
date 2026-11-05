@@ -38,6 +38,7 @@ import {
   recordProductView,
 } from '../../src/services/recentlyViewedService';
 import { useAuth } from '../../src/context/AuthContext';
+import AuthRequiredModal from '../../src/components/common/AuthRequiredModal';
 import {
   useCart,
 } from '../../src/context/CartContext';
@@ -63,7 +64,24 @@ export default function ProductDetailsScreen() {
   const imageHeight = Math.min(width * 0.95, 460);
 const [reviews, setReviews] = useState([]);
 const [reviewsLoading, setReviewsLoading] = useState(false);
-const { token, isAuthenticated } = useAuth();
+  const {
+    token,
+    isAuthenticated,
+    loading: authLoading,
+  } = useAuth();
+
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const requireLogin = () => {
+    if (authLoading) return false;
+
+    if (!isAuthenticated || !token) {
+      setShowAuthModal(true);
+      return false;
+    }
+
+    return true;
+  };
 
 const [reviewRating, setReviewRating] = useState(5);
 const [reviewTitle, setReviewTitle] = useState('');
@@ -308,9 +326,9 @@ const rating = reviewCount > 0
   const savingsAmount = comparePrice > price ? comparePrice - price : 0;
 
   const handleWishlistToggle = async () => {
-    if (!product?.id) {
-      return;
-    }
+    if (!requireLogin()) return;
+    if (!product?.id) return;
+
     await toggleWishlist(product);
   };
 
@@ -319,9 +337,8 @@ const rating = reviewCount > 0
   // ==========================================================
 
   const handleAddToCart = () => {
-    if (!product) {
-      return;
-    }
+    if (!requireLogin()) return;
+    if (!product) return;
 
     addToCart(
       product,
@@ -335,9 +352,8 @@ const rating = reviewCount > 0
   // ==========================================================
 
   const handleBuyNow = () => {
-    if (!product) {
-      return;
-    }
+    if (!requireLogin()) return;
+    if (!product) return;
 
     router.push({
       pathname: '/checkout',
@@ -358,9 +374,8 @@ const rating = reviewCount > 0
   // ==========================================================
 
   const handleIncrease = () => {
-    if (!cartItem) {
-      return;
-    }
+    if (!requireLogin()) return;
+    if (!cartItem) return;
 
     if (
       stock > 0 &&
@@ -379,9 +394,8 @@ const rating = reviewCount > 0
   // ==========================================================
 
   const handleDecrease = () => {
-    if (!cartItem) {
-      return;
-    }
+    if (!requireLogin()) return;
+    if (!cartItem) return;
 
     if (
       cartQuantity <= 1
@@ -463,7 +477,7 @@ const rating = reviewCount > 0
               onPress={handleRetry}
             >
               <Text style={styles.retryText}>
-                Retry Formulation
+                Retry
               </Text>
             </Pressable>
           )}
@@ -529,7 +543,10 @@ const rating = reviewCount > 0
 
           <Pressable
             style={styles.headerButton}
-            onPress={() => router.push('/wishlist')}
+            onPress={() => {
+              if (!requireLogin()) return;
+              router.push('/wishlist');
+            }}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="View Wishlist"
@@ -543,7 +560,10 @@ const rating = reviewCount > 0
 
           <Pressable
             style={styles.headerButton}
-            onPress={() => router.push('/cart')}
+            onPress={() => {
+              if (!requireLogin()) return;
+              router.push('/cart');
+            }}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={`Cart with ${cartCount} items`}
@@ -778,7 +798,7 @@ const rating = reviewCount > 0
               <View style={styles.sectionHeaderRow}>
                 <View style={styles.sectionTitleDot} />
                 <Text style={styles.sectionTitle}>
-                  About This Formulation
+                  About This
                 </Text>
               </View>
 
@@ -1106,7 +1126,7 @@ const rating = reviewCount > 0
                 ✦ COMPLETE YOUR RITUAL ✦
               </Text>
               <Text style={styles.relatedTitle}>
-                Related Formulations
+                Related Products
               </Text>
             </View>
 
@@ -1129,6 +1149,10 @@ const rating = reviewCount > 0
           </View>
         )}
       </ScrollView>
+      <AuthRequiredModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
     </SafeAreaView>
   );
 }

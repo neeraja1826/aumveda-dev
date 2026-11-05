@@ -56,10 +56,15 @@ export const createCategory = (category) =>
     body: JSON.stringify({
       name: category.name.trim(),
       slug: category.slug.trim().toLowerCase(),
-      parent_id: category.parent_id ?? null,
+      parent_id: category.parent_id || null,
+      description: category.description || null,
+      image_url: category.image_url || null,
+      show_on_home: category.show_on_home ?? false,
+      home_sort_order: Number(category.home_sort_order ?? 0),
+      sort_order: Number(category.sort_order ?? 0),
+      is_active: category.is_active ?? true,
     }),
   });
-
 export const getProduct = (productId) =>
   apiRequest(`/admin/products/${encodeURIComponent(productId)}`);
 
@@ -117,7 +122,9 @@ export const updateCategory = (categoryId, category) =>
       body: JSON.stringify({
         name: category.name.trim(),
         slug: category.slug.trim().toLowerCase(),
-        parent_id: category.parent_id ?? null,
+        parent_id: category.parent_id || null,
+        description: category.description ?? null,
+        image_url: category.image_url ?? null,
       }),
     }
   );
@@ -259,3 +266,36 @@ export const updateCouponActiveStatus = (couponId, isActive) =>
     `/admin/coupons/${encodeURIComponent(couponId)}/active?is_active=${isActive}`,
     { method: 'PATCH' }
   );
+
+/* Admin Notifications */
+
+export const getAdminNotifications = (params = {}) => {
+  const query = new URLSearchParams();
+
+  if (params.is_read !== undefined && params.is_read !== '') {
+    query.set('is_read', String(params.is_read));
+  }
+
+  if (params.notification_type) {
+    query.set('notification_type', params.notification_type);
+  }
+
+  query.set('limit', String(params.limit ?? 50));
+  query.set('offset', String(params.offset ?? 0));
+
+  return apiRequest(`/admin/notifications?${query.toString()}`);
+};
+
+export const getAdminUnreadCount = () =>
+  apiRequest('/admin/notifications/unread-count');
+
+export const markAdminNotificationRead = (notificationId) =>
+  apiRequest(
+    `/admin/notifications/${encodeURIComponent(notificationId)}/read`,
+    { method: 'PATCH' }
+  );
+
+export const markAllAdminNotificationsRead = () =>
+  apiRequest('/admin/notifications/read-all', {
+    method: 'PATCH',
+  });

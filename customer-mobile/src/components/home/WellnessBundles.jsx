@@ -1,5 +1,4 @@
 import React from 'react';
-
 import {
   Image,
   Pressable,
@@ -8,89 +7,75 @@ import {
   Text,
   View,
 } from 'react-native';
-
-import { Ionicons } from '@expo/vector-icons';
-
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
 
 export default function WellnessBundles({
   bundles = [],
 }) {
-
   const router = useRouter();
-
 
   // ============================================================
   // NO BUNDLES
   // ============================================================
-
   if (!bundles.length) {
     return null;
   }
 
-
   return (
     <View style={styles.section}>
+      {/* SECTION HEADER - CENTERED LIKE NEW ARRIVALS */}
+      <View style={styles.header}>
+        {/* CENTER BOTANICAL MOTIF */}
+        <View style={styles.motifRow}>
+          <MaterialCommunityIcons
+            name="leaf"
+            size={14}
+            color="#8C4E3A"
+            style={styles.motifLeftLeaf}
+          />
+          <MaterialCommunityIcons
+            name="leaf"
+            size={14}
+            color="#8C4E3A"
+            style={styles.motifRightLeaf}
+          />
+        </View>
 
-      {/* =======================================================
-          HEADING
-      ======================================================= */}
+        {/* EYEBROW */}
+        <View style={styles.eyebrowRow}>
+          <View style={styles.eyebrowLine} />
+          <Text style={styles.eyebrowText}>CURATED RITUALS</Text>
+          <View style={styles.eyebrowLine} />
+        </View>
 
-      <Text style={styles.eyebrow}>
-        WELLNESS BUNDLES
-      </Text>
-
-
-      <View style={styles.headingRow}>
-
-        <Text style={styles.title}>
-          Curated wellness
-        </Text>
-
-        <Text style={styles.italicTitle}>
-          rituals.
-        </Text>
-
+        {/* MAIN TITLE */}
+        <Text style={styles.title}>Wellness Bundles</Text>
       </View>
 
-
       {/* =======================================================
-          BUNDLES
+          BUNDLES CAROUSEL
       ======================================================= */}
-
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >
-
         {bundles.map((bundle) => (
-
           <BundleCard
             key={bundle.id}
             bundle={bundle}
             onPress={() => {
-
               if (bundle?.slug) {
-
-                router.push(
-                  `/bundles/${bundle.slug}`
-                );
-
+                router.push(`/bundles/${bundle.slug}`);
               }
-
             }}
           />
-
         ))}
-
       </ScrollView>
-
     </View>
   );
 }
-
 
 // ============================================================
 // BUNDLE CARD
@@ -100,51 +85,26 @@ function BundleCard({
   bundle,
   onPress,
 }) {
-
-  // Your API directly returns products[]
   const items = bundle.products || [];
   const imageUrl =
     bundle.image_url ||
     bundle.image ||
     bundle.imageUrl;
 
-
   return (
     <Pressable
       style={styles.card}
       onPress={onPress}
     >
-
-      {/* =====================================================
-          IMAGE
-      ===================================================== */}
-
+      {/* IMAGE */}
       <View style={styles.imageContainer}>
-
         {imageUrl ? (
-
           <Image
             source={{ uri: imageUrl }}
             style={styles.image}
             resizeMode="cover"
-            onLoad={() => {
-              console.log(
-                'BUNDLE IMAGE LOADED:',
-                bundle.name
-              );
-            }}
-            onError={(error) => {
-              console.log(
-                'BUNDLE IMAGE ERROR:',
-                bundle.name,
-                imageUrl,
-                error.nativeEvent
-              );
-            }}
           />
-
         ) : (
-
           <View style={styles.placeholder}>
             <Ionicons
               name="leaf-outline"
@@ -152,39 +112,20 @@ function BundleCard({
               color="#123D2B"
             />
           </View>
-
         )}
 
-
-        {/* =================================================
-            DISCOUNT
-        ================================================= */}
-
+        {/* DISCOUNT */}
         {bundle.discount_percentage != null && (
-
           <View style={styles.discount}>
-
             <Text style={styles.discountText}>
               Save {bundle.discount_percentage}%
             </Text>
-
           </View>
-
         )}
-
       </View>
 
-
-      {/* =====================================================
-          CONTENT
-      ===================================================== */}
-
+      {/* CONTENT */}
       <View style={styles.content}>
-
-        {/* =================================================
-            NAME
-        ================================================= */}
-
         <Text
           style={styles.name}
           numberOfLines={1}
@@ -192,29 +133,16 @@ function BundleCard({
           {bundle.name}
         </Text>
 
-
-        {/* =================================================
-            DESCRIPTION
-        ================================================= */}
-
         {bundle.description ? (
-
           <Text
             style={styles.description}
             numberOfLines={2}
           >
             {bundle.description}
           </Text>
-
         ) : null}
 
-
-        {/* =================================================
-            PRODUCTS
-        ================================================= */}
-
         {items.length > 0 && (
-
           <Text
             style={styles.products}
             numberOfLines={2}
@@ -224,101 +152,91 @@ function BundleCard({
               .filter(Boolean)
               .join(' + ')}
           </Text>
-
         )}
 
-
-        {/* =================================================
-            ACTION
-        ================================================= */}
-
         <View style={styles.bottomRow}>
-
           <Text style={styles.explore}>
             Explore Ritual
           </Text>
-
           <Ionicons
             name="arrow-forward"
             size={15}
             color="#381F12"
           />
-
         </View>
-
       </View>
-
     </Pressable>
   );
 }
-
 
 // ============================================================
 // STYLES
 // ============================================================
 
 const styles = StyleSheet.create({
-
-  // ==========================================================
-  // SECTION
-  // ==========================================================
-
   section: {
-    marginTop: 24,
-    paddingTop: 24,
+    marginTop: 20,
+    paddingTop: 16,
     paddingBottom: 24,
-    backgroundColor: '#F5F1E8',
   },
 
-  // ==========================================================
-  // EYEBROW
-  // ==========================================================
+  /* HEADER - CENTERED LIKE NEW ARRIVALS */
+  header: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
 
-  eyebrow: {
-    marginHorizontal: 24,
-    fontSize: 9,
+  motifRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    marginBottom: 2,
+  },
+
+  motifLeftLeaf: {
+    transform: [{ rotate: '-25deg' }],
+  },
+
+  motifRightLeaf: {
+    transform: [{ rotate: '25deg' }, { scaleX: -1 }],
+  },
+
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+
+  eyebrowLine: {
+    width: 22,
+    height: 1.2,
+    backgroundColor: '#8C4E3A',
+  },
+
+  eyebrowText: {
+    fontFamily: 'InterSemiBold',
+    fontSize: 9.5,
     letterSpacing: 1.8,
-    color: '#D9A52E',
+    color: '#8C4E3A',
     fontWeight: '700',
   },
 
-  // ==========================================================
-  // HEADING
-  // ==========================================================
-
-  headingRow: {
-    marginHorizontal: 24,
-    marginTop: 5,
-    marginBottom: 18,
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-
   title: {
-    fontSize: 25,
-    fontWeight: '600',
+    fontFamily: 'PlayfairSemiBold',
+    fontSize: 24,
     color: '#123D2B',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 28,
   },
-
-  italicTitle: {
-    marginLeft: 6,
-    fontSize: 25,
-    color: '#123D2B',
-    fontFamily: 'PlayfairItalic',
-  },
-
-  // ==========================================================
-  // SCROLL
-  // ==========================================================
 
   scroll: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     gap: 14,
   },
-
-  // ==========================================================
-  // CARD
-  // ==========================================================
 
   card: {
     width: 285,
@@ -329,10 +247,6 @@ const styles = StyleSheet.create({
     borderColor: '#E5DFD3',
     elevation: 3,
   },
-
-  // ==========================================================
-  // IMAGE
-  // ==========================================================
 
   imageContainer: {
     height: 165,
@@ -345,10 +259,6 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  // ==========================================================
-  // IMAGE PLACEHOLDER
-  // ==========================================================
-
   placeholder: {
     flex: 1,
     width: '100%',
@@ -357,10 +267,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#F5F1E8',
   },
-
-  // ==========================================================
-  // DISCOUNT
-  // ==========================================================
 
   discount: {
     position: 'absolute',
@@ -378,27 +284,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // ==========================================================
-  // CONTENT
-  // ==========================================================
-
   content: {
     padding: 16,
   },
-
-  // ==========================================================
-  // NAME
-  // ==========================================================
 
   name: {
     fontSize: 19,
     fontWeight: '600',
     color: '#123D2B',
   },
-
-  // ==========================================================
-  // DESCRIPTION
-  // ==========================================================
 
   description: {
     marginTop: 7,
@@ -407,10 +301,6 @@ const styles = StyleSheet.create({
     color: '#716F68',
   },
 
-  // ==========================================================
-  // PRODUCTS
-  // ==========================================================
-
   products: {
     marginTop: 10,
     fontSize: 11,
@@ -418,10 +308,6 @@ const styles = StyleSheet.create({
     color: '#123D2B',
     fontWeight: '600',
   },
-
-  // ==========================================================
-  // BOTTOM ACTION
-  // ==========================================================
 
   bottomRow: {
     marginTop: 15,

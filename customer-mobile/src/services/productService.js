@@ -64,6 +64,7 @@ function normalizeProduct(response) {
 export async function getProducts({
   search,
   categoryId,
+  subcategoryId,
   limit = 20,
   offset = 0,
 } = {}) {
@@ -75,6 +76,11 @@ export async function getProducts({
   if (categoryId && String(categoryId).toLowerCase() !== 'all') {
     params.append('category_id', String(categoryId));
   }
+
+  if (subcategoryId && String(subcategoryId).toLowerCase() !== 'all') {
+    params.append('subcategory_id', String(subcategoryId));
+  }
+
   const response = await apiRequest(
     `/products?${params.toString()}`
   );
@@ -91,7 +97,6 @@ export async function getProducts({
     .map(normalizeProduct)
     .filter(Boolean);
 
-  // Preserve existing search functionality.
   const term = String(search ?? '').trim().toLowerCase();
 
   if (term) {

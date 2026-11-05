@@ -1,153 +1,53 @@
+import { supabase } from '../lib/supabase';
 
-import { API_BASE_URL } from '../constants/config';
-
-/**
- * Shared API request function for the AUMVEDA mobile app.
- *
- * Supports:
- * - GET, POST, PUT, PATCH, DELETE
- * - Optional Bearer token authentication
- * - Custom request headers
- * - JSON request and response handling
- * - Clear error messages for failed requests
- * - Deployed Render backend connectivity
- */
-
-
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL_PRODUCTION;
 
 export async function apiRequest(endpoint, options = {}) {
-  // Build the request URL.
-  const baseUrl = API_BASE_URL.replace(/\/+$/, '');
+  const baseUrl = API_BASE_URL?.replace(/\/+$/, '');
+
+  if (!baseUrl) {
+    throw new Error(
+      'API URL is not configured. Check EXPO_PUBLIC_API_URL_LOCAL and EXPO_PUBLIC_API_URL_PRODUCTION in .env'
+    );
+  }
+
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${baseUrl}${path}`;
 
-  const method = options.method || 'GET';
-  const timeoutMs = options.timeoutMs ?? 15000;
-  const externalSignal = options.signal;
+  console.log('API REQUEST:', url);
 
-  // Prepare headers.
-  const headers = {
-    Accept: 'application/json',
+  // Get the current logged-in user's session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const accessToken = session?.access_token;
+
+  const response = await fetch(url, {
+  ...options,
+  body:
+    options.body !== undefined && options.body !== null
+      ? typeof options.body === 'string'
+        ? options.body
+        : JSON.stringify(options.body)
+      : undefined,
+  headers: {
+    'Content-Type': 'application/json',
+    ...(accessToken
+      ? { Authorization: `Bearer ${accessToken}` }
+      : {}),
     ...(options.headers || {}),
-  };
+  },
+});
 
-  if (options.body !== undefined && options.body !== null) {
-    headers['Content-Type'] = 'application/json';
-  }
-
-  if (options.token) {
-    headers.Authorization = `Bearer ${options.token}`;
-  }
-
-  const controller = new AbortController();
-
-  let timedOut = false;
-
-  const handleExternalAbort = () => {
-    controller.abort();
-  };
-
-  if (externalSignal) {
-    if (externalSignal.aborted) {
-      throw new Error(`Request cancelled: ${endpoint}`);
-    }
-
-    externalSignal.addEventListener(
-      'abort',
-      handleExternalAbort,
-      { once: true }
-    );
-  }
-
-  const timeoutId = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      method,
-      headers,
-      body:
-        options.body !== undefined && options.body !== null
-          ? JSON.stringify(options.body)
-          : undefined,
-      signal: controller.signal,
-    });
-
+  if (!response.ok) {
     const text = await response.text();
 
-    let data = null;
-
-    if (text) {
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(
-          `Invalid JSON response from ${endpoint} (HTTP ${response.status}).`
-        );
-      }
-    }
-
-    if (!response.ok) {
-      const detail = data?.detail ?? data?.message ?? data;
-
-      const message = Array.isArray(detail)
-        ? detail
-            .map((item) => {
-              const field = Array.isArray(item.loc)
-                ? item.loc.join('.')
-                : 'field';
-
-              return `${field}: ${item.msg ?? JSON.stringify(item)}`;
-            })
-            .join('; ')
-        : typeof detail === 'string'
-          ? detail
-          : JSON.stringify(detail);
-
-      throw new Error(
-        `${endpoint}: ${message || `HTTP ${response.status}`}`
-      );
-    }
-
-    return data;
-
-  } catch (error) {
-    if (timedOut) {
-      console.error(`API timeout: ${endpoint}`);
-
-      throw new Error(
-        `Request timed out after ${timeoutMs / 1000} seconds: ${endpoint}`
-      );
-    }
-
-    if (externalSignal?.aborted) {
-      console.warn(`Request cancelled externally: ${endpoint}`);
-
-      throw new Error(`Request cancelled: ${endpoint}`);
-    }
-
-    console.error(
-      `Network error: ${endpoint}`,
-      error?.message || String(error)
-    );
-
-    if (error?.name === 'AbortError') {
-      throw new Error(`Request aborted: ${endpoint}`);
-    }
-
     throw new Error(
-      `Cannot connect to the AUMVEDA backend at ${API_BASE_URL}. ` +
-      'Check your internet connection and confirm that the backend is available.'
-    );
-
-  } finally {
-    clearTimeout(timeoutId);
-
-    externalSignal?.removeEventListener(
-      'abort',
-      handleExternalAbort
+      `API ${response.status}: ${text || response.statusText}`
     );
   }
+
+  return response.json();
 }

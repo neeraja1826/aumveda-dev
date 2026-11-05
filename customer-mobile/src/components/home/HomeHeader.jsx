@@ -12,6 +12,7 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -22,9 +23,10 @@ import * as Location from 'expo-location';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { getAddresses } from '../../services/addressService';
+import { APP_LOGO_URL } from '../../constants/app';
 
 const LOCATION_STORAGE_KEY = '@aumveda_selected_location';
-const DEFAULT_LOCATION = 'Hyderabad, Telangana';
+const LOCATION_PLACEHOLDER = 'Select location';
 
 // Curated distinct pastel gradient palettes for categories when selected
 export const CATEGORY_PASTEL_THEMES = [
@@ -70,7 +72,7 @@ export const CATEGORY_PASTEL_THEMES = [
     headerBorder: '#F7D48E',
     statusBarColor: '#FFF8EB',
     cardGradient: ['#FFFFFF', '#FFF1D6'],
-    cardBorder: '#E5A11F',
+    cardBorder: '#794B00',
     accent: '#794B00',
     screenBackground: '#FFFBF2',
     accentLight: '#FEF2DC',
@@ -328,7 +330,7 @@ export default function HomeHeader({
   const { width } = useWindowDimensions();
   const { cartCount } = useCart();
   const { token, isAuthenticated } = useAuth();
-  const [locationText, setLocationText] = useState(DEFAULT_LOCATION);
+  const [locationText, setLocationText] = useState(LOCATION_PLACEHOLDER);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -462,7 +464,7 @@ export default function HomeHeader({
     try {
       setDetectingLocation(true);
 
-      const { status, canAskAgain } =
+      const { status } =
         await Location.requestForegroundPermissionsAsync();
 
       if (status !== 'granted') {
@@ -474,14 +476,10 @@ export default function HomeHeader({
               text: 'Cancel',
               style: 'cancel',
             },
-            ...(!canAskAgain
-              ? [
-                  {
-                    text: 'Open Settings',
-                    onPress: () => Linking.openSettings(),
-                  },
-                ]
-              : []),
+            {
+              text: 'Open App Settings',
+              onPress: () => Linking.openSettings(),
+            },
           ]
         );
 
@@ -492,19 +490,16 @@ export default function HomeHeader({
         await Location.hasServicesEnabledAsync();
 
       if (!servicesEnabled) {
+        if (Platform.OS === 'android') {
+          await Linking.sendIntent(
+            'android.settings.LOCATION_SOURCE_SETTINGS'
+          );
+          return;
+        }
+
         Alert.alert(
           'Location Is Turned Off',
-          'Please enable your device location to detect your delivery address.',
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-            },
-            {
-              text: 'Open Settings',
-              onPress: () => Linking.openSettings(),
-            },
-          ]
+          'Turn on Location Services in Settings > Privacy & Security > Location Services, then try again.'
         );
 
         return;
@@ -663,7 +658,7 @@ export default function HomeHeader({
             accessibilityLabel="Aumveda Home"
           >
             <Image
-              source={require('../../../assets/app-icon.png')}
+              source={{ uri: APP_LOGO_URL }}
               style={styles.logoImage}
               resizeMode="contain"
             />
@@ -995,7 +990,7 @@ export default function HomeHeader({
                         setLocationText(
                           formattedLocation ||
                             address.address_line1 ||
-                            DEFAULT_LOCATION
+                            LOCATION_PLACEHOLDER
                         );
 
                         setShowLocationModal(false);
@@ -1084,14 +1079,14 @@ export default function HomeHeader({
                 >
                   {detectingLocation
                     ? 'Please wait'
-                    : locationText !== DEFAULT_LOCATION
+                    : locationText !== LOCATION_PLACEHOLDER
                       ? locationText
                       : 'Detect your current delivery location'}
                 </Text>
               </View>
 
               {!detectingLocation &&
-                locationText !== DEFAULT_LOCATION && (
+                locationText !== LOCATION_PLACEHOLDER && (
                   <Ionicons
                     name="checkmark-circle"
                     size={20}

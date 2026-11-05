@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,6 +23,7 @@ import {
   useRouter,
 } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -73,7 +75,10 @@ export default function AddressRoute() {
   // -----------------------------------------
 
   const [label, setLabel] =
-    useState('');
+    useState('Home');
+
+  const [labelType, setLabelType] =
+    useState('Home');
 
   const [recipientName, setRecipientName] =
     useState('');
@@ -126,9 +131,12 @@ export default function AddressRoute() {
   // -----------------------------------------
 
   const populateForm = (address) => {
-    setLabel(
-      address?.label || ''
+    const savedLabel = String(address?.label || '').trim();
+    const standardLabel = ['Home', 'Office'].find(
+      (option) => option.toLowerCase() === savedLabel.toLowerCase()
     );
+    setLabelType(standardLabel || 'Other');
+    setLabel(standardLabel || savedLabel);
 
     setRecipientName(
       address?.recipient_name || ''
@@ -164,7 +172,8 @@ export default function AddressRoute() {
   // -----------------------------------------
 
   const clearForm = () => {
-    setLabel('');
+    setLabel('Home');
+    setLabelType('Home');
     setRecipientName('');
     setPhone('');
     setAddressLine1('');
@@ -174,6 +183,23 @@ export default function AddressRoute() {
     setPostalCode('');
     setEditingId(null);
   };
+
+  useEffect(() => {
+    if (!showForm || Platform.OS !== 'android') {
+      return undefined;
+    }
+
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        setShowForm(false);
+        clearForm();
+        return true;
+      }
+    );
+
+    return () => subscription.remove();
+  }, [showForm]);
 
   // -----------------------------------------
   // OPEN ADD FORM
@@ -199,6 +225,14 @@ export default function AddressRoute() {
   // -----------------------------------------
 
   const validateForm = () => {
+    if (labelType === 'Other' && !label.trim()) {
+      Alert.alert(
+        'Missing address label',
+        'Please enter a label for this address.'
+      );
+      return false;
+    }
+
     if (!recipientName.trim()) {
       Alert.alert(
         'Missing information',
@@ -572,7 +606,7 @@ const handleSelectAddress = async (address) => {
   if (showForm) {
     return (
       <SafeAreaView
-        style={styles.container}
+        style={styles.formScreen}
         edges={['top', 'bottom']}
       >
         <KeyboardAvoidingView
@@ -583,29 +617,37 @@ const handleSelectAddress = async (address) => {
               : undefined
           }
         >
-        <View style={styles.header}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => {
-              setShowForm(false);
-              clearForm();
-            }}
-          >
-            <Ionicons
-              name="arrow-back"
-              size={22}
-              color={colors.text}
-            />
-          </Pressable>
+        <LinearGradient
+          colors={['#E5F2E4', '#D9EAD7', '#CDE2CB']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.formHeaderGradient}
+        >
+          <View style={styles.formHeader}>
+            <Pressable
+              style={styles.formBackButton}
+              onPress={() => {
+                setShowForm(false);
+                clearForm();
+              }}
+            >
+              <Ionicons
+                name="arrow-back"
+                size={20}
+                color={colors.primary}
+              />
+            </Pressable>
 
-          <Text style={styles.headerTitle}>
-            {editingId
-              ? 'Edit Address'
-              : 'Add Address'}
-          </Text>
+            <View style={styles.formHeaderTitleWrap}>
+              <Text style={styles.headerEyebrow}>DELIVERY DETAILS</Text>
+              <Text style={styles.headerTitle}>
+                {editingId ? 'Edit Address' : 'Add Address'}
+              </Text>
+            </View>
 
-          <View style={styles.headerSpacer} />
-        </View>
+            <View style={styles.headerSpacer} />
+          </View>
+        </LinearGradient>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -615,59 +657,6 @@ const handleSelectAddress = async (address) => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.formCard}>
-            <Text style={styles.formTitle}>
-              Delivery Details
-            </Text>
-
-            <Text style={styles.formSubtitle}>
-              Enter the address where you want
-              your order delivered.
-            </Text>
-
-            <Text style={styles.label}>
-              Address Label
-            </Text>
-
-            <TextInput
-              value={label}
-              onChangeText={setLabel}
-              placeholder="Home / Office"
-              placeholderTextColor={
-                colors.textSecondary
-              }
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>
-              Recipient Name
-            </Text>
-
-            <TextInput
-              value={recipientName}
-              onChangeText={setRecipientName}
-              placeholder="Full name"
-              placeholderTextColor={
-                colors.textSecondary
-              }
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>
-              Phone Number
-            </Text>
-
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="10-digit mobile number"
-              placeholderTextColor={
-                colors.textSecondary
-              }
-              keyboardType="phone-pad"
-              maxLength={10}
-              style={styles.input}
-            />
-
             <Text style={styles.label}>
               Address Line 1
             </Text>
@@ -702,6 +691,20 @@ const handleSelectAddress = async (address) => {
                 styles.multilineSmall,
               ]}
               multiline
+            />
+
+            <Text style={styles.label}>
+              Phone Number
+            </Text>
+
+            <TextInput
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="10-digit mobile number"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="phone-pad"
+              maxLength={10}
+              style={styles.input}
             />
 
             <View style={styles.row}>
@@ -754,6 +757,86 @@ const handleSelectAddress = async (address) => {
               style={styles.input}
             />
 
+            <Text style={styles.label}>
+              Recipient Name
+            </Text>
+
+            <TextInput
+              value={recipientName}
+              onChangeText={setRecipientName}
+              placeholder="Full name"
+              placeholderTextColor={colors.textSecondary}
+              style={styles.input}
+            />
+
+            <Text style={styles.label}>
+              SAVE THIS ADDRESS AS
+            </Text>
+
+            <View style={styles.labelChips}>
+              {['Home', 'Office', 'Other'].map((option) => {
+                const isSelected = labelType === option;
+                return (
+                  <Pressable
+                    key={option}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    onPress={() => {
+                      setLabelType(option);
+                      if (option !== 'Other') {
+                        setLabel(option);
+                      } else if (labelType !== 'Other') {
+                        setLabel('');
+                      }
+                    }}
+                    style={[
+                      styles.labelChip,
+                      isSelected && styles.selectedLabelChip,
+                    ]}
+                  >
+                    {option !== 'Other' ? (
+                      <Ionicons
+                        name={option === 'Home' ? 'home-outline' : 'business-outline'}
+                        size={16}
+                        color={isSelected ? colors.white : colors.primary}
+                      />
+                    ) : null}
+                    <Text
+                      style={[
+                        styles.labelChipText,
+                        isSelected && styles.selectedLabelChipText,
+                      ]}
+                    >
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {labelType === 'Other' ? (
+              <TextInput
+                value={label}
+                onChangeText={setLabel}
+                placeholder="Enter address label"
+                placeholderTextColor={colors.textSecondary}
+                style={styles.input}
+                returnKeyType="done"
+                accessibilityLabel="Custom address label"
+              />
+            ) : null}
+
+            <View style={styles.privacyNote}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={16}
+                color={colors.primary}
+              />
+              <Text style={styles.privacyNoteText}>
+                Your address is saved securely and only used for delivery.
+              </Text>
+            </View>
+
             <Pressable
               style={[
                 styles.saveButton,
@@ -801,44 +884,52 @@ const handleSelectAddress = async (address) => {
 
   return (
     <SafeAreaView
-      style={styles.container}
+      style={styles.addressListScreen}
       edges={['top', 'bottom']}
     >
-      <View style={styles.header}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons
-            name="arrow-back"
-            size={22}
-            color={colors.text}
-          />
-        </Pressable>
+      <LinearGradient
+        colors={['#E5F2E4', '#D9EAD7', '#CDE2CB']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.listHeaderGradient}
+      >
+        <View style={styles.listHeader}>
+          <Pressable
+            style={styles.listBackButton}
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons
+              name="arrow-back"
+              size={20}
+              color={colors.primary}
+            />
+          </Pressable>
 
-        <Text style={styles.headerTitle}>
-          My Addresses
-        </Text>
+          <View style={styles.listHeaderTitleWrap}>
+            <Text style={styles.listHeaderEyebrow}>DELIVERY DETAILS</Text>
+            <Text style={styles.listHeaderTitle}>My Addresses</Text>
+          </View>
 
-        <View style={styles.headerSpacer} />
-      </View>
+          {addresses.length > 0 ? (
+            <View style={styles.addressCountBadge}>
+              <Ionicons name="location" size={13} color={colors.primary} />
+              <Text style={styles.addressCountText}>{addresses.length}</Text>
+            </View>
+          ) : (
+            <View style={styles.headerSpacer} />
+          )}
+        </View>
+      </LinearGradient>
 
       <ScrollView
+        style={styles.addressListBody}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={
           styles.listContent
         }
       >
-        <View style={styles.pageIntro}>
-          <Text style={styles.pageTitle}>
-            Delivery Addresses
-          </Text>
-
-          <Text style={styles.pageSubtitle}>
-            Manage your saved delivery addresses.
-          </Text>
-        </View>
-
         {addresses.length === 0 ? (
           <View style={styles.emptyCard}>
             <View style={styles.emptyIcon}>
@@ -959,6 +1050,48 @@ const handleSelectAddress = async (address) => {
                         </View>
                       )}
                     </View>
+
+                    <View style={styles.cardTopActions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Edit ${address?.label || 'address'}`}
+                        style={styles.cardTopActionButton}
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          handleEdit(address);
+                        }}
+                      >
+                        <Ionicons
+                          name="create-outline"
+                          size={17}
+                          color={colors.primary}
+                        />
+                      </Pressable>
+
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Delete ${address?.label || 'address'}`}
+                        style={[styles.cardTopActionButton, styles.cardTopDeleteButton]}
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          handleDelete(address);
+                        }}
+                        disabled={deletingId === address.id}
+                      >
+                        {deletingId === address.id ? (
+                          <ActivityIndicator
+                            size="small"
+                            color={colors.textSecondary}
+                          />
+                        ) : (
+                          <Ionicons
+                            name="trash-outline"
+                            size={16}
+                            color="#B54A4A"
+                          />
+                        )}
+                      </Pressable>
+                    </View>
                   </View>
 
                   <Text
@@ -997,114 +1130,33 @@ const handleSelectAddress = async (address) => {
                     {address.postal_code}
                   </Text>
 
-                  <Text
-                    style={
-                      styles.phoneText
-                    }
-                  >
-                    {address.phone}
-                  </Text>
+                  <View style={styles.phoneRow}>
+                    <Ionicons
+                      name="call-outline"
+                      size={13}
+                      color={colors.primary}
+                    />
+                    <Text style={styles.phoneText}>{address.phone}</Text>
+                  </View>
 
-                  <View
-                    style={
-                      styles.addressActions
-                    }
-                  >
-                    {!isDefault && (
+                  {!isDefault && (
+                    <View style={styles.addressActions}>
                       <Pressable
-                        style={
-                          styles.actionButton
-                        }
-                        onPress={() =>
-                          handleSetDefault(
-                            address.id
-                          )
-                        }
+                        style={styles.actionButton}
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          handleSetDefault(address.id);
+                        }}
                       >
                         <Ionicons
                           name="checkmark-circle-outline"
                           size={17}
-                          color={
-                            colors.primary
-                          }
+                          color={colors.primary}
                         />
-
-                        <Text
-                          style={
-                            styles.actionText
-                          }
-                        >
-                          Set Default
-                        </Text>
+                        <Text style={styles.actionText}>Set Default</Text>
                       </Pressable>
-                    )}
-
-                    <Pressable
-                      style={
-                        styles.actionButton
-                      }
-                      onPress={() =>
-                        handleEdit(address)
-                      }
-                    >
-                      <Ionicons
-                        name="create-outline"
-                        size={17}
-                        color={
-                          colors.text
-                        }
-                      />
-
-                      <Text
-                        style={
-                          styles.actionTextDark
-                        }
-                      >
-                        Edit
-                      </Text>
-                    </Pressable>
-
-                    <Pressable
-                      style={
-                        styles.actionButton
-                      }
-                      onPress={() =>
-                        handleDelete(
-                          address
-                        )
-                      }
-                      disabled={
-                        deletingId ===
-                        address.id
-                      }
-                    >
-                      {deletingId ===
-                      address.id ? (
-                        <ActivityIndicator
-                          size="small"
-                          color={
-                            colors.textSecondary
-                          }
-                        />
-                      ) : (
-                        <>
-                          <Ionicons
-                            name="trash-outline"
-                            size={17}
-                            color="#B54A4A"
-                          />
-
-                          <Text
-                            style={
-                              styles.deleteText
-                            }
-                          >
-                            Delete
-                          </Text>
-                        </>
-                      )}
-                    </Pressable>
-                  </View>
+                    </View>
+                  )}
                 </Pressable>
               );
             })}
@@ -1113,19 +1165,28 @@ const handleSelectAddress = async (address) => {
               style={styles.addNewButton}
               onPress={handleAddNew}
             >
-              <Ionicons
-                name="add-circle-outline"
-                size={20}
-                color={colors.primary}
-              />
-
-              <Text
-                style={
-                  styles.addNewButtonText
-                }
+              <LinearGradient
+                colors={['#FFFFFF', '#F3F7F1']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.addNewButtonInner}
               >
-                Add New Address
-              </Text>
+                <View style={styles.addNewIcon}>
+                  <Ionicons
+                    name="add"
+                    size={19}
+                    color={colors.white}
+                  />
+                </View>
+                <Text style={styles.addNewButtonText}>
+                  Add New Address
+                </Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={16}
+                  color={colors.primary}
+                />
+              </LinearGradient>
             </Pressable>
           </>
         )}
@@ -1142,6 +1203,21 @@ const handleSelectAddress = async (address) => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+
+  formScreen: {
+    flex: 1,
+    backgroundColor: '#E5F2E4',
+  },
+
+  addressListScreen: {
+    flex: 1,
+    backgroundColor: '#E5F2E4',
+  },
+
+  addressListBody: {
     flex: 1,
     backgroundColor: colors.background,
   },
@@ -1170,6 +1246,101 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
 
+  listHeaderGradient: {
+    paddingTop: 4,
+    paddingBottom: 12,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    borderWidth: 1,
+    borderColor: '#CDE2CB',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+
+  listHeader: {
+    minHeight: 50,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  listBackButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.09,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+
+  listHeaderTitleWrap: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+
+  listHeaderEyebrow: {
+    marginBottom: 1,
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 1.3,
+    color: '#65776C',
+  },
+
+  listHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+
+  addressCountBadge: {
+    minWidth: 40,
+    height: 34,
+    paddingHorizontal: 8,
+    borderRadius: 17,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
+
+  addressCountText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+
+  formHeader: {
+    minHeight: 72,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  formHeaderGradient: {
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    borderWidth: 1,
+    borderColor: '#CDE2CB',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+
   backButton: {
     width: 40,
     height: 40,
@@ -1179,8 +1350,37 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
 
+  formBackButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: '#E8E4DA',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 7,
+    elevation: 2,
+  },
+
+  formHeaderTitleWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  headerEyebrow: {
+    marginBottom: 2,
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    color: colors.textSecondary,
+  },
+
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
   },
@@ -1196,41 +1396,70 @@ const styles = StyleSheet.create({
   },
 
   pageIntro: {
-    marginBottom: 18,
+    marginBottom: 20,
+    paddingHorizontal: 2,
+  },
+
+  pageIntroHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+
+  pageIntroIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E6EFE3',
   },
 
   pageTitle: {
-    fontSize: 25,
+    fontSize: 21,
     fontWeight: '700',
     color: colors.text,
   },
 
   pageSubtitle: {
-    marginTop: 5,
+    marginTop: 7,
+    marginLeft: 43,
     fontSize: 12,
     lineHeight: 18,
     color: colors.textSecondary,
   },
 
   selectHint: {
-    marginBottom: 12,
+    marginBottom: 14,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#EAF2E8',
     fontSize: 12,
     color: colors.primary,
     fontWeight: '600',
   },
 
   addressCard: {
-    marginBottom: 14,
-    padding: 16,
+    marginBottom: 12,
+    padding: 14,
     borderRadius: 18,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#E9E7DF',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.055,
+    shadowRadius: 11,
+    elevation: 2,
   },
 
   defaultCard: {
-    borderColor: colors.primary,
-    borderWidth: 1.5,
+    borderColor: '#BFD6C0',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+    backgroundColor: '#FEFFFD',
   },
 
   addressTopRow: {
@@ -1238,117 +1467,166 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  cardTopActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginLeft: 8,
+  },
+
+  cardTopActionButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0F5EE',
+    borderWidth: 1,
+    borderColor: '#E4ECE1',
+  },
+
+  cardTopDeleteButton: {
+    backgroundColor: '#FFF5F3',
+    borderColor: '#F2E2DE',
+  },
+
   addressIcon: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.cream,
+    backgroundColor: '#EAF2E8',
+    borderWidth: 1,
+    borderColor: '#DCE9DA',
   },
 
   addressHeading: {
     flex: 1,
-    marginLeft: 11,
+    marginLeft: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 7,
   },
 
   addressLabel: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
   },
 
   defaultBadge: {
-    marginLeft: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: colors.cream,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: '#EAF3E7',
   },
 
   defaultBadgeText: {
     fontSize: 8,
     fontWeight: '800',
-    letterSpacing: 0.7,
+    letterSpacing: 0.8,
     color: colors.primary,
   },
 
   recipientName: {
-    marginTop: 15,
+    marginTop: 11,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
   },
 
   addressText: {
-    marginTop: 4,
+    marginTop: 2,
     fontSize: 12,
-    lineHeight: 18,
-    color: colors.textSecondary,
+    lineHeight: 17,
+    color: '#626B62',
+  },
+
+  phoneRow: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 9,
+    backgroundColor: '#F3F6F1',
   },
 
   phoneText: {
-    marginTop: 7,
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#455548',
   },
 
   addressActions: {
-    marginTop: 15,
-    paddingTop: 12,
+    marginTop: 11,
+    paddingTop: 9,
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 7,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: '#EEECE6',
   },
 
   actionButton: {
     minHeight: 34,
     paddingHorizontal: 10,
-    borderRadius: 9,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.background,
+    gap: 6,
+    backgroundColor: '#F0F5EE',
+    borderWidth: 1,
+    borderColor: '#E4ECE1',
   },
 
   actionText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.primary,
   },
 
-  actionTextDark: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.text,
-  },
-
-  deleteText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#B54A4A',
-  },
-
   addNewButton: {
-    height: 52,
-    marginTop: 4,
-    borderRadius: 15,
+    minHeight: 60,
+    marginTop: 3,
+    borderRadius: 18,
     borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.primary,
+    borderColor: '#D9E5D6',
+    overflow: 'hidden',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 7,
+    elevation: 1,
+  },
+
+  addNewButtonInner: {
+    minHeight: 60,
+    paddingHorizontal: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+  },
+
+  addNewIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
+    backgroundColor: colors.primary,
   },
 
   addNewButtonText: {
+    flex: 1,
     fontSize: 13,
     fontWeight: '700',
     color: colors.primary,
@@ -1407,47 +1685,78 @@ const styles = StyleSheet.create({
 
   formContent: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 36,
   },
 
   formCard: {
-    padding: 18,
-    borderRadius: 20,
+    padding: 20,
+    borderRadius: 22,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-
-  formTitle: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: colors.text,
-  },
-
-  formSubtitle: {
-    marginTop: 5,
-    marginBottom: 20,
-    fontSize: 12,
-    lineHeight: 18,
-    color: colors.textSecondary,
+    borderColor: '#E9E5DC',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    elevation: 3,
   },
 
   label: {
     marginBottom: 7,
-    marginTop: 4,
-    fontSize: 11,
-    fontWeight: '600',
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: '700',
     color: colors.text,
   },
 
-  input: {
-    minHeight: 46,
+  labelChips: {
+    flexDirection: 'row',
+    gap: 10,
     marginBottom: 12,
-    paddingHorizontal: 13,
-    borderRadius: 10,
+  },
+
+  labelChip: {
+    minHeight: 46,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: '#E7E4DA',
+    backgroundColor: '#FBFAF7',
+  },
+
+  selectedLabelChip: {
+    borderColor: '#1C563C',
+    backgroundColor: '#1C563C',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.16,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  labelChipText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  selectedLabelChipText: {
+    color: colors.white,
+  },
+
+  input: {
+    minHeight: 50,
+    marginBottom: 14,
+    paddingHorizontal: 15,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: '#E8E5DC',
+    backgroundColor: '#FBFAF7',
     color: colors.text,
     fontSize: 13,
   },
@@ -1473,15 +1782,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  privacyNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 5,
+    marginBottom: 10,
+    padding: 11,
+    borderRadius: 12,
+    backgroundColor: '#F1F6EF',
+  },
+
+  privacyNoteText: {
+    flex: 1,
+    fontSize: 10,
+    lineHeight: 15,
+    color: '#53675A',
+  },
+
   saveButton: {
-    height: 50,
+    height: 54,
     marginTop: 8,
-    borderRadius: 25,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.primary,
+    backgroundColor: '#123D2B',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   disabledButton: {

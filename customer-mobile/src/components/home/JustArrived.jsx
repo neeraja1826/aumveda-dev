@@ -12,6 +12,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 
+import AuthRequiredModal from '../common/AuthRequiredModal';
+import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 
@@ -272,8 +274,25 @@ export default function JustArrived({ products = [] }) {
 
 function NewArrivalCard({ product, onPress }) {
   const router = useRouter();
+  const {
+    isAuthenticated,
+    token,
+    loading: authLoading,
+  } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { cartItems, addToCart, increaseQuantity, decreaseQuantity } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
+
+  const requireLogin = () => {
+    if (authLoading) return false;
+
+    if (!isAuthenticated || !token) {
+      setShowAuthModal(true);
+      return false;
+    }
+
+    return true;
+  };
 
   const variant = product?.variant ?? null;
   const variantId = variant?.id ?? null;
@@ -326,22 +345,26 @@ function NewArrivalCard({ product, onPress }) {
 
   const handleAdd = (e) => {
     e?.stopPropagation?.();
+    if (!requireLogin()) return;
     if (!product?.id) return;
     addToCart(product, 1, variant);
   };
 
   const handlePlus = (e) => {
     e?.stopPropagation?.();
+    if (!requireLogin()) return;
     increaseQuantity(itemKey);
   };
 
   const handleMinus = (e) => {
     e?.stopPropagation?.();
+    if (!requireLogin()) return;
     decreaseQuantity(itemKey);
   };
 
   const handleWishlistToggle = (e) => {
     e?.stopPropagation?.();
+    if (!requireLogin()) return;
     if (product?.id) {
       toggleWishlist(product.id, product);
     }
@@ -349,6 +372,7 @@ function NewArrivalCard({ product, onPress }) {
 
   const handleBuyNow = (e) => {
     e?.stopPropagation?.();
+    if (!requireLogin()) return;
     if (!product?.id) return;
     router.push({
       pathname: '/checkout',
@@ -421,12 +445,13 @@ function NewArrivalCard({ product, onPress }) {
           {product?.name || 'Ayurvedic Essential'}
         </Text>
 
-        {/* RATING ROW */}
-        <View style={styles.ratingRow}>
-          <Ionicons name="star" size={11.5} color="#F5A623" />
-          <Text style={styles.ratingText}>
-            {rating.toFixed(1)} ({reviews} reviews)
-          </Text>
+        {/* RATING BADGE */}
+        <View style={styles.ratingBadge}>
+          <Ionicons name="star" size={10} color="#D9A52E" />
+          <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text>
+          {reviews > 0 && (
+            <Text style={styles.reviewText}>({reviews})</Text>
+          )}
         </View>
 
         {/* PRICE & DISCOUNT ROW */}
@@ -517,6 +542,10 @@ function NewArrivalCard({ product, onPress }) {
           </Pressable>
         </View>
       </View>
+      <AuthRequiredModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
     </Pressable>
   );
 }
@@ -528,14 +557,12 @@ function NewArrivalCard({ product, onPress }) {
 const styles = StyleSheet.create({
   sectionContainer: {
     width: '100%',
-    marginTop: 6,
-    marginBottom: 6,
+    marginTop: 1,
   },
 
   gradientSurface: {
     width: '100%',
     paddingTop: 18,
-    paddingBottom: 20,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -600,9 +627,9 @@ const styles = StyleSheet.create({
 
   eyebrowText: {
     fontFamily: 'InterSemiBold',
-    fontSize: 18.5,
+    fontSize: 20.5,
     letterSpacing: 1.8,
-    color: '#8C4E3A',
+    color: '#41251C',
     fontWeight: '700',
   },
 
@@ -739,17 +766,31 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 
-  ratingRow: {
+  ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    marginBottom: 3,
+    alignSelf: 'flex-start',
+    gap: 2.5,
+    backgroundColor: '#FFF8E7',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 0.8,
+    borderColor: '#F3E5C8',
+    marginBottom: 4,
   },
 
-  ratingText: {
-    fontFamily: 'InterMedium',
+  ratingValue: {
+    fontFamily: 'InterSemiBold',
     fontSize: 10,
-    color: '#556052',
+    fontWeight: '700',
+    color: '#123D2B',
+  },
+
+  reviewText: {
+    fontFamily: 'InterMedium',
+    fontSize: 9,
+    color: '#716F68',
   },
 
   priceRow: {

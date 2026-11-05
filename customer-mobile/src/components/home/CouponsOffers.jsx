@@ -10,10 +10,59 @@ import * as Clipboard from 'expo-clipboard';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 
 const APPLIED_COUPON_STORAGE_KEY = '@aumveda_applied_coupon';
 
+// Matches the exact offers shown in the reference image
+export const FALLBACK_COUPONS = [
+  {
+    id: 'shop40',
+    code: 'SHOP40',
+    discount_type: 'percentage',
+    discount_value: 40,
+    description: 'Get flat 40% off on orders above 5999',
+    min_order_value: 5999,
+  },
+  {
+    id: 'diwali26',
+    code: 'DIWALI26',
+    discount_type: 'percentage',
+    discount_value: 26,
+    description: 'Get flat 26% off on your diwali purchase on orders above 799',
+    min_order_value: 799,
+  },
+  {
+    id: 'welcome10',
+    code: 'WELCOME10',
+    discount_type: 'percentage',
+    discount_value: 10,
+    description: 'Welcome discount',
+    min_order_value: 499,
+  },
+];
+
+// Color themes per card matching reference screenshot: Mint Green, Lavender, Buttery Gold
+const COUPON_THEMES = [
+  {
+    colBg: '#EBF5E7',
+    textColor: '#174C26',
+    borderColor: '#DFEFD4',
+  },
+  {
+    colBg: '#F5ECF8',
+    textColor: '#48164E',
+    borderColor: '#EBD8F5',
+  },
+  {
+    colBg: '#FFF7E4',
+    textColor: '#8C590A',
+    borderColor: '#F8EAC2',
+  },
+];
+
 export default function CouponsOffers({ coupons = [] }) {
+  const router = useRouter();
   const [copiedCode, setCopiedCode] = useState(null);
   const [feedbackToast, setFeedbackToast] = useState('');
   const copiedTimerRef = useRef(null);
@@ -26,14 +75,16 @@ export default function CouponsOffers({ coupons = [] }) {
     };
   }, []);
 
-  const activeCoupons = (Array.isArray(coupons) ? coupons : []).slice(0, 3);
+  const activeCoupons =
+    Array.isArray(coupons) && coupons.length > 0
+      ? coupons
+      : FALLBACK_COUPONS;
 
   const handleCopy = useCallback(async (code, coupon) => {
     try {
       await Clipboard.setStringAsync(code);
       setCopiedCode(code);
 
-      // Auto-revert back to "Copy" after 2.5 seconds
       if (copiedTimerRef.current) {
         clearTimeout(copiedTimerRef.current);
       }
@@ -68,10 +119,6 @@ export default function CouponsOffers({ coupons = [] }) {
     }
   }, []);
 
-  if (activeCoupons.length === 0) {
-    return null;
-  }
-
   const formatDiscountNumber = (coupon) => {
     if (coupon.discount_type === 'percentage') {
       return `${Number(coupon.discount_value)}%`;
@@ -91,164 +138,119 @@ export default function CouponsOffers({ coupons = [] }) {
 
   return (
     <View style={styles.outerContainer}>
-      {/* SEAMLESS WARM GOLDEN SANDALWOOD CANVAS (BLENDED EDGES, ZERO HARSH CUTOFFS) */}
+      {/* WARM SOFT BEIGE SURFACE (CLEAN, NO LEAF) */}
       <LinearGradient
-        colors={[
-          '#F5F1E8', // Blends seamlessly into page background (no hard top border)
-          '#F7EFE3', // Gentle warm sandstone dawn
-          '#F4E5D1', // Soft warm honey sandalwood
-          '#EFDCC4', // Core rich golden amber center
-          '#F4E5D1', // Soft warm honey sandalwood
-          '#F7EFE3', // Gentle warm sandstone dawn
-          '#F5F1E8', // Blends seamlessly back into page background (no hard bottom border)
-        ]}
-        locations={[0, 0.12, 0.28, 0.5, 0.72, 0.88, 1]}
+        colors={['#F8EFE5', '#F5E8DC', '#EFE1D2']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
-        style={styles.cardSection}
+        style={styles.gradientSurface}
       >
-        {/* TOP-RIGHT SUBTLE BOTANICAL SANDALWOOD FOLIAGE WATERMARK */}
-        <View style={styles.foliageWrap} pointerEvents="none">
-          <MaterialCommunityIcons
-            name="leaf"
-            size={52}
-            color="#D8C5AE"
-            style={styles.foliageLeafOne}
-          />
-          <MaterialCommunityIcons
-            name="leaf"
-            size={34}
-            color="#E7D6C2"
-            style={styles.foliageLeafTwo}
-          />
-        </View>
-
-        {/* SECTION EYEBROW & MOTIF */}
-        <View style={styles.headerContainer}>
-          <View style={styles.motifRow}>
+        {/* HEADER ROW: TICKET PERCENT ICON + "Available Coupons" + VIEW ALL BUTTON */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
             <MaterialCommunityIcons
-              name="leaf"
-              size={12}
-              color="#8A5A20"
-              style={styles.motifLeftLeaf}
+              name="ticket-percent-outline"
+              size={24}
+              color="#633611"
+              style={styles.ticketIcon}
             />
-            <MaterialCommunityIcons
-              name="leaf"
-              size={12}
-              color="#8A5A20"
-              style={styles.motifRightLeaf}
-            />
+            <Text style={styles.title}>Available Coupons</Text>
           </View>
 
-          <View style={styles.eyebrowRow}>
-            <View style={styles.eyebrowLine} />
-            <Text style={styles.eyebrowText}>EXCLUSIVE OFFERS</Text>
-            <View style={styles.eyebrowLine} />
-          </View>
-
-          {/* MAIN HEADING ROW */}
-          <View style={styles.headingRow}>
-            <View style={styles.headingTextCol}>
-              <Text style={styles.title}>Available Coupons</Text>
-              <Text style={styles.subtitle}>
-                Use these offers at checkout and save more.
-              </Text>
-            </View>
-
-            <View style={styles.badgeChip}>
-              <MaterialCommunityIcons
-                name="ticket-percent"
-                size={13}
-                color="#123D2B"
-              />
-              <Text style={styles.badgeText}>
-                {activeCoupons.length} {activeCoupons.length === 1 ? 'OFFER' : 'OFFERS'}
-              </Text>
-            </View>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="View all available coupons"
+            onPress={() => router.push('/coupons')}
+            style={({ pressed }) => [
+              styles.viewAllBtn,
+              pressed && styles.cardPressed,
+            ]}
+          >
+            <Text style={styles.viewAllText}>View All</Text>
+            <Ionicons name="arrow-forward" size={12} color="#2C160C" />
+          </Pressable>
         </View>
 
         {/* FEEDBACK TOAST BANNER */}
         {feedbackToast ? (
           <View style={styles.toastBanner}>
-            <Ionicons name="checkmark-circle" size={13} color="#123D2B" />
+            <Ionicons name="checkmark-circle" size={13} color="#1A5323" />
             <Text style={styles.toastText}>{feedbackToast}</Text>
           </View>
         ) : null}
 
-        {/* FULL-WIDTH STACK OF TICKET CHIPS WITH SCALLOP NOTCHES */}
-        <View style={styles.chipsContainer}>
-          {activeCoupons.map((coupon) => {
+        {/* STATIC 3-COLUMN ROW OF COUPON TICKETS (NO HORIZONTAL SCROLL) */}
+        <View style={styles.cardsRow}>
+          {activeCoupons.slice(0, 3).map((coupon, index) => {
             const isCopied = copiedCode === coupon.code;
             const discountNum = formatDiscountNumber(coupon);
             const subText = getSubText(coupon);
+            const theme = COUPON_THEMES[index % COUPON_THEMES.length];
 
             return (
               <Pressable
-                key={coupon.id || coupon.code}
+                key={coupon.id || coupon.code || index}
                 style={({ pressed }) => [
-                  styles.couponChip,
-                  pressed && styles.couponChipPressed,
+                  styles.couponCard,
+                  pressed && styles.cardPressed,
                 ]}
                 onPress={() => handleCopy(coupon.code, coupon)}
                 accessibilityRole="button"
                 accessibilityLabel={`Coupon ${coupon.code}, ${discountNum} ${subText}`}
               >
-                {/* 4 SCALLOPED NOTCHES ON LEFT EDGE (BLEND WITH BACKGROUND) */}
-                <View style={styles.notchesColumn} pointerEvents="none">
-                  <View style={styles.notchCircle} />
-                  <View style={styles.notchCircle} />
-                  <View style={styles.notchCircle} />
-                  <View style={styles.notchCircle} />
-                </View>
+                {/* LEFT INWARD TICKET NOTCH */}
+                <View style={styles.notchLeft} pointerEvents="none" />
 
-                {/* LEFT: DISCOUNT VALUE */}
-                <View style={styles.discountCol}>
+                {/* RIGHT INWARD TICKET NOTCH */}
+                <View style={styles.notchRight} pointerEvents="none" />
+
+                {/* LEFT: PASTEL DISCOUNT COLUMN */}
+                <View
+                  style={[
+                    styles.discountCol,
+                    { backgroundColor: theme.colBg },
+                  ]}
+                >
                   <Text
                     style={[
                       styles.discountNumber,
+                      { color: theme.textColor },
                       discountNum === 'FREE' && styles.discountNumberFree,
                     ]}
                     numberOfLines={1}
                   >
                     {discountNum}
                   </Text>
-                  <Text style={styles.discountSub} numberOfLines={1}>
+                  <Text
+                    style={[
+                      styles.discountSub,
+                      { color: theme.textColor },
+                    ]}
+                    numberOfLines={1}
+                  >
                     {subText}
                   </Text>
                 </View>
 
-                {/* VERTICAL DIVIDER */}
+                {/* VERTICAL DASHED DIVIDER */}
                 <View style={styles.verticalDivider} />
 
-                {/* CENTER: COUPON CODE & DESCRIPTION */}
-                <View style={styles.centerInfoCol}>
-                  <Text style={styles.codeText}>{coupon.code}</Text>
+                {/* RIGHT: COUPON CODE & DESCRIPTION */}
+                <View style={styles.infoCol}>
+                  <View style={styles.codeRow}>
+                    <Text style={styles.codeText}>{coupon.code}</Text>
+                    {isCopied && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={10}
+                        color="#1A5323"
+                      />
+                    )}
+                  </View>
 
                   <Text style={styles.descText} numberOfLines={2}>
-                    {coupon.description || `Orders above ₹${coupon.min_order_value || 0}`}
-                  </Text>
-                </View>
-
-                {/* RIGHT: COPY ACTION PILL */}
-                <View
-                  style={[
-                    styles.copyBtn,
-                    isCopied && styles.copiedBtn,
-                  ]}
-                >
-                  <Ionicons
-                    name={isCopied ? 'checkmark' : 'copy-outline'}
-                    size={12.5}
-                    color={isCopied ? '#123D2B' : '#FFFFFF'}
-                  />
-                  <Text
-                    style={[
-                      styles.copyBtnText,
-                      isCopied && styles.copiedBtnText,
-                    ]}
-                  >
-                    {isCopied ? 'Copied' : 'Copy'}
+                    {coupon.description ||
+                      `Get discount on orders above ₹${coupon.min_order_value || 0}`}
                   </Text>
                 </View>
               </Pressable>
@@ -260,148 +262,92 @@ export default function CouponsOffers({ coupons = [] }) {
   );
 }
 
+// ============================================================
+// STYLES
+// ============================================================
+
 const styles = StyleSheet.create({
-  /* OUTER CONTAINER */
   outerContainer: {
     width: '100%',
-    marginHorizontal: 0,
-    paddingHorizontal: 0,
-    marginTop: 6,
-    marginBottom: 6,
+    paddingHorizontal: 12,
+    marginTop: 10,
+    marginBottom: 12,
   },
 
-  /* WARM SANDALWOOD SECTION WITH SEAMLESS BLENDED EDGES */
-  cardSection: {
+  /* WARM VANILLA / BEIGE SURFACE */
+  gradientSurface: {
     width: '100%',
-    paddingTop: 18,
-    paddingBottom: 20,
-    paddingHorizontal: 16,
-    position: 'relative',
+    borderRadius: 24,
+    paddingTop: 14,
+    paddingBottom: 16,
+    paddingHorizontal: 10,
+    borderWidth: 1.2,
+    borderColor: '#EBDCCE',
+    shadowColor: '#381E11',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
     overflow: 'hidden',
   },
 
-  /* TOP RIGHT BOTANICAL SANDALWOOD FOLIAGE WATERMARK */
-  foliageWrap: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    opacity: 0.35,
-    transform: [{ rotate: '15deg' }],
-  },
-
-  foliageLeafOne: {
-    opacity: 0.85,
-  },
-
-  foliageLeafTwo: {
-    position: 'absolute',
-    top: 14,
-    right: 14,
-    opacity: 0.7,
-    transform: [{ rotate: '-25deg' }],
-  },
-
-  /* HEADER CONTAINER */
-  headerContainer: {
-    marginBottom: 12,
-    zIndex: 2,
-  },
-
-  motifRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    marginBottom: 2,
-  },
-
-  motifLeftLeaf: {
-    transform: [{ rotate: '-25deg' }],
-  },
-
-  motifRightLeaf: {
-    transform: [{ rotate: '25deg' }, { scaleX: -1 }],
-  },
-
-  eyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-
-  eyebrowLine: {
-    width: 20,
-    height: 1.2,
-    backgroundColor: '#8A5A20',
-  },
-
-  eyebrowText: {
-    fontFamily: 'InterSemiBold',
-    fontSize: 9.5,
-    letterSpacing: 1.8,
-    color: '#8A5A20',
-    fontWeight: '700',
-  },
-
-  headingRow: {
+  /* HEADER ROW */
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 2,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
 
-  headingTextCol: {
-    flex: 1,
+  ticketIcon: {
+    transform: [{ rotate: '-12deg' }],
   },
 
   title: {
     fontFamily: 'PlayfairSemiBold',
-    fontSize: 21,
-    color: '#123D2B',
-    fontStyle: 'italic',
-    lineHeight: 26,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#381E10',
+    letterSpacing: -0.2,
   },
 
-  subtitle: {
-    fontFamily: 'InterRegular',
-    fontSize: 11,
-    color: '#5A5448',
-    marginTop: 2,
-  },
-
-  badgeChip: {
+  viewAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E8DCCB',
-    shadowColor: '#3A2016',
+    borderColor: '#EDE1D5',
+    shadowColor: '#381E11',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
 
-  badgeText: {
+  viewAllText: {
     fontFamily: 'InterSemiBold',
-    fontSize: 9.5,
-    color: '#123D2B',
-    fontWeight: '800',
-    letterSpacing: 0.4,
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#2C160C',
   },
 
   toastBanner: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#F3E4D0',
+    backgroundColor: '#395C21',
     marginBottom: 10,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -411,150 +357,143 @@ const styles = StyleSheet.create({
   toastText: {
     fontFamily: 'InterMedium',
     fontSize: 10.5,
-    color: '#123D2B',
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 
-  /* VERTICAL STACK OF 100% WIDTH TICKET CHIPS */
-  chipsContainer: {
+  /* STATIC 3-CARD ROW (NO HORIZONTAL SCROLL) */
+  cardsRow: {
     width: '100%',
-    gap: 10,
-    zIndex: 2,
-  },
-
-  couponChip: {
-    width: '100%',
-    minHeight: 58,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#EADBCE',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    paddingLeft: 12,
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+
+  /* COUPON TICKET CARD */
+  couponCard: {
+    flex: 1,
+    height: 72,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EDE2D7',
     position: 'relative',
     overflow: 'hidden',
-    shadowColor: '#3A2016',
+    shadowColor: '#381E11',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
     elevation: 2,
   },
 
-  couponChipPressed: {
-    transform: [{ scale: 0.99 }],
+  cardPressed: {
+    transform: [{ scale: 0.97 }],
     opacity: 0.92,
   },
 
-  /* 4 SCALLOPED NOTCHES ON LEFT EDGE (BLEND WITH SEAMLESS BACKGROUND) */
-  notchesColumn: {
+  /* LEFT INWARD NOTCH (SEMICIRCULAR CUTOUT) */
+  notchLeft: {
     position: 'absolute',
     left: -5,
-    top: 6,
-    bottom: 6,
-    width: 10,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    zIndex: 3,
-  },
-
-  notchCircle: {
+    top: '50%',
+    marginTop: -5,
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#EFDCC4',
+    backgroundColor: '#F5E8DC',
     borderWidth: 1,
-    borderColor: '#E4D0B8',
+    borderColor: '#EDE2D7',
+    zIndex: 10,
   },
 
-  /* DISCOUNT COLUMN (LEFT) */
+  /* RIGHT INWARD NOTCH (SEMICIRCULAR CUTOUT) */
+  notchRight: {
+    position: 'absolute',
+    right: -5,
+    top: '50%',
+    marginTop: -5,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#F5E8DC',
+    borderWidth: 1,
+    borderColor: '#EDE2D7',
+    zIndex: 10,
+  },
+
+  /* LEFT PASTEL DISCOUNT COLUMN */
   discountCol: {
-    width: 54,
+    width: '38%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingLeft: 4,
+    paddingHorizontal: 2,
   },
 
   discountNumber: {
-    fontFamily: 'InterSemiBold',
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#123D2B',
-    lineHeight: 21,
+    fontFamily: 'PlayfairSemiBold',
+    fontSize: 15.5,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+    lineHeight: 19,
+    textAlign: 'center',
   },
 
   discountNumberFree: {
-    fontSize: 13,
-    lineHeight: 15,
+    fontSize: 11,
+    letterSpacing: 0,
   },
 
   discountSub: {
-    fontFamily: 'InterSemiBold',
-    fontSize: 9,
+    fontFamily: 'PlayfairMedium',
+    fontSize: 8.5,
     fontWeight: '700',
-    color: '#8A5A20',
     letterSpacing: 0.5,
-    marginTop: 1,
+    textAlign: 'center',
+    marginTop: -1,
   },
 
-  /* VERTICAL DIVIDER */
+  /* VERTICAL DASHED DIVIDER */
   verticalDivider: {
     width: 1,
-    height: 36,
-    backgroundColor: '#EBE2D4',
-    marginHorizontal: 12,
+    height: '100%',
+    borderStyle: 'dashed',
+    borderWidth: 0.8,
+    borderColor: '#DED3C8',
   },
 
-  /* CENTER INFO COLUMN */
-  centerInfoCol: {
+  /* RIGHT INFO COLUMN */
+  infoCol: {
     flex: 1,
-    marginRight: 8,
+    height: '100%',
     justifyContent: 'center',
+    paddingLeft: 5,
+    paddingRight: 6,
+    paddingVertical: 4,
+  },
+
+  codeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
 
   codeText: {
     fontFamily: 'InterSemiBold',
-    fontSize: 13.5,
+    fontSize: 10,
     fontWeight: '800',
-    color: '#123D2B',
-    letterSpacing: 0.5,
+    color: '#28170F',
+    letterSpacing: 0.1,
   },
 
   descText: {
     fontFamily: 'InterRegular',
-    fontSize: 9.8,
-    color: '#555045',
-    lineHeight: 14,
-    marginTop: 1.5,
-  },
-
-  /* COPY ACTION BUTTON (RIGHT) */
-  copyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4.5,
-    backgroundColor: '#173F1D',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
-  },
-
-  copiedBtn: {
-    backgroundColor: '#EAF4EC',
-    borderWidth: 0.9,
-    borderColor: '#173F1D',
-  },
-
-  copyBtnText: {
-    fontFamily: 'InterSemiBold',
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-
-  copiedBtnText: {
-    color: '#173F1D',
+    fontSize: 8.5,
+    lineHeight: 11,
+    color: '#554942',
+    marginTop: 2,
   },
 });

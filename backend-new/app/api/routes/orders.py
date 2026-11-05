@@ -204,6 +204,7 @@ def create_order(
                     detail="Unable to create order. Please try again.",
                     )
             order = order[0]
+        create_admin_order_notification(order)
 
         return {
             "status": "success",
@@ -345,7 +346,38 @@ def get_orders(
             )
             variants = variants_response.data or []
 
-        # 6. Create lookup dictionaries.
+        # 6. Fetch product images and attach each product's primary image.
+        product_images = []
+        if product_ids:
+            images_response = (
+                supabase
+                .table("product_images")
+                .select("*")
+                .in_("product_id", product_ids)
+                .execute()
+            )
+            product_images = images_response.data or []
+
+        images_by_product_id = {}
+        for image in product_images:
+            product_id = str(image.get("product_id"))
+            images_by_product_id.setdefault(product_id, []).append(image)
+
+        for product in products:
+            images = images_by_product_id.get(str(product["id"]), [])
+            product["product_images"] = images
+
+            primary_image = next(
+                (image for image in images if image.get("is_primary")),
+                None,
+            )
+            if primary_image:
+                product["image_url"] = (
+                    primary_image.get("image_url")
+                    or primary_image.get("url")
+                )
+
+        # 7. Create lookup dictionaries.
         products_by_id = {
             product["id"]: product
             for product in products
@@ -356,7 +388,7 @@ def get_orders(
             for variant in variants
         }
 
-        # 7. Attach products and variants to each order item.
+        # 8. Attach products and variants to each order item.
         items_by_order = {}
 
         for item in order_items:
@@ -374,7 +406,7 @@ def get_orders(
 
             items_by_order[order_id].append(item)
 
-        # 8. Attach items to every order.
+        # 9. Attach items to every order.
         for order in orders:
             order["items"] = items_by_order.get(
                 order["id"], []
@@ -419,6 +451,223 @@ def execute_supabase_read(query, retries=3):
             time.sleep(delay)
 
 
+# ============================================================
+# BUY AGAIN - PREVIOUSLY PURCHASED PRODUCTS
+# ============================================================
+
+@router.get("/buy-again")
+def get_buy_again_products(
+    customer_id: str = Depends(get_current_customer_id),
+):
+    try:
+        # 1. Get delivered orders belonging to this customer.
+        orders_response = (
+            supabase
+            .table("orders")
+            .select("id, created_at")
+            .eq("customer_id", customer_id)
+            .eq("status", "delivered")
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        orders = orders_response.data or []
+
+        if not orders:
+            return {
+                "status": "success",
+                "count": 0,
+                "data": [],
+            }
+
+        order_ids = [order["id"] for order in orders]
+
+        # 2. Get items from delivered orders.
+        items_response = (
+            supabase
+            .table("order_items")
+            .select(
+                "id, order_id, product_id, variant_id, "
+                "product_name, variant_name, quantity, "
+                "unit_price, total_price, created_at"
+            )
+            .in_("order_id", order_ids)
+            .execute()
+        )
+
+        order_items = items_response.data or []
+
+        if not order_items:
+            return {
+                "status": "success",
+                "count": 0,
+                "data": [],
+            }
+
+        # 3. Collect product and variant IDs.
+        product_ids = list({
+            item["product_id"]
+            for item in order_items
+            if item.get("product_id")
+        })
+
+        variant_ids = list({
+            item["variant_id"]
+            for item in order_items
+            if item.get("variant_id")
+        })
+
+        # 4. Fetch current product details.
+        products = []
+
+        if product_ids:
+            products_response = (
+                supabase
+                .table("products")
+                .select("*")
+                .in_("id", product_ids)
+                .execute()
+            )
+
+            products = products_response.data or []
+
+        # 5. Fetch current variant details.
+        variants = []
+
+        if variant_ids:
+            variants_response = (
+                supabase
+                .table("product_variants")
+                .select("*")
+                .in_("id", variant_ids)
+                .execute()
+            )
+
+            variants = variants_response.data or []
+
+        # 5A. Fetch product images.
+        product_images = []
+
+        if product_ids:
+            images_response = (
+                supabase
+                .table("product_images")
+                .select("*")
+                .in_("product_id", product_ids)
+                .execute()
+            )
+
+            product_images = images_response.data or []
+
+        images_by_product_id = {}
+
+        for image in product_images:
+            product_id = str(image.get("product_id"))
+            images_by_product_id.setdefault(product_id, []).append(image)
+
+        # Attach images to each product.
+        for product in products:
+            product["product_images"] = images_by_product_id.get(
+                str(product["id"]),
+                [],
+            )
+            primary_image = next(
+                (
+                    image for image in product["product_images"]
+                    if image.get("is_primary")
+                ),
+                None,
+            )
+
+            if primary_image:
+                product["image_url"] = (
+                    primary_image.get("image_url")
+                    or primary_image.get("url")
+                )
+            elif product["product_images"]:
+                first_image = product["product_images"][0]
+                product["image_url"] = (
+                    first_image.get("image_url")
+                    or first_image.get("url")
+                )
+
+        products_by_id = {
+            str(product["id"]): product
+            for product in products
+        }
+
+        variants_by_id = {
+            str(variant["id"]): variant
+            for variant in variants
+        }
+
+        # 6. Combine previous purchase information.
+        buy_again = {}
+
+        for item in order_items:
+            product_id = item.get("product_id")
+
+            if not product_id:
+                continue
+
+            product = products_by_id.get(str(product_id))
+
+            # Skip products that are no longer available in the catalogue.
+            if not product:
+                continue
+
+            variant = variants_by_id.get(
+                str(item.get("variant_id"))
+            )
+
+            key = (
+                f"{product_id}:"
+                f"{item.get('variant_id') or 'default'}"
+            )
+
+            if key not in buy_again:
+                buy_again[key] = {
+                    "product": product,
+                    "variant": variant,
+                    "last_purchased_at": item.get("created_at"),
+                    "last_order_id": item.get("order_id"),
+                    "total_quantity_purchased": 0,
+                    "purchase_count": 0,
+                    "last_purchase_price": item.get("unit_price"),
+                }
+
+            buy_again[key]["total_quantity_purchased"] += (
+                item.get("quantity") or 0
+            )
+
+            buy_again[key]["purchase_count"] += 1
+
+        # 7. Return latest purchases first.
+        results = sorted(
+            buy_again.values(),
+            key=lambda item: item.get("last_purchased_at") or "",
+            reverse=True,
+        )
+
+        return {
+            "status": "success",
+            "count": len(results),
+            "data": results,
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logger.exception(
+            "Failed to load Buy Again products"
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to load previously purchased products.",
+        )
+
 
 @router.get("/{order_id}")
 def get_order(
@@ -428,7 +677,7 @@ def get_order(
     try:
         logger.info("GET ORDER: Fetching order %s", order_id)
 
-        response = (
+        response = execute_supabase_read(
             supabase
             .table("orders")
             .select(
@@ -456,7 +705,6 @@ def get_order(
             .eq("id", str(order_id))
             .eq("customer_id", customer_id)
             .limit(1)
-            .execute()
         )
 
         logger.info("GET ORDER: Order query succeeded")
@@ -473,12 +721,11 @@ def get_order(
 
         logger.info("GET ORDER: Fetching order items")
 
-        items_response = (
+        items_response = execute_supabase_read(
             supabase
             .table("order_items")
             .select("*")
             .eq("order_id", str(order_id))
-            .execute()
         )
 
         order_items = items_response.data or []
@@ -505,12 +752,11 @@ def get_order(
         if product_ids:
             logger.info("GET ORDER: Fetching products")
 
-            products_response = (
+            products_response = execute_supabase_read(
                 supabase
                 .table("products")
                 .select("*, product_images(*)")
                 .in_("id", product_ids)
-                .execute()
             )
 
             products = products_response.data or []
@@ -552,10 +798,30 @@ def get_order(
         }
 
         for item in order_items:
-            item["product"] = products_by_id.get(
-                str(item.get("product_id"))
-            )
+            product = products_by_id.get(str(item.get("product_id")))
+            if product:
+                product_images = product.get("product_images") or []
+                primary_image = next(
+                    (
+                        image for image in product_images
+                        if image.get("is_primary") is True
+                    ),
+                    None,
+                )
+                selected_image = primary_image or (
+                    product_images[0] if product_images else None
+                )
+                image_url = (
+                    selected_image.get("image_url")
+                    if selected_image
+                    else None
+                )
+                product["image_url"] = image_url
+                item["image_url"] = image_url
+            else:
+                item["image_url"] = None
 
+            item["product"] = product
             item["variant"] = variants_by_id.get(
                 str(item.get("variant_id"))
             )
@@ -582,4 +848,58 @@ def get_order(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to load order details. Please try again.",
+        )
+# ============================================================
+# CREATE ADMIN NOTIFICATION
+# ============================================================
+
+def create_admin_order_notification(order: dict):
+    try:
+        # Get all active admin accounts.
+        admins_response = (
+            supabase
+            .table("profiles")
+            .select("id")
+            .eq("role", "admin")
+            .eq("is_active", True)
+            .execute()
+        )
+
+        admins = admins_response.data or []
+
+        if not admins:
+            logger.warning("No active admin accounts found for order notification.")
+            return
+
+        order_id = order.get("id")
+        order_number = order.get("order_number") or str(order_id)
+
+        notifications = []
+
+        for admin in admins:
+            notifications.append({
+                "recipient_id": admin["id"],
+                "recipient_role": "admin",
+                "title": "New Order Received",
+                "message": f"New order {order_number} has been placed.",
+                "notification_type": "new_order",
+                "reference_type": "order",
+                "reference_id": order_id,
+                "is_read": False,
+            })
+
+        if notifications:
+            supabase.table("notifications").insert(
+                notifications
+            ).execute()
+
+            logger.info(
+                "Admin order notification created for order %s",
+                order_number,
+            )
+
+    except Exception:
+        # Notification failure must not interrupt order creation.
+        logger.exception(
+            "Failed to create admin notification for new order."
         )

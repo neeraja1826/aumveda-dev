@@ -49,6 +49,7 @@ export default function TabsLayout() {
         name="categories"
         options={{
           title: 'Products',
+          tabBarStyle: { display: 'none' },
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'grid' : 'grid-outline'}

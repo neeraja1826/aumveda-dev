@@ -19,6 +19,7 @@ import {
 import {
   WishlistProvider,
 } from '../src/context/WishlistContext';
+import { getPostLoginRoute } from '../src/utils/authNavigation';
 
 function AppNavigator() {
   const {
@@ -36,18 +37,11 @@ function AppNavigator() {
       return;
     }
 
-    const currentGroup = segments[0];
-    const isInAuthGroup = currentGroup === '(auth)';
-
-    
+    const isInAuthGroup = segments[0] === '(auth)';
 
     // Logged-in users should not remain on login/ screens.
     if (isAuthenticated && isInAuthGroup) {
-      router.replace(
-        params.returnTo === '/checkout'
-          ? '/checkout'
-          : '/(tabs)'
-      );
+      router.replace(getPostLoginRoute(params.returnTo));
     }
   }, [loading, isAuthenticated, segments, router, params.returnTo]);
 

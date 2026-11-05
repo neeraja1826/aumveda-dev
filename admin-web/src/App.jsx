@@ -18,7 +18,7 @@ import Reports from './modules/Reports.jsx';
 import Settings from './modules/Settings.jsx';
 import Login from './modules/Login.jsx';
 import Coupons from './modules/Coupons.jsx';
-
+import Notifications from './modules/Notifications.jsx';
 import { getAdminToken, setAdminToken } from './services/api.js';
 import './index.css';
 
@@ -36,6 +36,7 @@ const pages = {
   [ADMIN_PAGES.REPORTS]: Reports,
   [ADMIN_PAGES.SETTINGS]: Settings,
   [ADMIN_PAGES.COUPONS]: Coupons,
+  [ADMIN_PAGES.NOTIFICATIONS]: Notifications,
 };
 
 export default function App() {

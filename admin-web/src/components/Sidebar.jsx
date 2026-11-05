@@ -13,6 +13,7 @@ import {
   Warehouse,
   RotateCcw,
   TicketPercent,
+  Bell,
 } from 'lucide-react';
 
 export const ADMIN_PAGES = {
@@ -29,6 +30,7 @@ export const ADMIN_PAGES = {
   FINANCE: 'Finance',
   REPORTS: 'Reports',
   SETTINGS: 'Settings',
+  NOTIFICATIONS: 'Notifications',
 };
 
 const links = [
@@ -45,6 +47,7 @@ const links = [
   [ADMIN_PAGES.FINANCE, Wallet],
   [ADMIN_PAGES.REPORTS, BarChart3],
   [ADMIN_PAGES.SETTINGS, Settings],
+  [ADMIN_PAGES.NOTIFICATIONS, Bell],
 ];
 
 export default function Sidebar({
