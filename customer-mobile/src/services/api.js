@@ -15,7 +15,6 @@ export async function apiRequest(endpoint, options = {}) {
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${baseUrl}${path}`;
 
-  console.log('API REQUEST:', url);
 
   // Get the current logged-in user's session
   const {

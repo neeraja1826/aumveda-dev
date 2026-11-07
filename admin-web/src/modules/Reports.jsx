@@ -150,6 +150,40 @@ export default function Reports() {
     );
   }, [items, search]);
 
+  function exportReportCsv() {
+    if (!filteredItems.length || !columns.length) return;
+
+    const escapeCsvValue = (value) => {
+      const text = value == null
+        ? ''
+        : typeof value === 'object'
+          ? JSON.stringify(value)
+          : String(value);
+
+      return `\"${text.replaceAll('\"', '\"\"')}\"`;
+    };
+
+    const header = columns.map(escapeCsvValue).join(',');
+    const rows = filteredItems.map((item) =>
+      columns.map((column) => escapeCsvValue(item[column])).join(',')
+    );
+
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], {
+      type: 'text/csv;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `aumveda-${report}-report-${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function retryOverview() {
     // Reloading the page is unnecessary; use the current overview effect
     // by keeping overview refresh separate from the detailed report.
@@ -423,6 +457,15 @@ export default function Reports() {
               placeholder="Search report…"
               aria-label="Search detailed report"
             />
+
+            <button
+              type="button"
+              className="report-refresh"
+              disabled={reportLoading || !filteredItems.length}
+              onClick={exportReportCsv}
+            >
+              Export CSV
+            </button>
 
             <button
               type="button"

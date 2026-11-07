@@ -22,6 +22,7 @@ export default function Dashboard({ onNavigate }) {
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -36,7 +37,7 @@ export default function Dashboard({ onNavigate }) {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, []);
+  }, [reload]);
 
   return (
     <section className="module-page dashboard-page">
@@ -46,7 +47,16 @@ export default function Dashboard({ onNavigate }) {
         description="Real-time operations, fulfillment metrics, and inventory overview."
         badgeText="Live Operations"
         doodle="leaf"
-      />
+      >
+        <button
+          type="button"
+          className="primary-button dashboard-refresh-button"
+          onClick={() => setReload((current) => current + 1)}
+          disabled={loading}
+        >
+          {loading ? 'Refreshing…' : 'Refresh'}
+        </button>
+      </AyurvedicHeroBanner>
 
       {loading && (
         <div className="dashboard-loading-card">
@@ -55,7 +65,19 @@ export default function Dashboard({ onNavigate }) {
         </div>
       )}
 
-      {error && <div className="error-state" role="alert">{error}</div>}
+      {error && (
+        <div className="error-state dashboard-error" role="alert">
+          <span>{error}</span>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setReload((current) => current + 1)}
+            disabled={loading}
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       {summary && (
         <>
@@ -176,6 +198,16 @@ export default function Dashboard({ onNavigate }) {
         .dashboard-page {
           align-content: start;
           gap: 24px;
+        }
+        .dashboard-refresh-button {
+          min-width: 90px;
+        }
+        .dashboard-error {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
         }
         .dashboard-loading-card {
           display: flex;

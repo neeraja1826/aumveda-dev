@@ -7,6 +7,7 @@ import {
   Power,
   X,
   Tag,
+  Eye,
 } from 'lucide-react';
 
 import {
@@ -87,6 +88,7 @@ export default function Coupons() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [reload, setReload] = useState(0);
+  const [selectedCoupon, setSelectedCoupon] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -184,6 +186,14 @@ export default function Coupons() {
     setError('');
     setSuccess('');
     setShowForm(true);
+  }
+
+  function openDetails(coupon) {
+    setSelectedCoupon(coupon);
+  }
+
+  function closeDetails() {
+    setSelectedCoupon(null);
   }
 
   function closeForm() {
@@ -419,6 +429,15 @@ export default function Coupons() {
                       <div className="coupon-actions">
                         <button
                           type="button"
+                          className="coupon-view-btn"
+                          title="View coupon details"
+                          onClick={() => openDetails(coupon)}
+                        >
+                          <Eye size={16} />
+                        </button>
+
+                        <button
+                          type="button"
                           title="Edit coupon"
                           onClick={() => openEditForm(coupon)}
                         >
@@ -441,6 +460,112 @@ export default function Coupons() {
           </div>
         )}
       </div>
+
+      {selectedCoupon && (
+        <div className="coupon-modal-backdrop" onClick={closeDetails}>
+          <div
+            className="coupon-modal coupon-details-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="coupon-modal-header">
+              <div>
+                <span className="coupons-eyebrow">COUPON DETAILS</span>
+                <h3>{selectedCoupon.code || 'Coupon'}</h3>
+              </div>
+
+              <button
+                type="button"
+                className="coupon-close-btn"
+                onClick={closeDetails}
+                aria-label="Close coupon details"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="coupon-details-grid">
+              <div className="coupon-detail-item">
+                <span>Description</span>
+                <strong>{selectedCoupon.description || 'No description'}</strong>
+              </div>
+              <div className="coupon-detail-item">
+                <span>Status</span>
+                <strong>{selectedCoupon.is_active ? 'Active' : 'Inactive'}</strong>
+              </div>
+              <div className="coupon-detail-item">
+                <span>Discount</span>
+                <strong>{formatDiscount(selectedCoupon)}</strong>
+              </div>
+              <div className="coupon-detail-item">
+                <span>Minimum order</span>
+                <strong>₹{Number(selectedCoupon.min_order_value || 0).toLocaleString('en-IN')}</strong>
+              </div>
+              <div className="coupon-detail-item">
+                <span>Maximum discount</span>
+                <strong>
+                  {selectedCoupon.max_discount_amount == null
+                    ? 'No limit'
+                    : `₹${Number(selectedCoupon.max_discount_amount).toLocaleString('en-IN')}`}
+                </strong>
+              </div>
+              <div className="coupon-detail-item">
+                <span>Total usage limit</span>
+                <strong>{selectedCoupon.usage_limit ?? 'Unlimited'}</strong>
+              </div>
+              <div className="coupon-detail-item">
+                <span>Uses per customer</span>
+                <strong>{selectedCoupon.per_customer_limit ?? 1}</strong>
+              </div>
+              <div className="coupon-detail-item">
+                <span>First order only</span>
+                <strong>{selectedCoupon.first_order_only ? 'Yes' : 'No'}</strong>
+              </div>
+              <div className="coupon-detail-item">
+                <span>Starts</span>
+                <strong>{formatDate(selectedCoupon.starts_at)}</strong>
+              </div>
+              <div className="coupon-detail-item">
+                <span>Expires</span>
+                <strong>{formatDate(selectedCoupon.expires_at)}</strong>
+              </div>
+            </div>
+
+            <div className="coupon-detail-locations">
+              <span>Display locations</span>
+              <div>
+                {(selectedCoupon.display_locations || []).length
+                  ? selectedCoupon.display_locations.map((location) => (
+                      <span key={location}>{
+                        COUPON_PLACEMENTS.find((item) => item.value === location)?.label || location
+                      }</span>
+                    ))
+                  : <span>Not specified</span>}
+              </div>
+            </div>
+
+            <div className="coupon-modal-footer">
+              <button
+                type="button"
+                className="coupon-secondary-btn"
+                onClick={closeDetails}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="coupon-primary-btn"
+                onClick={() => {
+                  closeDetails();
+                  openEditForm(selectedCoupon);
+                }}
+              >
+                <Pencil size={16} />
+                Edit Coupon
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <div className="coupon-modal-backdrop">
@@ -644,6 +769,77 @@ export default function Coupons() {
           </div>
         </div>
       )}
+      <style>{`
+        .coupon-view-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          height: 34px;
+          border: 1px solid #dfe6dc;
+          border-radius: 8px;
+          background: #fff;
+          color: #31563f;
+          cursor: pointer;
+        }
+        .coupon-view-btn:hover {
+          background: #f5f8f3;
+        }
+        .coupon-details-modal {
+          max-width: 680px;
+        }
+        .coupon-details-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          padding: 20px 24px;
+        }
+        .coupon-detail-item {
+          padding: 13px 14px;
+          border: 1px solid #e5ebe2;
+          border-radius: 10px;
+          background: #fbfcfa;
+        }
+        .coupon-detail-item span,
+        .coupon-detail-locations > span {
+          display: block;
+          margin-bottom: 5px;
+          color: #737b73;
+          font-size: 11px;
+        }
+        .coupon-detail-item strong {
+          color: #26352d;
+          font-size: 13px;
+          line-height: 1.4;
+        }
+        .coupon-detail-locations {
+          padding: 0 24px 20px;
+        }
+        .coupon-detail-locations > div {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+        .coupon-detail-locations > div span {
+          padding: 6px 10px;
+          border-radius: 20px;
+          background: #eef5ec;
+          color: #31563f;
+          font-size: 12px;
+        }
+        @media (max-width: 640px) {
+          .coupon-details-grid {
+            grid-template-columns: 1fr;
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+          .coupon-detail-locations {
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+        }
+      `}</style>
+
     </section>
   );
 }

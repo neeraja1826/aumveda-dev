@@ -75,10 +75,10 @@ export default function AddressRoute() {
   // -----------------------------------------
 
   const [label, setLabel] =
-    useState('Home');
+    useState('');
 
   const [labelType, setLabelType] =
-    useState('Home');
+    useState('');
 
   const [recipientName, setRecipientName] =
     useState('');
@@ -172,8 +172,8 @@ export default function AddressRoute() {
   // -----------------------------------------
 
   const clearForm = () => {
-    setLabel('Home');
-    setLabelType('Home');
+    setLabel('');
+    setLabelType('');
     setRecipientName('');
     setPhone('');
     setAddressLine1('');
@@ -225,10 +225,12 @@ export default function AddressRoute() {
   // -----------------------------------------
 
   const validateForm = () => {
-    if (labelType === 'Other' && !label.trim()) {
+    if (!labelType || !label.trim()) {
       Alert.alert(
         'Missing address label',
-        'Please enter a label for this address.'
+        labelType === 'Other'
+          ? 'Please enter a label for this address.'
+          : 'Please select an address label.'
       );
       return false;
     }
@@ -658,7 +660,7 @@ const handleSelectAddress = async (address) => {
         >
           <View style={styles.formCard}>
             <Text style={styles.label}>
-              Address Line 1
+              Address Line 1 *
             </Text>
 
             <TextInput
@@ -694,7 +696,7 @@ const handleSelectAddress = async (address) => {
             />
 
             <Text style={styles.label}>
-              Phone Number
+              Phone Number *
             </Text>
 
             <TextInput
@@ -710,7 +712,7 @@ const handleSelectAddress = async (address) => {
             <View style={styles.row}>
               <View style={styles.half}>
                 <Text style={styles.label}>
-                  City
+                  City *
                 </Text>
 
                 <TextInput
@@ -726,7 +728,7 @@ const handleSelectAddress = async (address) => {
 
               <View style={styles.half}>
                 <Text style={styles.label}>
-                  State
+                  State *
                 </Text>
 
                 <TextInput
@@ -742,7 +744,7 @@ const handleSelectAddress = async (address) => {
             </View>
 
             <Text style={styles.label}>
-              Pincode
+              Postal Code *
             </Text>
 
             <TextInput
@@ -758,7 +760,7 @@ const handleSelectAddress = async (address) => {
             />
 
             <Text style={styles.label}>
-              Recipient Name
+              Recipient Name *
             </Text>
 
             <TextInput
@@ -770,7 +772,7 @@ const handleSelectAddress = async (address) => {
             />
 
             <Text style={styles.label}>
-              SAVE THIS ADDRESS AS
+              SAVE THIS ADDRESS AS *
             </Text>
 
             <View style={styles.labelChips}>

@@ -5,6 +5,7 @@ import {
   updateResourceStatus,
   updateVendorActiveStatus,
   getVendorDetails,
+  createVendor,
 } from '../services/adminService.js';
 import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
@@ -22,6 +23,27 @@ export default function Vendors() {
   const [vendorDetails, setVendorDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState('');
+  const [showCreateVendor, setShowCreateVendor] = useState(false);
+const [creatingVendor, setCreatingVendor] = useState(false);
+const [createVendorError, setCreateVendorError] = useState('');
+const [createdVendorCredentials, setCreatedVendorCredentials] = useState(null);
+
+const [vendorForm, setVendorForm] = useState({
+  business_name: '',
+  email: '',
+  phone: '',
+  password: '',
+  confirm_password: '',
+  legal_name: '',
+  description: '',
+  address_line1: '',
+  address_line2: '',
+  city: '',
+  state: '',
+  postal_code: '',
+  country: 'India',
+  commission_rate: 0,
+});
 
   async function openVendorDetails(item) {
     setSelectedVendor(item);
@@ -81,6 +103,56 @@ export default function Vendors() {
     };
   }, [status, search, reload]);
 
+  async function handleCreateVendor(event) {
+    event.preventDefault();
+
+    if (creatingVendor) return;
+
+    if (vendorForm.password !== vendorForm.confirm_password) {
+      setCreateVendorError('Password and confirm password do not match.');
+      return;
+    }
+
+    setCreatingVendor(true);
+    setCreateVendorError('');
+    setCreatedVendorCredentials(null);
+
+    try {
+      const payload = {
+        business_name: vendorForm.business_name.trim(),
+        email: vendorForm.email.trim(),
+        phone: vendorForm.phone.trim(),
+        password: vendorForm.password,
+        legal_name: vendorForm.legal_name.trim() || undefined,
+        description: vendorForm.description.trim() || undefined,
+        address_line1: vendorForm.address_line1.trim() || undefined,
+        address_line2: vendorForm.address_line2.trim() || undefined,
+        city: vendorForm.city.trim() || undefined,
+        state: vendorForm.state.trim() || undefined,
+        postal_code: vendorForm.postal_code.trim() || undefined,
+        country: vendorForm.country.trim() || 'India',
+        commission_rate: Number(vendorForm.commission_rate) || 0,
+      };
+
+      const result = await createVendor(payload);
+
+      const data = result?.data ?? result;
+
+      setCreatedVendorCredentials({
+        email: data?.credentials?.email || payload.email,
+        password: data?.credentials?.temporary_password || '',
+      });
+
+      setReload((current) => current + 1);
+    } catch (requestError) {
+      setCreateVendorError(
+        requestError.message || 'Unable to create vendor account.'
+      );
+    } finally {
+      setCreatingVendor(false);
+    }
+  }
+
   async function changeStatus(item, value) {
     if (updatingId) return;
 
@@ -136,6 +208,17 @@ export default function Vendors() {
             placeholder="Search business name or email..."
             aria-label="Search vendors"
           />
+          <button
+  type="button"
+  className="vendor-create-button"
+  onClick={() => {
+    setCreateVendorError('');
+    setCreatedVendorCredentials(null);
+    setShowCreateVendor(true);
+  }}
+>
+  + Create Vendor
+</button>
 
           <select
             value={status}
@@ -287,6 +370,12 @@ export default function Vendors() {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
                 {selectedVendor && (
   <div
     className="vendor-modal-overlay"
@@ -421,11 +510,372 @@ export default function Vendors() {
     </section>
   </div>
 )}
-              </tbody>
-            </table>
-          </div>
-        )}
+    {showCreateVendor && (
+  <div
+    className="vendor-modal-overlay"
+    onClick={() => {
+      if (!creatingVendor) {
+        setShowCreateVendor(false);
+      }
+    }}
+  >
+    <section
+      className="vendor-create-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-vendor-title"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="vendor-modal-header">
+        <div>
+          <h3 id="create-vendor-title">Create Vendor Account</h3>
+          <p>
+            Create the vendor account and generate login credentials.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="vendor-modal-close"
+          onClick={() => {
+            if (!creatingVendor) {
+              setShowCreateVendor(false);
+            }
+          }}
+          aria-label="Close create vendor"
+        >
+          ×
+        </button>
       </div>
+
+      {createdVendorCredentials ? (
+        <div className="vendor-credentials-success">
+          <div className="vendor-success-icon">✓</div>
+
+          <h4>Vendor Account Created</h4>
+
+          <p>
+            The vendor account has been created successfully.
+            Share these credentials with the vendor.
+          </p>
+
+          <div className="vendor-credential-row">
+            <span>Email</span>
+            <strong>{createdVendorCredentials.email}</strong>
+          </div>
+
+          <div className="vendor-credential-row">
+            <span>Temporary Password</span>
+            <strong>{createdVendorCredentials.password}</strong>
+          </div>
+
+          <div className="vendor-credential-warning">
+            Save these credentials before closing this window.
+            The temporary password should be shared securely with
+            the vendor.
+          </div>
+
+          <div className="vendor-modal-footer">
+            <button
+              type="button"
+              className="vendor-modal-done"
+              onClick={() => {
+                setShowCreateVendor(false);
+                setCreatedVendorCredentials(null);
+
+                setVendorForm({
+                  business_name: '',
+                  email: '',
+                  phone: '',
+                  password: '',
+                  confirm_password: '',
+                  legal_name: '',
+                  description: '',
+                  address_line1: '',
+                  address_line2: '',
+                  city: '',
+                  state: '',
+                  postal_code: '',
+                  country: 'India',
+                  commission_rate: 0,
+                });
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      ) : (
+        <form
+          className="vendor-create-form"
+          onSubmit={handleCreateVendor}
+        >
+          {createVendorError && (
+            <div className="error-state" role="alert">
+              {createVendorError}
+            </div>
+          )}
+
+          <div className="vendor-form-section">
+            <h4>Account Information</h4>
+
+            <div className="vendor-form-grid">
+              <label>
+                <span>Business Name *</span>
+                <input
+                  type="text"
+                  value={vendorForm.business_name}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      business_name: event.target.value,
+                    }))
+                  }
+                  required
+                  maxLength={255}
+                />
+              </label>
+
+              <label>
+                <span>Email *</span>
+                <input
+                  type="email"
+                  value={vendorForm.email}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      email: event.target.value,
+                    }))
+                  }
+                  required
+                  maxLength={255}
+                />
+              </label>
+
+              <label>
+                <span>Phone *</span>
+                <input
+                  type="tel"
+                  value={vendorForm.phone}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      phone: event.target.value,
+                    }))
+                  }
+                  required
+                  minLength={5}
+                  maxLength={50}
+                />
+              </label>
+
+              <label>
+                <span>Password *</span>
+                <input
+                  type="password"
+                  value={vendorForm.password}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      password: event.target.value,
+                    }))
+                  }
+                  required
+                  minLength={6}
+                  maxLength={100}
+                />
+              </label>
+
+              <div className="vendor-form-field">
+                <label htmlFor="vendor-confirm-password">
+                  Confirm Password <span>*</span>
+                </label>
+                <input
+                  id="vendor-confirm-password"
+                  type="password"
+                  value={vendorForm.confirm_password}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      confirm_password: event.target.value,
+                    }))
+                  }
+                  required
+                  minLength={6}
+                  maxLength={100}
+                  placeholder="Confirm password"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="vendor-form-section">
+            <h4>Business Details</h4>
+
+            <div className="vendor-form-grid">
+              <label>
+                <span>Legal Name</span>
+                <input
+                  type="text"
+                  value={vendorForm.legal_name}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      legal_name: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                <span>Commission Rate (%) *</span>
+                <input
+                  type="number"
+                  value={vendorForm.commission_rate}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      commission_rate: event.target.value,
+                    }))
+                  }
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  required
+                />
+              </label>
+
+              <label className="vendor-form-full">
+                <span>Description</span>
+                <textarea
+                  value={vendorForm.description}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                  rows={3}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="vendor-form-section">
+            <h4>Address</h4>
+
+            <div className="vendor-form-grid">
+              <label className="vendor-form-full">
+                <span>Address Line 1</span>
+                <input
+                  type="text"
+                  value={vendorForm.address_line1}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      address_line1: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="vendor-form-full">
+                <span>Address Line 2</span>
+                <input
+                  type="text"
+                  value={vendorForm.address_line2}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      address_line2: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                <span>City</span>
+                <input
+                  type="text"
+                  value={vendorForm.city}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      city: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                <span>State</span>
+                <input
+                  type="text"
+                  value={vendorForm.state}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      state: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                <span>Postal Code</span>
+                <input
+                  type="text"
+                  value={vendorForm.postal_code}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      postal_code: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                <span>Country</span>
+                <input
+                  type="text"
+                  value={vendorForm.country}
+                  onChange={(event) =>
+                    setVendorForm((current) => ({
+                      ...current,
+                      country: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="vendor-modal-footer">
+            <button
+              type="button"
+              className="vendor-create-cancel"
+              onClick={() => setShowCreateVendor(false)}
+              disabled={creatingVendor}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              className="vendor-create-submit"
+              disabled={creatingVendor}
+            >
+              {creatingVendor
+                ? 'Creating Account...'
+                : 'Create Vendor Account'}
+            </button>
+          </div>
+        </form>
+      )}
+    </section>
+  </div>
+)}
 
       <style>{`
         .vendors-page .module-toolbar {
@@ -650,6 +1100,220 @@ export default function Vendors() {
 
   .vendors-page .vendor-details-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+.vendors-page .vendor-create-button {
+  position: relative;
+  z-index: 20;
+  padding: 9px 15px;
+  border: 1px solid #123d2b;
+  border-radius: 8px;
+  background: #123d2b;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+.vendors-page .vendor-create-button:hover {
+  background: #1b503a;
+}
+
+.vendors-page .vendor-create-modal {
+  width: 100%;
+  max-width: 760px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.vendors-page .vendor-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.vendors-page .vendor-form-section {
+  padding: 18px;
+  border: 1px solid #e8ebe7;
+  border-radius: 10px;
+  background: #fafcf9;
+}
+
+.vendors-page .vendor-form-section h4 {
+  margin: 0 0 16px;
+  color: #123d2b;
+  font-size: 14px;
+}
+
+.vendors-page .vendor-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.vendors-page .vendor-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vendors-page .vendor-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vendors-page .vendor-form-field label {
+  color: #555b56;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vendors-page .vendor-form-grid label span {
+  color: #555b56;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vendors-page .vendor-form-grid input,
+.vendors-page .vendor-form-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d9dfd9;
+  border-radius: 7px;
+  background: #fff;
+  color: #252a26;
+  font-size: 13px;
+  outline: none;
+}
+
+.vendors-page .vendor-form-grid input:focus,
+.vendors-page .vendor-form-grid textarea:focus {
+  border-color: #276345;
+  box-shadow: 0 0 0 2px rgba(39, 99, 69, 0.08);
+}
+
+.vendors-page .vendor-form-full {
+  grid-column: 1 / -1;
+}
+
+.vendors-page .vendor-create-submit {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 7px;
+  background: #123d2b;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vendors-page .vendor-create-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vendors-page .vendor-create-cancel {
+  padding: 10px 18px;
+  border: 1px solid #d5ddd5;
+  border-radius: 7px;
+  background: #fff;
+  color: #555b56;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vendors-page .vendor-create-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vendors-page .vendor-credentials-success {
+  padding: 10px 0;
+  text-align: center;
+}
+
+.vendors-page .vendor-success-icon {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e8f2e7;
+  color: #123d2b;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.vendors-page .vendor-credentials-success h4 {
+  margin: 0;
+  color: #123d2b;
+  font-size: 18px;
+}
+
+.vendors-page .vendor-credentials-success > p {
+  margin: 8px auto 20px;
+  max-width: 520px;
+  color: #716f68;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.vendors-page .vendor-credential-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 13px 15px;
+  margin-top: 8px;
+  border: 1px solid #e2e7e2;
+  border-radius: 8px;
+  background: #fafcf9;
+  text-align: left;
+}
+
+.vendors-page .vendor-credential-row span {
+  color: #77747a;
+  font-size: 12px;
+}
+
+.vendors-page .vendor-credential-row strong {
+  color: #123d2b;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.vendors-page .vendor-credential-warning {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff8e8;
+  color: #735c25;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+@media (max-width: 620px) {
+  .vendors-page .vendor-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vendors-page .vendor-form-full {
+    grid-column: auto;
+  }
+
+  .vendors-page .vendor-credential-row {
+    flex-direction: column;
+    gap: 5px;
   }
 }
       `}</style>

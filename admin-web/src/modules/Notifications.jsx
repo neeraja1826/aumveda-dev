@@ -10,6 +10,7 @@ import {
   Check,
   CheckCheck,
   RefreshCw,
+  X,
 } from 'lucide-react';
 
 import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
@@ -45,6 +46,9 @@ const formatDate = (value) => {
   });
 };
 
+const formatNotificationType = (value) =>
+  (value || 'general').replaceAll('_', ' ');
+
 export default function Notifications() {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
@@ -60,6 +64,8 @@ export default function Notifications() {
   const [markingAll, setMarkingAll] = useState(false);
 
   const [reload, setReload] = useState(0);
+
+  const [selectedNotification, setSelectedNotification] = useState(null);
 
   const loadNotifications = useCallback(async () => {
     setLoading(true);
@@ -113,6 +119,18 @@ export default function Notifications() {
       await markAdminNotificationRead(notificationId);
 
       setSuccess('Notification marked as read.');
+
+      if (selectedNotification?.id === notificationId) {
+        setSelectedNotification((current) =>
+          current
+            ? {
+                ...current,
+                is_read: true,
+              }
+            : current
+        );
+      }
+
       await loadNotifications();
     } catch (requestError) {
       setError(
@@ -135,6 +153,17 @@ export default function Notifications() {
 
       setSuccess('All notifications marked as read.');
       await loadNotifications();
+
+      if (selectedNotification) {
+        setSelectedNotification((current) =>
+          current
+            ? {
+                ...current,
+                is_read: true,
+              }
+            : current
+        );
+      }
     } catch (requestError) {
       setError(
         requestError.message || 'Unable to mark notifications as read.'
@@ -144,11 +173,18 @@ export default function Notifications() {
     }
   }
 
+  function openNotificationDetails(notification) {
+    setSelectedNotification(notification);
+  }
+
+  function closeNotificationDetails() {
+    setSelectedNotification(null);
+  }
+
   const readCount = items.filter((item) => item.is_read).length;
 
   return (
     <section className="module-page notifications-page">
-
       {/* Page Header */}
       <AyurvedicHeroBanner
         eyebrow="AUMVEDA ADMIN UPDATES"
@@ -173,7 +209,6 @@ export default function Notifications() {
 
       {/* Summary Cards */}
       <div className="notification-summary">
-
         <div className="notification-stat">
           <span>Total Notifications</span>
           <strong>{total}</strong>
@@ -188,15 +223,12 @@ export default function Notifications() {
           <span>Read on This Page</span>
           <strong>{readCount}</strong>
         </div>
-
       </div>
 
       {/* Notifications List */}
       <div className="module-card">
-
         {/* Toolbar */}
         <div className="notification-toolbar">
-
           <div className="notification-filters">
             {['all', 'unread', 'read'].map((value) => (
               <button
@@ -224,7 +256,6 @@ export default function Notifications() {
             <CheckCheck size={15} />
             {markingAll ? 'Updating...' : 'Mark all as read'}
           </button>
-
         </div>
 
         {/* Success Message */}
@@ -247,7 +278,6 @@ export default function Notifications() {
             Loading notifications...
           </div>
         ) : items.length === 0 ? (
-
           /* Empty State */
           <div className="notification-empty">
             <div className="notification-empty-icon">
@@ -264,12 +294,9 @@ export default function Notifications() {
                   : 'Notifications will appear here when admin events are generated.'}
             </span>
           </div>
-
         ) : (
-
           /* Notification Items */
           <div className="notification-list">
-
             {items.map((item) => {
               const Icon =
                 notificationIcons[item.notification_type] || Bell;
@@ -281,120 +308,424 @@ export default function Notifications() {
                     item.is_read ? 'read' : 'unread'
                   }`}
                 >
-
                   <div className="notification-icon">
                     <Icon size={19} strokeWidth={1.8} />
                   </div>
 
                   <div className="notification-content">
-
                     <div className="notification-heading">
-                      <strong>{item.title}</strong>
+                      <strong>{item.title || 'Notification'}</strong>
 
                       {!item.is_read && (
                         <span className="notification-unread-dot" />
                       )}
                     </div>
 
-                    <p>{item.message}</p>
+                    <p>{item.message || 'No message available.'}</p>
 
                     <div className="notification-meta">
                       <span className="notification-type">
-                        {(item.notification_type || 'general')
-                          .replaceAll('_', ' ')}
+                        {formatNotificationType(item.notification_type)}
                       </span>
 
                       <span className="notification-date">
                         {formatDate(item.created_at)}
                       </span>
                     </div>
-
                   </div>
 
-                  {!item.is_read && (
+                  <div className="notification-actions">
                     <button
                       type="button"
-                      className="notification-read-button"
-                      onClick={() => handleMarkAsRead(item.id)}
-                      disabled={updatingId === item.id}
-                      title="Mark notification as read"
+                      className="notification-view-button"
+                      onClick={() => openNotificationDetails(item)}
                     >
-                      <Check size={15} />
-
-                      <span>
-                        {updatingId === item.id
-                          ? 'Updating...'
-                          : 'Mark read'}
-                      </span>
+                      View Details
                     </button>
-                  )}
 
+                    {!item.is_read && (
+                      <button
+                        type="button"
+                        className="notification-read-button"
+                        onClick={() => handleMarkAsRead(item.id)}
+                        disabled={updatingId === item.id}
+                        title="Mark notification as read"
+                      >
+                        <Check size={15} />
+
+                        <span>
+                          {updatingId === item.id
+                            ? 'Updating...'
+                            : 'Mark read'}
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 </article>
               );
             })}
-
           </div>
         )}
-
       </div>
+
+      {/* Notification Details Modal */}
+      {selectedNotification && (
+        <div
+          className="notification-modal-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeNotificationDetails();
+            }
+          }}
+        >
+          <div
+            className="notification-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="notification-details-title"
+          >
+            <div className="notification-modal-header">
+              <div>
+                <span className="notification-modal-eyebrow">
+                  Notification Details
+                </span>
+
+                <h2 id="notification-details-title">
+                  {selectedNotification.title || 'Notification'}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className="notification-modal-close"
+                onClick={closeNotificationDetails}
+                aria-label="Close notification details"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="notification-modal-icon">
+              {(() => {
+                const Icon =
+                  notificationIcons[
+                    selectedNotification.notification_type
+                  ] || Bell;
+
+                return <Icon size={24} strokeWidth={1.8} />;
+              })()}
+            </div>
+
+            <div className="notification-details-grid">
+              <div className="notification-detail-item">
+                <span>Notification ID</span>
+                <strong>{selectedNotification.id || '—'}</strong>
+              </div>
+
+              <div className="notification-detail-item">
+                <span>Type</span>
+                <strong>
+                  {formatNotificationType(
+                    selectedNotification.notification_type
+                  )}
+                </strong>
+              </div>
+
+              <div className="notification-detail-item">
+                <span>Status</span>
+                <strong
+                  className={
+                    selectedNotification.is_read
+                      ? 'detail-status read-status'
+                      : 'detail-status unread-status'
+                  }
+                >
+                  {selectedNotification.is_read ? 'Read' : 'Unread'}
+                </strong>
+              </div>
+
+              <div className="notification-detail-item">
+                <span>Date & Time</span>
+                <strong>
+                  {formatDate(selectedNotification.created_at)}
+                </strong>
+              </div>
+
+              {selectedNotification.recipient && (
+                <div className="notification-detail-item">
+                  <span>Recipient</span>
+                  <strong>
+                    {typeof selectedNotification.recipient === 'object'
+                      ? JSON.stringify(selectedNotification.recipient)
+                      : selectedNotification.recipient}
+                  </strong>
+                </div>
+              )}
+
+              {selectedNotification.recipient_id && (
+                <div className="notification-detail-item">
+                  <span>Recipient ID</span>
+                  <strong>{selectedNotification.recipient_id}</strong>
+                </div>
+              )}
+            </div>
+
+            <div className="notification-message-box">
+              <span>Message</span>
+              <p>
+                {selectedNotification.message ||
+                  'No message available.'}
+              </p>
+            </div>
+
+            <div className="notification-modal-footer">
+              {!selectedNotification.is_read && (
+                <button
+                  type="button"
+                  className="notification-read-button"
+                  onClick={() =>
+                    handleMarkAsRead(selectedNotification.id)
+                  }
+                  disabled={
+                    updatingId === selectedNotification.id
+                  }
+                >
+                  <Check size={15} />
+                  {updatingId === selectedNotification.id
+                    ? 'Updating...'
+                    : 'Mark as Read'}
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="notification-modal-secondary"
+                onClick={closeNotificationDetails}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{`
+.notification-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.notification-view-button,
+.notification-modal-secondary {
+  padding: 8px 12px;
+  border: 1px solid #dce5e5;
+  border-radius: 8px;
+  background: #fff;
+  color: #365c58;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notification-view-button:hover,
+.notification-modal-secondary:hover {
+  background: #f5f9f8;
+  border-color: #b9d3d0;
+}
+
+.notification-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(24, 38, 37, 0.45);
+}
+
+.notification-modal {
+  width: min(620px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border: 1px solid #e3ebea;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(31, 50, 48, 0.18);
+}
+
+.notification-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid #edf1f1;
+}
+
+.notification-modal-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: #6b8582;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.notification-modal-header h2 {
+  margin: 0;
+  color: #263b39;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.notification-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #e1e8e7;
+  border-radius: 8px;
+  background: #fff;
+  color: #526967;
+  cursor: pointer;
+}
+
+.notification-modal-close:hover {
+  background: #f5f9f8;
+}
+
+.notification-modal-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin: 22px 24px 18px;
+  border-radius: 14px;
+  background: #eaf4f3;
+  color: #286b65;
+}
+
+.notification-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 0 24px 20px;
+}
+
+.notification-detail-item {
+  padding: 14px;
+  border: 1px solid #edf1f1;
+  border-radius: 10px;
+  background: #fafcfc;
+}
+
+.notification-detail-item span,
+.notification-message-box > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #718582;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.notification-detail-item strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #2c403e;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.detail-status {
+  text-transform: capitalize;
+}
+
+.read-status {
+  color: #4f6d68 !important;
+}
+
+.unread-status {
+  color: #286b65 !important;
+}
+
+.notification-message-box {
+  margin: 0 24px 22px;
+  padding: 16px;
+  border: 1px solid #e5eeee;
+  border-radius: 10px;
+  background: #f7fbfa;
+}
+
+.notification-message-box p {
+  margin: 0;
+  color: #405452;
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.notification-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 24px 22px;
+  border-top: 1px solid #edf1f1;
+}
+
+@media (max-width: 768px) {
+  .notification-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .notification-view-button,
+  .notification-read-button {
+    flex: 1;
+  }
+
+  .notification-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-modal-overlay {
+    padding: 12px;
+  }
+
+  .notification-modal-header {
+    padding: 20px 18px 16px;
+  }
+
+  .notification-modal-icon {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+
+  .notification-details-grid {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .notification-message-box {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+
+  .notification-modal-footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+`}</style>
     </section>
   );
 }
-<style>{`
-  .notifications-page {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    padding: 24px;
-    color: #263238;
-  }
-
-  .notification-summary {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-  }
-
-  .notification-summary-card,
-  .notification-item {
-    padding: 20px;
-    border: 1px solid #e8edef;
-    border-radius: 12px;
-    background: #fff;
-  }
-
-  .notification-item.unread {
-    background: #f5fafa;
-    border-color: #d5e9e6;
-  }
-
-  .notification-filters {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .notification-filters button {
-    padding: 9px 14px;
-    border: 1px solid #e1e7e9;
-    border-radius: 8px;
-    background: #fff;
-    cursor: pointer;
-  }
-
-  .notification-filters button.active {
-    background: #eaf4f3;
-    border-color: #a8ceca;
-    color: #286b65;
-  }
-
-  @media (max-width: 768px) {
-    .notifications-page {
-      padding: 16px;
-    }
-
-    .notification-summary {
-      grid-template-columns: 1fr;
-    }
-  }
-`}</style>

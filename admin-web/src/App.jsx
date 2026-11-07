@@ -1,8 +1,13 @@
-
 import { useState } from 'react';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom';
 
 import Header from './components/Header.jsx';
-import Sidebar, { ADMIN_PAGES } from './components/Sidebar.jsx';
+import Sidebar from './components/Sidebar.jsx';
 
 import Dashboard from './modules/Dashboard.jsx';
 import Products from './modules/Products.jsx';
@@ -19,56 +24,20 @@ import Settings from './modules/Settings.jsx';
 import Login from './modules/Login.jsx';
 import Coupons from './modules/Coupons.jsx';
 import Notifications from './modules/Notifications.jsx';
+import Support from './modules/Support.jsx';
+
 import { getAdminToken, setAdminToken } from './services/api.js';
+
 import './index.css';
 
-const pages = {
-  [ADMIN_PAGES.DASHBOARD]: Dashboard,
-  [ADMIN_PAGES.PRODUCTS]: Products,
-  [ADMIN_PAGES.CATEGORIES]: Categories,
-  [ADMIN_PAGES.VENDORS]: Vendors,
-  [ADMIN_PAGES.CUSTOMERS]: Customers,
-  [ADMIN_PAGES.ORDERS]: Orders,
-  [ADMIN_PAGES.RETURNS]: Returns,
-  [ADMIN_PAGES.INVENTORY]: Inventory,
-  [ADMIN_PAGES.REVIEWS]: Reviews,
-  [ADMIN_PAGES.FINANCE]: Finance,
-  [ADMIN_PAGES.REPORTS]: Reports,
-  [ADMIN_PAGES.SETTINGS]: Settings,
-  [ADMIN_PAGES.COUPONS]: Coupons,
-  [ADMIN_PAGES.NOTIFICATIONS]: Notifications,
-};
-
-export default function App() {
-  const [token, setToken] = useState(() => getAdminToken());
-  const [activePage, setActivePage] = useState(ADMIN_PAGES.DASHBOARD);
+function AdminLayout({ onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  function handleLogin() {
-    setToken(getAdminToken());
-    setActivePage(ADMIN_PAGES.DASHBOARD);
-    setRefreshKey((current) => current + 1);
-  }
-
-  function handleLogout() {
-    setAdminToken('');
-    setToken('');
-    setActivePage(ADMIN_PAGES.DASHBOARD);
-    setSidebarOpen(false);
-  }
-
-  if (!token) {
-    return <Login onLogin={handleLogin} />;
-  }
-
-  const Page = pages[activePage] ?? Dashboard;
+  const token = getAdminToken();
 
   return (
     <div className="admin-shell">
       <Sidebar
-        activePage={activePage}
-        onNavigate={setActivePage}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -84,19 +53,147 @@ export default function App() {
 
       <div className="admin-main">
         <Header
-          title={activePage}
           tokenConnected={Boolean(token)}
           onMenuClick={() => setSidebarOpen(true)}
-          onLogout={handleLogout}
+          onLogout={onLogout}
         />
 
-        <main
-          className="page-content"
-          key={`${activePage}-${refreshKey}`}
-        >
-          <Page onNavigate={setActivePage} />
+        <main className="page-content">
+          <Routes>
+            <Route
+              path="/admin/dashboard"
+              element={<Dashboard />}
+            />
+
+            <Route
+              path="/admin/products"
+              element={<Products />}
+            />
+
+            <Route
+              path="/admin/categories"
+              element={<Categories />}
+            />
+
+            <Route
+              path="/admin/coupons"
+              element={<Coupons />}
+            />
+
+            <Route
+              path="/admin/vendors"
+              element={<Vendors />}
+            />
+
+            <Route
+              path="/admin/vendors/:vendorId"
+              element={<Vendors />}
+            />
+
+            <Route
+              path="/admin/customers"
+              element={<Customers />}
+            />
+
+            <Route
+              path="/admin/orders"
+              element={<Orders />}
+            />
+
+            <Route
+              path="/admin/orders/:orderId"
+              element={<Orders />}
+            />
+
+            <Route
+              path="/admin/returns"
+              element={<Returns />}
+            />
+
+            <Route
+              path="/admin/inventory"
+              element={<Inventory />}
+            />
+
+            <Route
+              path="/admin/reviews"
+              element={<Reviews />}
+            />
+
+            <Route
+              path="/admin/finance"
+              element={<Finance />}
+            />
+
+            <Route
+              path="/admin/reports"
+              element={<Reports />}
+            />
+
+            <Route
+              path="/admin/notifications"
+              element={<Notifications />}
+            />
+
+            <Route
+              path="/admin/support"
+              element={<Support />}
+            />
+
+            <Route
+              path="/admin/settings"
+              element={<Settings />}
+            />
+
+            <Route
+              path="/admin"
+              element={
+                <Navigate
+                  to="/admin/dashboard"
+                  replace
+                />
+              }
+            />
+
+            <Route
+              path="*"
+              element={
+                <Navigate
+                  to="/admin/dashboard"
+                  replace
+                />
+              }
+            />
+          </Routes>
         </main>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  const token = getAdminToken();
+
+  const handleLogin = () => {
+    window.location.href = '/admin/dashboard';
+  };
+
+  const handleLogout = () => {
+    setAdminToken('');
+    window.location.href = '/';
+  };
+
+  if (!token) {
+    return (
+      <BrowserRouter>
+        <Login onLogin={handleLogin} />
+      </BrowserRouter>
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <AdminLayout onLogout={handleLogout} />
+    </BrowserRouter>
   );
 }

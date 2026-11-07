@@ -14,6 +14,7 @@ export default function Customers() {
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState('');
   const [reload, setReload] = useState(0);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -60,6 +61,10 @@ export default function Customers() {
     } finally {
       setUpdatingId('');
     }
+  }
+
+  function closeCustomerDetails() {
+    setSelectedCustomer(null);
   }
 
   return (
@@ -168,18 +173,27 @@ export default function Customers() {
                       </span>
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="secondary-button"
+                      <div className="customer-actions">
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() => setSelectedCustomer(customer)}
+                        >
+                          View Details
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-button"
                         disabled={updatingId !== ''}
                         onClick={() => toggleCustomer(customer)}
-                      >
-                        {updatingId === customer.id
+                        >
+                          {updatingId === customer.id
                           ? 'Updating...'
-                          : customer.is_active
-                            ? 'Deactivate'
-                            : 'Activate'}
-                      </button>
+                            : customer.is_active
+                              ? 'Deactivate'
+                              : 'Activate'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -189,7 +203,189 @@ export default function Customers() {
         )}
       </div>
 
+      {selectedCustomer && (
+        <div
+          className="customer-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeCustomerDetails();
+          }}
+        >
+          <div
+            className="customer-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="customer-details-title"
+          >
+            <div className="customer-modal-header">
+              <div>
+                <span className="customer-modal-eyebrow">CUSTOMER PROFILE</span>
+                <h2 id="customer-details-title">
+                  {selectedCustomer.full_name || 'Unnamed customer'}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={closeCustomerDetails}
+                aria-label="Close customer details"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="customer-detail-grid">
+              <div className="customer-detail-item">
+                <span>Customer ID</span>
+                <strong>{selectedCustomer.id || '—'}</strong>
+              </div>
+              <div className="customer-detail-item">
+                <span>Email</span>
+                <strong>{selectedCustomer.email || '—'}</strong>
+              </div>
+              <div className="customer-detail-item">
+                <span>Phone</span>
+                <strong>{selectedCustomer.phone || '—'}</strong>
+              </div>
+              <div className="customer-detail-item">
+                <span>Role</span>
+                <strong>{selectedCustomer.role || 'customer'}</strong>
+              </div>
+              <div className="customer-detail-item">
+                <span>Account Status</span>
+                <strong>{selectedCustomer.is_active ? 'Active' : 'Inactive'}</strong>
+              </div>
+              <div className="customer-detail-item">
+                <span>Joined</span>
+                <strong>
+                  {selectedCustomer.created_at
+                    ? new Date(selectedCustomer.created_at).toLocaleString('en-IN')
+                    : '—'}
+                </strong>
+              </div>
+            </div>
+
+            {selectedCustomer.address && (
+              <div className="customer-detail-section">
+                <h3>Address</h3>
+                <p>
+                  {typeof selectedCustomer.address === 'string'
+                    ? selectedCustomer.address
+                    : Object.values(selectedCustomer.address).filter(Boolean).join(', ')}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <style>{`
+
+        .customers-page .customer-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .customers-page .customer-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          background: rgba(20, 28, 23, 0.42);
+        }
+
+        .customers-page .customer-modal {
+          width: min(720px, 100%);
+          max-height: min(760px, 90vh);
+          overflow: auto;
+          padding: 24px;
+          background: #fff;
+          border: 1px solid #e1e9e1;
+          border-radius: 18px;
+          box-shadow: 0 24px 70px rgba(28, 45, 34, 0.18);
+        }
+
+        .customers-page .customer-modal-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 22px;
+        }
+
+        .customers-page .customer-modal-eyebrow {
+          display: block;
+          margin-bottom: 6px;
+          color: #7a8a7d;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+        }
+
+        .customers-page .customer-modal h2 {
+          margin: 0;
+          color: #244b36;
+          font-size: 24px;
+        }
+
+        .customers-page .customer-detail-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .customers-page .customer-detail-item {
+          padding: 14px;
+          background: #f8fbf8;
+          border: 1px solid #e5eee5;
+          border-radius: 12px;
+        }
+
+        .customers-page .customer-detail-item span {
+          display: block;
+          margin-bottom: 6px;
+          color: #7b887e;
+          font-size: 11px;
+        }
+
+        .customers-page .customer-detail-item strong {
+          display: block;
+          overflow-wrap: anywhere;
+          color: #263c2e;
+          font-size: 13px;
+        }
+
+        .customers-page .customer-detail-section {
+          margin-top: 16px;
+          padding: 16px;
+          background: #fffaf3;
+          border: 1px solid #efe4d4;
+          border-radius: 12px;
+        }
+
+        .customers-page .customer-detail-section h3 {
+          margin: 0 0 8px;
+          color: #5d4935;
+          font-size: 13px;
+        }
+
+        .customers-page .customer-detail-section p {
+          margin: 0;
+          color: #5f665f;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        @media (max-width: 640px) {
+          .customers-page .customer-detail-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
         .customers-page .module-toolbar {
           display: flex;
           flex-wrap: wrap;
@@ -260,7 +456,113 @@ export default function Customers() {
         }
 
         @media (max-width: 620px) {
-          .customers-page .module-toolbar {
+  
+        .customers-page .customer-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .customers-page .customer-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          background: rgba(20, 28, 23, 0.42);
+        }
+
+        .customers-page .customer-modal {
+          width: min(720px, 100%);
+          max-height: min(760px, 90vh);
+          overflow: auto;
+          padding: 24px;
+          background: #fff;
+          border: 1px solid #e1e9e1;
+          border-radius: 18px;
+          box-shadow: 0 24px 70px rgba(28, 45, 34, 0.18);
+        }
+
+        .customers-page .customer-modal-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 22px;
+        }
+
+        .customers-page .customer-modal-eyebrow {
+          display: block;
+          margin-bottom: 6px;
+          color: #7a8a7d;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+        }
+
+        .customers-page .customer-modal h2 {
+          margin: 0;
+          color: #244b36;
+          font-size: 24px;
+        }
+
+        .customers-page .customer-detail-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .customers-page .customer-detail-item {
+          padding: 14px;
+          background: #f8fbf8;
+          border: 1px solid #e5eee5;
+          border-radius: 12px;
+        }
+
+        .customers-page .customer-detail-item span {
+          display: block;
+          margin-bottom: 6px;
+          color: #7b887e;
+          font-size: 11px;
+        }
+
+        .customers-page .customer-detail-item strong {
+          display: block;
+          overflow-wrap: anywhere;
+          color: #263c2e;
+          font-size: 13px;
+        }
+
+        .customers-page .customer-detail-section {
+          margin-top: 16px;
+          padding: 16px;
+          background: #fffaf3;
+          border: 1px solid #efe4d4;
+          border-radius: 12px;
+        }
+
+        .customers-page .customer-detail-section h3 {
+          margin: 0 0 8px;
+          color: #5d4935;
+          font-size: 13px;
+        }
+
+        .customers-page .customer-detail-section p {
+          margin: 0;
+          color: #5f665f;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        @media (max-width: 640px) {
+          .customers-page .customer-detail-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .customers-page .module-toolbar {
             flex-direction: column;
           }
 

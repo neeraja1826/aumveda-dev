@@ -51,6 +51,7 @@ const [stockFilter, setStockFilter] = useState('all');
   const [stockError, setStockError] = useState('');
   const [stockSearch, setStockSearch] = useState('');
   const [stockReload, setStockReload] = useState(0);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [adjustmentAction, setAdjustmentAction] = useState('add');
@@ -297,10 +298,16 @@ const [stockFilter, setStockFilter] = useState('all');
     }
   };
 
+  const closeTransactionDetails = () => setSelectedTransaction(null);
+
+  const transactionValue = (value) =>
+    value === null || value === undefined || value === '' ? '—' : String(value);
+
   return (
     <section className="module-page inventory-page">
       <style>{`
        
+.inventory-page .transaction-modal-overlay,
 .inventory-page .stock-modal-overlay {
   position: fixed;
   inset: 0;
@@ -313,6 +320,7 @@ const [stockFilter, setStockFilter] = useState('all');
   backdrop-filter: blur(3px);
 }
 
+.inventory-page .transaction-modal,
 .inventory-page .stock-modal {
   width: 100%;
   max-width: 480px;
@@ -323,6 +331,54 @@ const [stockFilter, setStockFilter] = useState('all');
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.2);
+}
+
+.inventory-page .transaction-modal {
+  max-width: 620px;
+}
+
+.inventory-page .transaction-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.inventory-page .transaction-detail-item {
+  padding: 13px 14px;
+  border: 1px solid #e5e9e4;
+  border-radius: 10px;
+  background: #fafbf8;
+}
+
+.inventory-page .transaction-detail-item.full {
+  grid-column: 1 / -1;
+}
+
+.inventory-page .transaction-detail-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #788278;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.inventory-page .transaction-detail-value {
+  color: #263c30;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .inventory-page .transaction-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-page .transaction-detail-item.full {
+    grid-column: auto;
+  }
 }
 
 .inventory-page .stock-modal-header {
@@ -454,11 +510,13 @@ const [stockFilter, setStockFilter] = useState('all');
 }
 
 @media (max-width: 480px) {
-  .inventory-page .stock-modal-overlay {
+  .inventory-page .transaction-modal-overlay,
+.inventory-page .stock-modal-overlay {
     padding: 12px;
   }
 
-  .inventory-page .stock-modal {
+  .inventory-page .transaction-modal,
+.inventory-page .stock-modal {
     padding: 18px;
     max-height: calc(100vh - 24px);
   }
@@ -641,6 +699,88 @@ const [stockFilter, setStockFilter] = useState('all');
       </div>
 
       
+
+{selectedTransaction && (
+  <div
+    className="transaction-modal-overlay"
+    onMouseDown={(event) => {
+      if (event.target === event.currentTarget) {
+        closeTransactionDetails();
+      }
+    }}
+  >
+    <div
+      className="transaction-modal stock-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="transaction-modal-title"
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      <div className="stock-modal-header">
+        <div>
+          <h3 id="transaction-modal-title">Inventory Transaction Details</h3>
+          <p className="inventory-count" style={{ marginTop: 5 }}>
+            Complete information for this stock movement
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="stock-modal-close"
+          aria-label="Close transaction details"
+          onClick={closeTransactionDetails}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="transaction-detail-grid">
+        <div className="transaction-detail-item">
+          <span className="transaction-detail-label">Transaction ID</span>
+          <span className="transaction-detail-value">{transactionValue(selectedTransaction.id)}</span>
+        </div>
+        <div className="transaction-detail-item">
+          <span className="transaction-detail-label">Transaction Type</span>
+          <span className="transaction-detail-value">{transactionValue(getTransactionType(selectedTransaction))}</span>
+        </div>
+        <div className="transaction-detail-item">
+          <span className="transaction-detail-label">Product</span>
+          <span className="transaction-detail-value">{transactionValue(selectedTransaction.product_name || selectedTransaction.product?.name)}</span>
+        </div>
+        <div className="transaction-detail-item">
+          <span className="transaction-detail-label">Variant</span>
+          <span className="transaction-detail-value">{transactionValue(selectedTransaction.variant_name || selectedTransaction.variant_id)}</span>
+        </div>
+        <div className="transaction-detail-item">
+          <span className="transaction-detail-label">SKU</span>
+          <span className="transaction-detail-value">{transactionValue(selectedTransaction.sku)}</span>
+        </div>
+        <div className="transaction-detail-item">
+          <span className="transaction-detail-label">Quantity Change</span>
+          <span className="transaction-detail-value">{transactionValue(getQuantity(selectedTransaction))}</span>
+        </div>
+        <div className="transaction-detail-item">
+          <span className="transaction-detail-label">Reference Type</span>
+          <span className="transaction-detail-value">{transactionValue(selectedTransaction.reference_type)}</span>
+        </div>
+        <div className="transaction-detail-item">
+          <span className="transaction-detail-label">Reference ID</span>
+          <span className="transaction-detail-value">{transactionValue(selectedTransaction.reference_id || selectedTransaction.reference)}</span>
+        </div>
+        <div className="transaction-detail-item full">
+          <span className="transaction-detail-label">Reason / Notes</span>
+          <span className="transaction-detail-value">{transactionValue(selectedTransaction.notes || selectedTransaction.reason)}</span>
+        </div>
+        <div className="transaction-detail-item full">
+          <span className="transaction-detail-label">Date</span>
+          <span className="transaction-detail-value">{formatDate(selectedTransaction.created_at || selectedTransaction.transaction_date)}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+
 {selectedVariant && (
   <div
     className="stock-modal-overlay"
@@ -866,6 +1006,7 @@ const [stockFilter, setStockFilter] = useState('all');
                   <th>Quantity change</th>
                   <th>Reference / Reason</th>
                   <th>Date</th>
+                  <th>Action</th>
                 </tr>
               </thead>
 
@@ -931,6 +1072,16 @@ const [stockFilter, setStockFilter] = useState('all');
 
                       <td>
                         {formatDate(item.created_at || item.transaction_date)}
+                      </td>
+
+                      <td>
+                        <button
+                          type="button"
+                          className="inventory-refresh"
+                          onClick={() => setSelectedTransaction(item)}
+                        >
+                          View Details
+                        </button>
                       </td>
                     </tr>
                   );

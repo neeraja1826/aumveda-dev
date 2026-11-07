@@ -9,6 +9,8 @@ const resources = {
   inventory: '/admin/inventory/transactions',
   reviews: '/admin/reviews',
   settings: '/admin/settings',
+  support: '/admin/support/tickets',
+
 };
 
 export const getDashboardSummary = () =>
@@ -154,6 +156,12 @@ export const updateVendorActiveStatus = (vendorId, isActive) =>
 
 export const getVendorDetails = (vendorId) =>
   apiRequest(`/admin/vendors/${encodeURIComponent(vendorId)}`);
+export async function createVendor(payload) {
+  return apiRequest('/admin/vendors/create', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
 
 export const getInventoryStock = (params = {}) => {
   const query = new URLSearchParams(params).toString();
@@ -299,3 +307,42 @@ export const markAllAdminNotificationsRead = () =>
   apiRequest('/admin/notifications/read-all', {
     method: 'PATCH',
   });
+export async function getSupportSummary() {
+  return apiRequest('/admin/support/summary');
+}
+
+export async function getSupportTickets(params = {}) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.append(key, value);
+    }
+  });
+
+  const queryString = query.toString();
+
+  return apiRequest(
+    `/admin/support/tickets${queryString ? `?${queryString}` : ''}`
+  );
+}
+
+export async function getSupportTicket(ticketId) {
+  return apiRequest(`/admin/support/tickets/${ticketId}`);
+}
+
+export async function updateSupportTicket(ticketId, payload) {
+  return apiRequest(`/admin/support/tickets/${ticketId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function replySupportTicket(ticketId, message) {
+  return apiRequest(`/admin/support/tickets/${ticketId}/reply`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  });
+}
+
+

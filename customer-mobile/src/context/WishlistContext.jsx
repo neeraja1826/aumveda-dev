@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
@@ -11,6 +12,7 @@ import {
   addToWishlist,
   removeFromWishlist,
 } from '../services/wishlistService';
+import { clearGuestWishlist } from '../utils/storage';
 import { useAuth } from './AuthContext';
 
 const WishlistContext = createContext(null);
@@ -44,25 +46,41 @@ export function WishlistProvider({ children }) {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
+  const loadRequest = useRef(0);
 
   const loadWishlist = useCallback(async () => {
+    const requestId = ++loadRequest.current;
+
     if (authLoading) return;
 
     if (!isAuthenticated || !token) {
       setWishlist([]);
       setLoading(false);
+
+      try {
+        await clearGuestWishlist();
+      } catch (error) {
+        console.error('WISHLIST: Failed to clear guest wishlist:', error);
+      }
+
       return;
     }
 
     setLoading(true);
     try {
       const products = await getWishlist(token);
-      setWishlist(Array.isArray(products) ? products : []);
+      if (requestId === loadRequest.current) {
+        setWishlist(Array.isArray(products) ? products : []);
+      }
     } catch (error) {
       console.error('WISHLIST: Failed to load:', error);
-      setWishlist([]);
+      if (requestId === loadRequest.current) {
+        setWishlist([]);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequest.current) {
+        setLoading(false);
+      }
     }
   }, [authLoading, isAuthenticated, token]);
 
@@ -72,11 +90,15 @@ export function WishlistProvider({ children }) {
     loadWishlist();
   }, [loadWishlist]);
 
+  const visibleWishlist =
+    isAuthenticated && !authLoading ? wishlist : [];
+
   const isWishlisted = useCallback(
     (productId) => Boolean(
-      productId && wishlist.some((product) => product?.id === productId)
+      productId &&
+      visibleWishlist.some((product) => product?.id === productId)
     ),
-    [wishlist]
+    [visibleWishlist]
   );
 
   const addProduct = useCallback(async (productOrId, productData) => {
@@ -143,7 +165,7 @@ export function WishlistProvider({ children }) {
       return { success: false, error: new Error('A product ID is required.') };
     }
 
-    const currentlyWishlisted = wishlist.some(
+    const currentlyWishlisted = visibleWishlist.some(
       (item) => item?.id === product.id
     );
     if (currentlyWishlisted) {
@@ -154,12 +176,12 @@ export function WishlistProvider({ children }) {
     }
 
     return addProduct(product);
-  }, [addProduct, removeProduct, wishlist]);
+  }, [addProduct, removeProduct, visibleWishlist]);
 
   return (
     <WishlistContext.Provider
       value={{
-        wishlist,
+        wishlist: visibleWishlist,
         loading,
         isWishlisted,
         addProduct,

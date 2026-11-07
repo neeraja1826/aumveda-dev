@@ -84,12 +84,12 @@ export default function ProfileScreen() {
           >
             <LinearGradient
               colors={[
-                'rgba(18, 61, 43, 0.90)',
-                'rgba(18, 61, 43, 0.76)',
-                'rgba(18, 61, 43, 0.45)',
+                'rgba(8, 28, 19, 0.95)',
+                'rgba(10, 36, 25, 0.88)',
+                'rgba(12, 44, 30, 0.82)',
               ]}
               start={{ x: 0, y: 0 }}
-              end={{ x: 0.8, y: 1 }}
+              end={{ x: 0.85, y: 1 }}
               style={styles.heroOverlay}
             />
 
@@ -334,9 +334,9 @@ export default function ProfileScreen() {
         >
           <LinearGradient
             colors={[
-              'rgba(18, 61, 43, 0.94)',
-              'rgba(18, 61, 43, 0.82)',
-              'rgba(18, 61, 43, 0.52)',
+              'rgba(8, 28, 19, 0.95)',
+              'rgba(10, 36, 25, 0.88)',
+              'rgba(12, 44, 30, 0.82)',
             ]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0.85, y: 1 }}
@@ -399,7 +399,7 @@ export default function ProfileScreen() {
 
             <View style={styles.authProfileText}>
               <View style={styles.memberPill}>
-                <Ionicons name="sparkles" size={10} color="#E5BD69" />
+                <Ionicons name="sparkles" size={11} color="#FDE08B" />
                 <Text style={styles.memberPillText}>AUMVEDA PRIVILEGE</Text>
               </View>
 
@@ -695,6 +695,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 
   registeredMark: {
@@ -786,6 +789,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     textAlign: 'center',
     marginBottom: 6,
+    textShadowColor: 'rgba(0, 0, 0, 0.65)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 
   guestHeroSubtitle: {
@@ -795,6 +801,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'InterRegular',
     maxWidth: 320,
+    textShadowColor: 'rgba(0, 0, 0, 0.65)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
   /* ============================================================
@@ -858,44 +867,51 @@ const styles = StyleSheet.create({
   authProfileText: {
     flex: 1,
     marginLeft: 16,
+    justifyContent: 'center',
   },
 
   memberPill: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    backgroundColor: 'rgba(229, 189, 105, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(229, 189, 105, 0.45)',
-    marginBottom: 5,
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: 12,
+    backgroundColor: 'rgba(8, 28, 19, 0.82)',
+    borderWidth: 1.2,
+    borderColor: '#E5BD69',
+    marginBottom: 6,
   },
 
   memberPillText: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1.4,
-    color: '#E5BD69',
+    color: '#FDE08B',
     fontFamily: 'InterSemiBold',
   },
 
   authUserName: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
-    color: '#FFFDF6',
+    color: '#FFFFFF',
     fontFamily: 'PlayfairSemiBold',
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
 
   authUserEmail: {
-    marginTop: 2,
-    fontSize: 12,
-    color: '#E8DDBF',
-    fontFamily: 'InterRegular',
-    opacity: 0.9,
+    marginTop: 3,
+    fontSize: 12.5,
+    color: '#F5EFE6',
+    fontFamily: 'InterMedium',
+    opacity: 0.95,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 
   /* ============================================================

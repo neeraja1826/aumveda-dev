@@ -57,6 +57,16 @@ export default function OrderTracking({ status }) {
   const rawIndex = STEP_ORDER.indexOf(currentStatus);
   const activeIndex = rawIndex < 0 ? 0 : rawIndex;
 
+  // Percentage width for the completed portion of the connecting line
+  const fillWidthPercent =
+    activeIndex === 0
+      ? '0%'
+      : activeIndex === 1
+        ? '33.3%'
+        : activeIndex === 2
+          ? '66.6%'
+          : '100%';
+
   return (
     <View style={styles.card}>
       {/* HEADER */}
@@ -72,16 +82,19 @@ export default function OrderTracking({ status }) {
       </View>
 
       {/* HORIZONTAL TIMELINE STEPPER */}
-      <View style={styles.stepperContainer}>
-        {STEPS.map((step, index) => {
-          const isCompleted = index <= activeIndex;
-          const isDone = index < activeIndex;
-          const isCurrent = index === activeIndex;
+      <View style={styles.stepperWrapper}>
+        {/* CONTINUOUS BACKGROUND CONNECTING TRACK */}
+        <View style={styles.trackBackground} pointerEvents="none">
+          <View style={[styles.trackFill, { width: fillWidthPercent }]} />
+        </View>
 
-          return (
-            <React.Fragment key={step.key}>
-              {/* STEP NODE */}
-              <View style={styles.stepItem}>
+        {/* STEP NODES */}
+        <View style={styles.nodesRow}>
+          {STEPS.map((step, index) => {
+            const isCompleted = index <= activeIndex;
+
+            return (
+              <View key={step.key} style={styles.stepItem}>
                 <View
                   style={[
                     styles.nodeCircle,
@@ -89,7 +102,7 @@ export default function OrderTracking({ status }) {
                   ]}
                 >
                   {isCompleted ? (
-                    <Ionicons name="checkmark" size={17} color="#FFFFFF" />
+                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
                   ) : step.icon === 'truck-outline' ? (
                     <MaterialCommunityIcons
                       name="truck-outline"
@@ -115,25 +128,9 @@ export default function OrderTracking({ status }) {
                   {step.label}
                 </Text>
               </View>
-
-              {/* HORIZONTAL CONNECTOR LINE BETWEEN NODES */}
-              {index < STEPS.length - 1 && (
-                <View style={styles.connectorTrack}>
-                  <View
-                    style={[
-                      styles.connectorLine,
-                      index < activeIndex
-                        ? styles.connectorLineDone
-                        : index === activeIndex
-                          ? styles.connectorLineActive
-                          : styles.connectorLinePending,
-                    ]}
-                  />
-                </View>
-              )}
-            </React.Fragment>
-          );
-        })}
+            );
+          })}
+        </View>
       </View>
     </View>
   );
@@ -169,7 +166,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 16,
     gap: 9,
   },
 
@@ -199,16 +196,36 @@ const styles = StyleSheet.create({
   },
 
   /* HORIZONTAL STEPPER */
-  stepperContainer: {
+  stepperWrapper: {
+    position: 'relative',
+    paddingVertical: 4,
+  },
+
+  trackBackground: {
+    position: 'absolute',
+    top: 20,
+    left: 28,
+    right: 28,
+    height: 2,
+    backgroundColor: '#EBE2D4',
+    borderRadius: 1,
+  },
+
+  trackFill: {
+    height: 2,
+    backgroundColor: '#123D2B',
+    borderRadius: 1,
+  },
+
+  nodesRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: 4,
   },
 
   stepItem: {
     alignItems: 'center',
-    width: 62,
+    width: 66,
   },
 
   nodeCircle: {
@@ -246,30 +263,6 @@ const styles = StyleSheet.create({
     color: '#123D2B',
     fontFamily: 'InterSemiBold',
     fontWeight: '700',
-  },
-
-  connectorTrack: {
-    flex: 1,
-    height: 34,
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-
-  connectorLine: {
-    height: 2,
-    borderRadius: 1,
-  },
-
-  connectorLineDone: {
-    backgroundColor: '#123D2B',
-  },
-
-  connectorLineActive: {
-    backgroundColor: '#B5CFBA',
-  },
-
-  connectorLinePending: {
-    backgroundColor: '#EAE1D2',
   },
 
   /* EXCEPTION BOX */

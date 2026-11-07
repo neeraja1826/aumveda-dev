@@ -36,6 +36,7 @@ export default function Reviews() {
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState(null);
   const [reload, setReload] = useState(0);
+  const [selectedReview, setSelectedReview] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -93,6 +94,10 @@ export default function Reviews() {
     }),
     [items]
   );
+
+  function closeReviewDetails() {
+    setSelectedReview(null);
+  }
 
   async function changeStatus(review, value) {
     if (updatingId !== null) return;
@@ -322,7 +327,116 @@ export default function Reviews() {
           cursor: pointer;
         }
 
+        .reviews-page .review-view-button {
+          white-space: nowrap;
+        }
+
+        .review-detail-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          background: rgba(25, 38, 30, 0.42);
+        }
+
+        .review-detail-modal {
+          width: min(620px, 100%);
+          max-height: 90vh;
+          overflow: auto;
+          padding: 22px;
+          border: 1px solid #e0e7dc;
+          border-radius: 16px;
+          background: #fff;
+          box-shadow: 0 22px 60px rgba(27, 43, 33, 0.18);
+        }
+
+        .review-detail-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #edf0eb;
+        }
+
+        .review-detail-eyebrow {
+          display: block;
+          margin-bottom: 5px;
+          color: #7b877b;
+          font-size: 10px;
+          letter-spacing: .08em;
+          text-transform: uppercase;
+        }
+
+        .review-detail-header h3 {
+          margin: 0;
+          color: #26352D;
+          font-size: 18px;
+        }
+
+        .review-detail-close {
+          width: 34px;
+          height: 34px;
+          border: 1px solid #dfe5dc;
+          border-radius: 9px;
+          background: #fff;
+          color: #4d5b50;
+          font-size: 22px;
+          cursor: pointer;
+        }
+
+        .review-detail-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          margin-top: 18px;
+        }
+
+        .review-detail-grid > div,
+        .review-detail-comment {
+          padding: 12px;
+          border: 1px solid #e7ece4;
+          border-radius: 10px;
+          background: #fafbf9;
+        }
+
+        .review-detail-grid span,
+        .review-detail-comment > span {
+          display: block;
+          margin-bottom: 5px;
+          color: #7a847b;
+          font-size: 10px;
+          text-transform: uppercase;
+        }
+
+        .review-detail-grid strong {
+          display: block;
+          color: #344438;
+          font-size: 12px;
+          overflow-wrap: anywhere;
+        }
+
+        .review-detail-comment {
+          margin-top: 14px;
+        }
+
+        .review-detail-comment p {
+          margin: 0;
+          color: #59665b;
+          font-size: 13px;
+          line-height: 1.7;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        }
+
         @media (max-width: 700px) {
+          .review-detail-grid {
+            grid-template-columns: 1fr;
+          }
+
           .reviews-page .review-summary {
             gap: 8px;
           }
@@ -471,6 +585,7 @@ export default function Reviews() {
                   <th>Feedback</th>
                   <th>Date</th>
                   <th>Status</th>
+                  <th>Action</th>
                 </tr>
               </thead>
 
@@ -528,6 +643,16 @@ export default function Reviews() {
                         ))}
                       </select>
                     </td>
+
+                    <td>
+                      <button
+                        type="button"
+                        className="secondary-button review-view-button"
+                        onClick={() => setSelectedReview(item)}
+                      >
+                        View Details
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -541,6 +666,38 @@ export default function Reviews() {
           </div>
         )}
       </div>
+      {selectedReview && (
+        <div
+          className="review-detail-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeReviewDetails();
+          }}
+        >
+          <div className="review-detail-modal" role="dialog" aria-modal="true" aria-labelledby="review-detail-title">
+            <div className="review-detail-header">
+              <div>
+                <span className="review-detail-eyebrow">Review Details</span>
+                <h3 id="review-detail-title">{getProductName(selectedReview)}</h3>
+              </div>
+              <button type="button" className="review-detail-close" onClick={closeReviewDetails} aria-label="Close review details">×</button>
+            </div>
+
+            <div className="review-detail-grid">
+              <div><span>Review ID</span><strong>{selectedReview.id ?? '—'}</strong></div>
+              <div><span>Customer</span><strong>{getCustomerName(selectedReview)}</strong></div>
+              <div><span>Rating</span><strong>{selectedReview.rating != null ? `${selectedReview.rating} / 5` : '—'}</strong></div>
+              <div><span>Status</span><strong>{selectedReview.status ?? '—'}</strong></div>
+              <div><span>Date</span><strong>{formatDate(selectedReview.created_at || selectedReview.updated_at)}</strong></div>
+            </div>
+
+            <div className="review-detail-comment">
+              <span>Customer Feedback</span>
+              <p>{getComment(selectedReview)}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }

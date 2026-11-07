@@ -57,10 +57,21 @@ export function CartProvider({ children }) {
 
     const loadStoredCart = async () => {
       try {
+        if (!isAuthenticated) {
+          await clearCartStorage(GUEST_CART_OWNER_KEY);
+
+          if (mounted) {
+            setCartItems([]);
+            setLoadedCartOwner(cartOwnerKey);
+          }
+
+          return;
+        }
+
         const storedCart = await getCart(cartOwnerKey);
         let nextCart = Array.isArray(storedCart) ? storedCart : [];
 
-        if (isAuthenticated && cartOwnerKey !== GUEST_CART_OWNER_KEY) {
+        if (cartOwnerKey !== GUEST_CART_OWNER_KEY) {
           const guestCart = await getCart(GUEST_CART_OWNER_KEY);
           if (Array.isArray(guestCart) && guestCart.length > 0) {
             const mergedCart = new Map(
@@ -117,6 +128,7 @@ export function CartProvider({ children }) {
   useEffect(() => {
     if (
       isAuthLoading ||
+      !isAuthenticated ||
       !cartOwnerKey ||
       !isCartLoaded ||
       loadedCartOwner !== cartOwnerKey

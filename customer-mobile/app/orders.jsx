@@ -16,7 +16,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
 
 import { useAuth } from '../src/context/AuthContext';
-import { getOrders } from '../src/services/orderService';
+import {
+  getOrders,
+  getOrderReturnRequests,
+} from '../src/services/orderService';
 import { colors } from '../src/theme/colors';
 
 function formatAmount(value, currency = 'INR') {
@@ -110,8 +113,100 @@ function getStatusTheme(statusRaw) {
   };
 }
 
-function OrderCard({ order, onPress }) {
+function getReturnStatusTheme(statusRaw) {
+  const status = String(statusRaw || '').trim().toLowerCase();
+  const labels = {
+    requested: 'Request received',
+    under_review: 'Under review',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    pickup_scheduled: 'Pickup scheduled',
+    item_received: 'Item received',
+    replacement_processing: 'Replacement processing',
+    refund_processing: 'Refund processing',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+  };
+
+  if (status === 'rejected' || status === 'cancelled') {
+    return {
+      label: labels[status],
+      backgroundColor: '#FDEEEE',
+      borderColor: '#F7D7D7',
+      color: '#B85C5C',
+      icon: 'close-circle-outline',
+    };
+  }
+
+  if (status === 'completed' || status === 'approved') {
+    return {
+      label: labels[status],
+      backgroundColor: '#E8F2E7',
+      borderColor: '#CDE2CB',
+      color: '#123D2B',
+      icon: 'checkmark-circle-outline',
+    };
+  }
+
+  if (
+    status === 'pickup_scheduled' ||
+    status === 'item_received' ||
+    status === 'replacement_processing' ||
+    status === 'refund_processing'
+  ) {
+    return {
+      label: labels[status],
+      backgroundColor: '#EBF4F6',
+      borderColor: '#BDE0E8',
+      color: '#1C5B6B',
+      icon: 'sync-outline',
+    };
+  }
+
+  return {
+    label:
+      labels[status] ||
+      (status ? status.replaceAll('_', ' ') : 'Status unavailable'),
+    backgroundColor: '#FEF7E6',
+    borderColor: '#EBDCB9',
+    color: '#A87E34',
+    icon: 'time-outline',
+  };
+}
+
+function getLatestReturnRequestByOrder(requests) {
+  return requests.reduce((latestByOrder, request) => {
+    const orderId = request?.order_id;
+
+    if (!orderId) {
+      return latestByOrder;
+    }
+
+    const existing = latestByOrder.get(String(orderId));
+    const requestTime = Date.parse(
+      request.updated_at || request.created_at || ''
+    );
+    const existingTime = Date.parse(
+      existing?.updated_at || existing?.created_at || ''
+    );
+
+    if (
+      !existing ||
+      (Number.isFinite(requestTime) &&
+        (!Number.isFinite(existingTime) || requestTime > existingTime))
+    ) {
+      latestByOrder.set(String(orderId), request);
+    }
+
+    return latestByOrder;
+  }, new Map());
+}
+
+function OrderCard({ order, returnRequest, onPress }) {
   const statusTheme = getStatusTheme(order.status);
+  const returnStatusTheme = returnRequest
+    ? getReturnStatusTheme(returnRequest.status)
+    : null;
   const items = Array.isArray(order.items) ? order.items : [];
   const firstItem = items[0];
 
@@ -208,6 +303,39 @@ function OrderCard({ order, onPress }) {
         </View>
       </View>
 
+      {returnStatusTheme ? (
+        <View
+          style={[
+            styles.returnStatusRow,
+            {
+              backgroundColor: returnStatusTheme.backgroundColor,
+              borderColor: returnStatusTheme.borderColor,
+            },
+          ]}
+        >
+          <Ionicons
+            name={returnStatusTheme.icon}
+            size={14}
+            color={returnStatusTheme.color}
+          />
+          <Text style={styles.returnStatusLabel}>
+            {returnRequest.request_type === 'replacement'
+              ? 'Replacement'
+              : 'Return'}{' '}
+            status:
+          </Text>
+          <Text
+            style={[
+              styles.returnStatusValue,
+              { color: returnStatusTheme.color },
+            ]}
+            numberOfLines={1}
+          >
+            {returnStatusTheme.label}
+          </Text>
+        </View>
+      ) : null}
+
       {/* HAIRLINE DIVIDER */}
       <View style={styles.cardDivider} />
 
@@ -294,11 +422,15 @@ export default function OrdersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [returnRequestsByOrder, setReturnRequestsByOrder] = useState(new Map());
+  const [returnStatusError, setReturnStatusError] = useState('');
 
   const loadOrders = useCallback(async (isActive = () => true, isRefresh = false) => {
     if (!token) {
       setOrders([]);
+      setReturnRequestsByOrder(new Map());
       setError(null);
+      setReturnStatusError('');
       setLoading(false);
       setRefreshing(false);
       return;
@@ -310,10 +442,36 @@ export default function OrdersScreen() {
       setLoading(true);
     }
     setError(null);
+    setReturnStatusError('');
 
     try {
-      const result = await getOrders(token);
-      if (isActive()) setOrders(result);
+      const [ordersResult, returnRequestsResult] = await Promise.allSettled([
+        getOrders(token),
+        getOrderReturnRequests(token),
+      ]);
+
+      if (ordersResult.status === 'rejected') {
+        throw ordersResult.reason;
+      }
+
+      if (isActive()) {
+        setOrders(ordersResult.value);
+
+        if (returnRequestsResult.status === 'fulfilled') {
+          setReturnRequestsByOrder(
+            getLatestReturnRequestByOrder(returnRequestsResult.value)
+          );
+        } else {
+          console.error(
+            'Load return request statuses error:',
+            returnRequestsResult.reason
+          );
+          setReturnRequestsByOrder(new Map());
+          setReturnStatusError(
+            'Unable to load return request statuses. Pull to refresh.'
+          );
+        }
+      }
     } catch (loadError) {
       console.error('Load orders error:', loadError);
       if (isActive()) {
@@ -483,10 +641,16 @@ export default function OrdersScreen() {
               />
             }
           >
+            {returnStatusError ? (
+              <Text style={styles.returnStatusLoadError}>
+                {returnStatusError}
+              </Text>
+            ) : null}
             {orders.map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
+                returnRequest={returnRequestsByOrder.get(String(order.id))}
                 onPress={() => router.push(`/orders/${encodeURIComponent(order.id)}`)}
               />
             ))}
@@ -751,6 +915,34 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'capitalize',
+  },
+  returnStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    borderRadius: 9,
+    borderWidth: 1,
+  },
+  returnStatusLabel: {
+    color: '#716F68',
+    fontFamily: 'InterMedium',
+    fontSize: 10.5,
+  },
+  returnStatusValue: {
+    flex: 1,
+    fontFamily: 'InterSemiBold',
+    fontSize: 10.5,
+    textTransform: 'capitalize',
+  },
+  returnStatusLoadError: {
+    color: colors.danger,
+    fontFamily: 'InterMedium',
+    fontSize: 11,
+    paddingHorizontal: 4,
+    paddingBottom: 2,
   },
 
   /* HAIRLINE CARD DIVIDER */

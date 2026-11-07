@@ -1,5 +1,6 @@
-
 import { useEffect, useMemo, useState } from 'react';
+import { Eye, RefreshCw, X, Settings as SettingsIcon } from 'lucide-react';
+
 import { getResource } from '../services/adminService.js';
 import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
@@ -54,6 +55,7 @@ export default function Settings() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [reload, setReload] = useState(0);
+  const [selectedSetting, setSelectedSetting] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -69,7 +71,9 @@ export default function Settings() {
       })
       .catch((requestError) => {
         if (active) {
-          setError(requestError.message || 'Unable to load site settings.');
+          setError(
+            requestError.message || 'Unable to load site settings.'
+          );
         }
       })
       .finally(() => {
@@ -98,6 +102,14 @@ export default function Settings() {
         .includes(query)
     );
   }, [items, search]);
+
+  function openSettingDetails(setting) {
+    setSelectedSetting(setting);
+  }
+
+  function closeSettingDetails() {
+    setSelectedSetting(null);
+  }
 
   return (
     <section className="module-page settings-page">
@@ -142,6 +154,10 @@ export default function Settings() {
 
         .settings-page .settings-refresh,
         .settings-page .settings-retry {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
           min-height: 36px;
           padding: 8px 12px;
           border: 1px solid #dce4d8;
@@ -156,6 +172,11 @@ export default function Settings() {
         .settings-page .settings-refresh:hover,
         .settings-page .settings-retry:hover {
           background: #f5f7f3;
+        }
+
+        .settings-page .settings-refresh:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .settings-page .settings-key {
@@ -187,6 +208,30 @@ export default function Settings() {
           min-width: 125px;
           color: #737d73;
           font-size: 12px;
+        }
+
+        .settings-page .settings-action {
+          width: 120px;
+        }
+
+        .settings-page .settings-view-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 8px 11px;
+          border: 1px solid #dce4d8;
+          border-radius: 8px;
+          background: #fff;
+          color: #365340;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .settings-page .settings-view-button:hover {
+          background: #f4f7f2;
+          border-color: #bfcfc0;
         }
 
         .settings-page .settings-note {
@@ -226,6 +271,171 @@ export default function Settings() {
           font-size: 13px;
         }
 
+        .settings-modal-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          background: rgba(30, 43, 34, 0.42);
+        }
+
+        .settings-modal {
+          width: min(620px, 100%);
+          max-height: calc(100vh - 48px);
+          overflow-y: auto;
+          border: 1px solid #e1e7df;
+          border-radius: 16px;
+          background: #fff;
+          box-shadow: 0 24px 70px rgba(35, 52, 40, 0.18);
+        }
+
+        .settings-modal-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 18px;
+          padding: 22px 24px;
+          border-bottom: 1px solid #edf0eb;
+        }
+
+        .settings-modal-eyebrow {
+          display: block;
+          margin-bottom: 6px;
+          color: #718074;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .settings-modal-header h2 {
+          margin: 0;
+          color: #304337;
+          font-size: 21px;
+          line-height: 1.3;
+          overflow-wrap: anywhere;
+        }
+
+        .settings-modal-close {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          height: 34px;
+          flex-shrink: 0;
+          border: 1px solid #e0e6df;
+          border-radius: 8px;
+          background: #fff;
+          color: #607064;
+          cursor: pointer;
+        }
+
+        .settings-modal-close:hover {
+          background: #f5f7f3;
+        }
+
+        .settings-modal-body {
+          padding: 22px 24px;
+        }
+
+        .settings-modal-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 48px;
+          height: 48px;
+          margin-bottom: 18px;
+          border-radius: 12px;
+          background: #f0f5ef;
+          color: #55715c;
+        }
+
+        .settings-detail-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .settings-detail {
+          padding: 13px;
+          border: 1px solid #e7ebe5;
+          border-radius: 10px;
+          background: #fafbf9;
+        }
+
+        .settings-detail span {
+          display: block;
+          margin-bottom: 6px;
+          color: #7a847b;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .settings-detail strong {
+          display: block;
+          color: #36483b;
+          font-size: 13px;
+          line-height: 1.5;
+          overflow-wrap: anywhere;
+        }
+
+        .settings-detail-value {
+          padding: 14px;
+          border: 1px solid #e3e9e0;
+          border-radius: 10px;
+          background: #f7f9f6;
+        }
+
+        .settings-detail-value span {
+          display: block;
+          margin-bottom: 8px;
+          color: #7a847b;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .settings-detail-value pre {
+          margin: 0;
+          max-height: 260px;
+          overflow: auto;
+          color: #455449;
+          font-family: inherit;
+          font-size: 12px;
+          line-height: 1.6;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        }
+
+        .settings-modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          padding: 16px 24px 20px;
+          border-top: 1px solid #edf0eb;
+        }
+
+        .settings-modal-secondary {
+          padding: 8px 14px;
+          border: 1px solid #dce4d8;
+          border-radius: 8px;
+          background: #fff;
+          color: #405247;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .settings-modal-secondary:hover {
+          background: #f5f7f3;
+        }
+
         @media (max-width: 700px) {
           .settings-page .settings-toolbar {
             align-items: stretch;
@@ -243,6 +453,27 @@ export default function Settings() {
 
           .settings-page .settings-value {
             min-width: 180px;
+          }
+
+          .settings-detail-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .settings-modal-overlay {
+            padding: 12px;
+          }
+
+          .settings-modal-header {
+            padding: 18px;
+          }
+
+          .settings-modal-body {
+            padding: 18px;
+          }
+
+          .settings-modal-footer {
+            padding-left: 18px;
+            padding-right: 18px;
           }
         }
       `}</style>
@@ -278,16 +509,20 @@ export default function Settings() {
               disabled={loading}
               onClick={() => setReload((current) => current + 1)}
             >
+              <RefreshCw size={14} />
               {loading ? 'Loading…' : 'Refresh'}
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="loading-state">Loading site settings…</div>
+          <div className="loading-state">
+            Loading site settings…
+          </div>
         ) : error ? (
           <div className="settings-error" role="alert">
             <div>{error}</div>
+
             <button
               type="button"
               className="settings-retry"
@@ -298,21 +533,11 @@ export default function Settings() {
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="settings-empty">
-            <svg
-              width="42"
-              height="42"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            <SettingsIcon
+              size={42}
+              strokeWidth={1.4}
               style={{ color: '#9aa795' }}
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.6 2.8-.2-.1a1.7 1.7 0 0 0-1.8.2 1.7 1.7 0 0 0-.8 1.5v.2h-3.2v-.2a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.8.3l-.1.1-2.8-1.6.1-.2a1.7 1.7 0 0 0-.2-1.8A1.7 1.7 0 0 0 4.8 16h-.2v-3.2h.2a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.8L6 9.8l1.6-2.8.2.1a1.7 1.7 0 0 0 1.8-.2 1.7 1.7 0 0 0 .8-1.5v-.2h3.2v.2a1.7 1.7 0 0 0 1.1 1.6 1.7 1.7 0 0 0 1.8-.3l.1-.1 2.8 1.6-.1.2a1.7 1.7 0 0 0 .2 1.8 1.7 1.7 0 0 0 1.5.8h.2v3.2h-.2a1.7 1.7 0 0 0-1.1.8z" />
-            </svg>
+            />
 
             <h3>
               {items.length === 0
@@ -334,6 +559,7 @@ export default function Settings() {
                   <th>Setting</th>
                   <th>Value</th>
                   <th>Last Updated</th>
+                  <th>Action</th>
                 </tr>
               </thead>
 
@@ -363,6 +589,17 @@ export default function Settings() {
                         {formatDate(item.updated_at)}
                       </div>
                     </td>
+
+                    <td className="settings-action">
+                      <button
+                        type="button"
+                        className="settings-view-button"
+                        onClick={() => openSettingDetails(item)}
+                      >
+                        <Eye size={14} />
+                        View
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -378,6 +615,107 @@ export default function Settings() {
           current admin API.
         </span>
       </div>
+
+      {selectedSetting && (
+        <div
+          className="settings-modal-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeSettingDetails();
+            }
+          }}
+        >
+          <div
+            className="settings-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-details-title"
+          >
+            <div className="settings-modal-header">
+              <div>
+                <span className="settings-modal-eyebrow">
+                  Platform Configuration
+                </span>
+
+                <h2 id="settings-details-title">
+                  {getSettingName(selectedSetting)}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className="settings-modal-close"
+                onClick={closeSettingDetails}
+                aria-label="Close settings details"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="settings-modal-body">
+              <div className="settings-modal-icon">
+                <SettingsIcon size={23} strokeWidth={1.6} />
+              </div>
+
+              <div className="settings-detail-grid">
+                <div className="settings-detail">
+                  <span>Setting ID</span>
+                  <strong>{selectedSetting.id || '—'}</strong>
+                </div>
+
+                <div className="settings-detail">
+                  <span>Key</span>
+                  <strong>
+                    {selectedSetting.key ||
+                      selectedSetting.name ||
+                      '—'}
+                  </strong>
+                </div>
+
+                <div className="settings-detail">
+                  <span>Last Updated</span>
+                  <strong>
+                    {formatDate(selectedSetting.updated_at)}
+                  </strong>
+                </div>
+
+                <div className="settings-detail">
+                  <span>Status</span>
+                  <strong>Read-only</strong>
+                </div>
+              </div>
+
+              {selectedSetting.description && (
+                <div className="settings-detail" style={{ marginBottom: 12 }}>
+                  <span>Description</span>
+                  <strong>{selectedSetting.description}</strong>
+                </div>
+              )}
+
+              <div className="settings-detail-value">
+                <span>Current Value</span>
+
+                <pre>
+                  {formatSettingValue(
+                    getSettingValue(selectedSetting)
+                  )}
+                </pre>
+              </div>
+            </div>
+
+            <div className="settings-modal-footer">
+              <button
+                type="button"
+                className="settings-modal-secondary"
+                onClick={closeSettingDetails}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
