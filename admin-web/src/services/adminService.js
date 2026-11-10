@@ -344,5 +344,14 @@ export async function replySupportTicket(ticketId, message) {
     body: JSON.stringify({ message }),
   });
 }
+export async function getBanners() {
+  return apiRequest('/admin/banners');
+}
 
+export async function createBanner(formData) {
+  return apiRequest('/admin/banners', {
+    method: 'POST',
+    body: formData,
+  });
+}
 

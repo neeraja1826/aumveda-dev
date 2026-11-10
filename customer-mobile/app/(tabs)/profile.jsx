@@ -404,10 +404,13 @@ export default function ProfileScreen() {
               </View>
 
               <Text style={styles.authUserName} numberOfLines={1}>
-                {user?.name ||
-                  user?.full_name ||
+                {user?.full_name ||
+                  user?.name ||
+                  user?.user_metadata?.full_name ||
+                  user?.user_metadata?.name ||
                   user?.username ||
-                  'Aumveda Customer'}
+                  user?.email?.split('@')[0] ||
+                  ''}
               </Text>
 
               <Text style={styles.authUserEmail} numberOfLines={1}>

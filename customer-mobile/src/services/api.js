@@ -6,7 +6,7 @@ const API_BASE_URL =
 export async function apiRequest(endpoint, options = {}) {
   const baseUrl = API_BASE_URL?.replace(/\/+$/, '');
 
-  if (!baseUrl) {
+  if (!baseUrl) {0
     throw new Error(
       'API URL is not configured. Check EXPO_PUBLIC_API_URL_LOCAL and EXPO_PUBLIC_API_URL_PRODUCTION in .env'
     );

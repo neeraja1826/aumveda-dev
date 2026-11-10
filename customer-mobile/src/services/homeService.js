@@ -1,4 +1,3 @@
-
 import { apiRequest } from './api';
 
 function getPayload(response, fallback = null) {
@@ -19,7 +18,6 @@ const HOME_CACHE_TTL = 5 * 60 * 1000;
 let homeCache = null;
 let homeCacheTime = 0;
 let homeRequest = null;
-
 
 export async function getHomeData({
   token = null,
@@ -54,6 +52,7 @@ export async function getHomeData({
     };
 
     const [
+      bannersResponse,
       categoriesResponse,
       productsResponse,
       bundlesResponse,
@@ -61,6 +60,7 @@ export async function getHomeData({
       newArrivalsResponse,
       campaignsResponse,
     ] = await Promise.all([
+      safeRequest('/home/app-banners', []),
       safeRequest('/home/categories', []),
       safeRequest('/home/featured-products', []),
       safeRequest('/home/bundles', []),
@@ -71,6 +71,7 @@ export async function getHomeData({
 
     const result = {
       hero: null,
+      banners: getArray(bannersResponse),
       categories: getArray(categoriesResponse),
       featuredProducts: getArray(productsResponse),
       decorations: [],
@@ -96,6 +97,5 @@ export async function getHomeData({
     if (homeRequest === request) {
       homeRequest = null;
     }
-
   }
 }

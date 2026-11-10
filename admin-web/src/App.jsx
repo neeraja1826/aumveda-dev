@@ -25,6 +25,7 @@ import Login from './modules/Login.jsx';
 import Coupons from './modules/Coupons.jsx';
 import Notifications from './modules/Notifications.jsx';
 import Support from './modules/Support.jsx';
+import Banners from './modules/Banners.jsx';
 
 import { getAdminToken, setAdminToken } from './services/api.js';
 
@@ -73,6 +74,11 @@ function AdminLayout({ onLogout }) {
             <Route
               path="/admin/categories"
               element={<Categories />}
+            />
+
+            <Route
+              path="/admin/banners"
+              element={<Banners />}
             />
 
             <Route

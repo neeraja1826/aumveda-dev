@@ -157,6 +157,21 @@ const profile = extractUser(response);
         }
       }
 
+      const sessionUserName =
+        supabaseSession?.user?.user_metadata?.full_name ||
+        supabaseSession?.user?.user_metadata?.name;
+      if (
+        sessionUserName &&
+        !activeUser?.full_name &&
+        !activeUser?.name &&
+        !activeUser?.username
+      ) {
+        activeUser = {
+          ...activeUser,
+          full_name: sessionUserName,
+        };
+      }
+
       if (activeUser) {
         setUser(activeUser);
         setToken(sessionToken);
@@ -239,7 +254,7 @@ const profile = extractUser(response);
         );
       }
 
-      const { error: sessionError } = await supabase.auth.setSession({
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: newToken,
         refresh_token: refreshToken,
       });
@@ -273,23 +288,45 @@ const profile = extractUser(response);
       // fetch profile using token
       // ----------------------------------------------
 
-      if (!loggedInUser) {
+      if (
+        !loggedInUser?.full_name &&
+        !loggedInUser?.name &&
+        !loggedInUser?.username
+      ) {
         try {
           const profileResponse =
             await getProfile(
               newToken
             );
 
-          loggedInUser =
-            extractUser(
-              profileResponse
-            );
+          const profileUser = extractUser(profileResponse);
+          if (profileUser) {
+            loggedInUser = {
+              ...loggedInUser,
+              ...profileUser,
+            };
+          }
         } catch (profileError) {
           console.error(
             'AUTH: Profile fetch after login failed:',
             profileError
           );
         }
+      }
+
+      const authUserName =
+        sessionData?.user?.user_metadata?.full_name ||
+        sessionData?.user?.user_metadata?.name;
+      if (
+        authUserName &&
+        !loggedInUser?.full_name &&
+        !loggedInUser?.name &&
+        !loggedInUser?.username
+      ) {
+        loggedInUser = {
+          ...loggedInUser,
+          full_name: authUserName,
+        };
       }
 
       // ----------------------------------------------

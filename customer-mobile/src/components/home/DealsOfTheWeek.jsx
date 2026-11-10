@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Image,
@@ -9,48 +10,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import { getHomeData } from '../../services/homeService';
+
 // Average aspect ratio for the banner series (~2.33)
 const BANNER_ASPECT_RATIO = 2.33;
+
 // Slide interval: 3.8 seconds
 const AUTO_PLAY_INTERVAL = 3800;
-
-const BANNERS = [
-  {
-    id: 'deals-of-the-week',
-    source: require('../../../assets/Deals-of-the-week.png'),
-    title: 'Deals of the Week',
-    accessibilityLabel: 'Deals of the week. Tap to view all deals',
-  },
-  {
-    id: 'diwali-offer',
-    source: require('../../../assets/diwali-offer.png'),
-    title: 'Diwali Special Offers',
-    accessibilityLabel: 'Diwali special offers on Ayurvedic essentials. Tap to view deals',
-  },
-  {
-    id: 'first-order-discount',
-    source: require('../../../assets/first-order-discount.png'),
-    title: 'First Order Discount',
-    accessibilityLabel: 'Get extra 10 percent off on your first order. Tap to view deals',
-  },
-  {
-    id: 'free-gift',
-    source: require('../../../assets/free-gift.png'),
-    title: 'Free Gift on Orders',
-    accessibilityLabel: 'Free gift on select orders. Tap to view deals',
-  },
-];
-
-// Slides list with trailing clone: [Banner 0, Banner 1, Banner 2, Banner 3, Banner 0 Clone]
-// Starts naturally at Slide 0. All 4 original banners are guaranteed to be fully visible in sequence.
-// Forward slide from Banner 3 into Banner 0 Clone enables continuous right-sliding with zero leftward rewind.
-const SLIDES = [
-  ...BANNERS,
-  {
-    ...BANNERS[0],
-    id: `${BANNERS[0].id}-clone-end`,
-  },
-];
 
 export default function DealsOfTheWeek() {
   const router = useRouter();
@@ -58,27 +24,71 @@ export default function DealsOfTheWeek() {
 
   const scrollRef = useRef(null);
   const currentIndexRef = useRef(0);
+
   const [activeDot, setActiveDot] = useState(0);
+  const [banners, setBanners] = useState([]);
 
   const isInteractingRef = useRef(false);
   const resumeTimerRef = useRef(null);
   const resetTimerRef = useRef(null);
 
   const bannerWidth = Math.min(windowWidth - 28, 600);
-  const bannerHeight = Math.round(bannerWidth / BANNER_ASPECT_RATIO);
+  const bannerHeight = Math.round(
+    bannerWidth / BANNER_ASPECT_RATIO
+  );
 
-  const handleOpenDeals = () => {
-    router.push('/deals');
-  };
+  // Load banners from backend
+  useEffect(() => {
+    let mounted = true;
+
+    const loadBanners = async () => {
+      try {
+        const homeData = await getHomeData();
+
+        if (mounted) {
+          setBanners(homeData?.banners || []);
+        }
+      } catch (error) {
+        console.error(
+          'Failed to load app banners:',
+          error?.message || error
+        );
+      }
+    };
+
+    loadBanners();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Slides list with trailing clone
+  // [Banner 0, Banner 1, Banner 2, Banner 3, Banner 0 Clone]
+  const slides =
+    banners.length > 0
+      ? [
+          ...banners,
+          {
+            ...banners[0],
+            id: `${banners[0].id}-clone-end`,
+          },
+        ]
+      : [];
 
   // Continuous forward slide to the right
   const slideNext = useCallback(() => {
-    if (isInteractingRef.current || !scrollRef.current) {
+    if (
+      isInteractingRef.current ||
+      !scrollRef.current ||
+      banners.length === 0
+    ) {
       return;
     }
 
     const current = currentIndexRef.current;
     const next = current + 1;
+
     currentIndexRef.current = next;
 
     scrollRef.current.scrollTo({
@@ -86,50 +96,59 @@ export default function DealsOfTheWeek() {
       animated: true,
     });
 
-    // Update active dot immediately (0, 1, 2, 3)
-    setActiveDot(next % BANNERS.length);
+    // Update active dot immediately
+    setActiveDot(next % banners.length);
 
-    // If we just slid into the trailing clone (index 4),
-    // wait for the smooth forward slide animation to complete (~400ms),
-    // then silently reset back to index 0 without any animation.
-    if (next >= SLIDES.length - 1) {
+    // If we just slid into the trailing clone,
+    // silently reset back to index 0 after animation.
+    if (next >= slides.length - 1) {
       if (resetTimerRef.current) {
         clearTimeout(resetTimerRef.current);
       }
+
       resetTimerRef.current = setTimeout(() => {
         scrollRef.current?.scrollTo({
           x: 0,
           animated: false,
         });
+
         currentIndexRef.current = 0;
       }, 420);
     }
-  }, [windowWidth]);
+  }, [windowWidth, banners.length, slides.length]);
 
   // Auto-play interval
   useEffect(() => {
+    if (banners.length === 0) {
+      return;
+    }
+
     const interval = setInterval(() => {
       slideNext();
     }, AUTO_PLAY_INTERVAL);
 
     return () => {
       clearInterval(interval);
+
       if (resumeTimerRef.current) {
         clearTimeout(resumeTimerRef.current);
       }
+
       if (resetTimerRef.current) {
         clearTimeout(resetTimerRef.current);
       }
     };
-  }, [slideNext]);
+  }, [slideNext, banners.length]);
 
   // Pause auto-sliding while user is dragging manually
   const handleScrollBeginDrag = () => {
     isInteractingRef.current = true;
+
     if (resumeTimerRef.current) {
       clearTimeout(resumeTimerRef.current);
       resumeTimerRef.current = null;
     }
+
     if (resetTimerRef.current) {
       clearTimeout(resetTimerRef.current);
       resetTimerRef.current = null;
@@ -137,26 +156,33 @@ export default function DealsOfTheWeek() {
   };
 
   const handleMomentumScrollEnd = (event) => {
+    if (banners.length === 0) {
+      return;
+    }
+
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / windowWidth);
 
-    if (index >= SLIDES.length - 1) {
-      // Arrived at trailing clone: seamlessly snap to index 0
+    if (index >= slides.length - 1) {
+      // Arrived at trailing clone
       currentIndexRef.current = 0;
+
       scrollRef.current?.scrollTo({
         x: 0,
         animated: false,
       });
+
       setActiveDot(0);
     } else {
       currentIndexRef.current = index;
-      setActiveDot(index % BANNERS.length);
+      setActiveDot(index % banners.length);
     }
 
     // Resume auto-sliding after 1.5s
     if (resumeTimerRef.current) {
       clearTimeout(resumeTimerRef.current);
     }
+
     resumeTimerRef.current = setTimeout(() => {
       isInteractingRef.current = false;
     }, 1500);
@@ -165,6 +191,10 @@ export default function DealsOfTheWeek() {
   // User taps a pagination dot
   const handleDotPress = useCallback(
     (dotIndex) => {
+      if (banners.length === 0) {
+        return;
+      }
+
       currentIndexRef.current = dotIndex;
       setActiveDot(dotIndex);
 
@@ -174,19 +204,30 @@ export default function DealsOfTheWeek() {
       });
 
       isInteractingRef.current = true;
+
       if (resumeTimerRef.current) {
         clearTimeout(resumeTimerRef.current);
       }
+
       resumeTimerRef.current = setTimeout(() => {
         isInteractingRef.current = false;
       }, 2500);
     },
-    [windowWidth]
+    [windowWidth, banners.length]
   );
+
+  const handleOpenDeals = () => {
+    router.push('/deals');
+  };
+
+  // Do not render the carousel until banners are available
+  if (banners.length === 0) {
+    return null;
+  }
 
   return (
     <View style={styles.outerContainer}>
-      {/* SLIDING BANNER CAROUSEL (FORWARD-ONLY INFINITE LOOP) */}
+      {/* SLIDING BANNER CAROUSEL */}
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -197,23 +238,33 @@ export default function DealsOfTheWeek() {
         onMomentumScrollEnd={handleMomentumScrollEnd}
         scrollEventThrottle={16}
       >
-        {SLIDES.map((item) => (
+        {slides.map((item) => (
           <View
             key={item.id}
-            style={[styles.slideContainer, { width: windowWidth }]}
+            style={[
+              styles.slideContainer,
+              { width: windowWidth },
+            ]}
           >
             <Pressable
               onPress={handleOpenDeals}
               style={({ pressed }) => [
                 styles.card,
-                { width: bannerWidth, height: bannerHeight },
+                {
+                  width: bannerWidth,
+                  height: bannerHeight,
+                },
                 pressed && styles.pressed,
               ]}
               accessibilityRole="button"
-              accessibilityLabel={item.accessibilityLabel}
+              accessibilityLabel={
+                item.alt_text ||
+                item.title ||
+                'App banner. Tap to view deals'
+              }
             >
               <Image
-                source={item.source}
+                source={{ uri: item.image_url }}
                 style={styles.bannerImage}
                 resizeMode="cover"
               />
@@ -223,9 +274,13 @@ export default function DealsOfTheWeek() {
       </ScrollView>
 
       {/* PAGINATION DOTS */}
-      <View style={styles.paginationRow} pointerEvents="box-none">
-        {BANNERS.map((banner, index) => {
+      <View
+        style={styles.paginationRow}
+        pointerEvents="box-none"
+      >
+        {banners.map((banner, index) => {
           const isActive = index === activeDot;
+
           return (
             <Pressable
               key={banner.id}
@@ -240,7 +295,9 @@ export default function DealsOfTheWeek() {
               <View
                 style={[
                   styles.dot,
-                  isActive ? styles.dotActive : styles.dotInactive,
+                  isActive
+                    ? styles.dotActive
+                    : styles.dotInactive,
                 ]}
               />
             </Pressable>
@@ -269,7 +326,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
     shadowColor: '#123D2B',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 3,
