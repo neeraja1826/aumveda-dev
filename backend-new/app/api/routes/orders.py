@@ -1,8 +1,23 @@
+import base64
+import io
 import logging
-import time
-import httpx
-from typing import Literal
-from uuid import UUID
+
+from decimal import Decimal
+
+import resend
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
 from fastapi import (
     APIRouter,
@@ -18,6 +33,7 @@ from fastapi.security import (
 
 from pydantic import BaseModel
 
+from app.core.config import settings
 from app.core.supabase import supabase
 
 
@@ -176,6 +192,9 @@ def create_order(
 ):
 
     try:
+        # ---------------------------------------------------------
+        # 1. CREATE ORDER USING EXISTING RPC
+        # ---------------------------------------------------------
         response = (
             supabase
             .rpc(
@@ -202,10 +221,741 @@ def create_order(
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Unable to create order. Please try again.",
-                    )
+                )
+
             order = order[0]
+
+        # ---------------------------------------------------------
+        # 2. CREATE ADMIN NOTIFICATION
+        # ---------------------------------------------------------
         create_admin_order_notification(order)
 
+        # ---------------------------------------------------------
+        # 3. FETCH COMPLETE ORDER DETAILS FOR INVOICE
+        # ---------------------------------------------------------
+        invoice_pdf = None
+        customer_email = None
+        customer_name = "Customer"
+
+        try:
+            order_id = order.get("id")
+            order_number = order.get("order_number")
+
+            # -----------------------------------------------------
+            # CUSTOMER
+            # -----------------------------------------------------
+            profile_response = (
+                supabase
+                .table("profiles")
+                .select("*")
+                .eq("id", customer_id)
+                .limit(1)
+                .execute()
+            )
+
+            profile = (
+                profile_response.data[0]
+                if profile_response.data
+                else {}
+            )
+
+            customer_email = (
+                profile.get("email")
+                or profile.get("email_address")
+            )
+
+            customer_name = (
+                profile.get("full_name")
+                or profile.get("name")
+                or profile.get("display_name")
+                or "Customer"
+            )
+
+            customer_phone = (
+                profile.get("phone")
+                or profile.get("phone_number")
+                or ""
+            )
+
+            # -----------------------------------------------------
+            # ORDER DETAILS
+            # -----------------------------------------------------
+            order_response = (
+                supabase
+                .table("orders")
+                .select("*")
+                .eq("id", str(order_id))
+                .limit(1)
+                .execute()
+            )
+
+            complete_order = (
+                order_response.data[0]
+                if order_response.data
+                else order
+            )
+
+            # -----------------------------------------------------
+            # ORDER ITEMS
+            # -----------------------------------------------------
+            items_response = (
+                supabase
+                .table("order_items")
+                .select("*")
+                .eq("order_id", str(order_id))
+                .execute()
+            )
+
+            order_items = items_response.data or []
+
+            # -----------------------------------------------------
+            # PRODUCT DETAILS
+            # -----------------------------------------------------
+            product_ids = list({
+                item.get("product_id")
+                for item in order_items
+                if item.get("product_id")
+            })
+
+            variant_ids = list({
+                item.get("variant_id")
+                for item in order_items
+                if item.get("variant_id")
+            })
+
+            products = []
+
+            if product_ids:
+                products_response = (
+                    supabase
+                    .table("products")
+                    .select("*")
+                    .in_("id", product_ids)
+                    .execute()
+                )
+
+                products = products_response.data or []
+
+            variants = []
+
+            if variant_ids:
+                variants_response = (
+                    supabase
+                    .table("product_variants")
+                    .select("*")
+                    .in_("id", variant_ids)
+                    .execute()
+                )
+
+                variants = variants_response.data or []
+
+            products_by_id = {
+                str(product.get("id")): product
+                for product in products
+            }
+
+            variants_by_id = {
+                str(variant.get("id")): variant
+                for variant in variants
+            }
+
+            # -----------------------------------------------------
+            # PREPARE INVOICE DATA
+            # -----------------------------------------------------
+            invoice_number = f"INV-{order_number}"
+
+            order_date = (
+                complete_order.get("created_at")
+                or order.get("created_at")
+                or ""
+            )
+
+            order_status = (
+                complete_order.get("status")
+                or order.get("status")
+                or "Processing"
+            )
+
+            payment_method = (
+                complete_order.get("payment_method")
+                or payload.payment_method
+                or ""
+            )
+
+            payment_status = (
+                complete_order.get("payment_status")
+                or "Pending"
+            )
+
+            currency = (
+                complete_order.get("currency")
+                or "INR"
+            )
+
+            subtotal = (
+                complete_order.get("subtotal")
+                or 0
+            )
+
+            shipping = (
+                complete_order.get("shipping")
+                or 0
+            )
+
+            discount = (
+                complete_order.get("discount")
+                or 0
+            )
+
+            tax = (
+                complete_order.get("tax")
+                or 0
+            )
+
+            total_amount = (
+                complete_order.get("total_amount")
+                or 0
+            )
+
+            shipping_address = (
+                complete_order.get("shipping_address")
+                or {}
+            )
+
+            billing_address = (
+                complete_order.get("billing_address")
+                or shipping_address
+                or {}
+            )
+
+            # -----------------------------------------------------
+            # TRACKING INFORMATION
+            # -----------------------------------------------------
+            tracking_id = (
+                complete_order.get("tracking_id")
+                or complete_order.get("tracking_number")
+                or complete_order.get("shipment_tracking_id")
+                or complete_order.get("awb_number")
+                or "Not assigned"
+            )
+
+            # -----------------------------------------------------
+            # VENDOR
+            # -----------------------------------------------------
+            vendor_names = []
+
+            for product in products:
+                vendor_name = (
+                    product.get("vendor_name")
+                    or product.get("vendor")
+                    or product.get("seller_name")
+                )
+
+                if vendor_name:
+                    vendor_names.append(str(vendor_name))
+
+            vendor_text = ", ".join(
+                dict.fromkeys(vendor_names)
+            ) if vendor_names else "AUMVEDA"
+
+            # -----------------------------------------------------
+            # CREATE PDF IN MEMORY
+            # -----------------------------------------------------
+            pdf_buffer = io.BytesIO()
+
+            document = SimpleDocTemplate(
+                pdf_buffer,
+                pagesize=A4,
+                rightMargin=15 * mm,
+                leftMargin=15 * mm,
+                topMargin=15 * mm,
+                bottomMargin=15 * mm,
+            )
+
+            styles = getSampleStyleSheet()
+
+            title_style = ParagraphStyle(
+                "InvoiceTitle",
+                parent=styles["Title"],
+                fontSize=22,
+                leading=26,
+                alignment=TA_CENTER,
+                spaceAfter=8,
+            )
+
+            heading_style = ParagraphStyle(
+                "Heading",
+                parent=styles["Heading2"],
+                fontSize=11,
+                leading=14,
+                spaceBefore=8,
+                spaceAfter=6,
+            )
+
+            normal_style = ParagraphStyle(
+                "InvoiceNormal",
+                parent=styles["Normal"],
+                fontSize=9,
+                leading=13,
+            )
+
+            right_style = ParagraphStyle(
+                "InvoiceRight",
+                parent=normal_style,
+                alignment=TA_RIGHT,
+            )
+
+            elements = []
+
+            # -----------------------------------------------------
+            # HEADER
+            # -----------------------------------------------------
+            elements.append(
+                Paragraph(
+                    "AUMVEDA",
+                    title_style,
+                )
+            )
+
+            elements.append(
+                Paragraph(
+                    "Ayurvedic Wellness & Natural Products",
+                    ParagraphStyle(
+                        "Subtitle",
+                        parent=normal_style,
+                        alignment=TA_CENTER,
+                        fontSize=9,
+                    ),
+                )
+            )
+
+            elements.append(Spacer(1, 8))
+
+            # -----------------------------------------------------
+            # INVOICE INFORMATION
+            # -----------------------------------------------------
+            invoice_info = [
+                [
+                    Paragraph("<b>Invoice Number</b>", normal_style),
+                    Paragraph(str(invoice_number), normal_style),
+                    Paragraph("<b>Order Number</b>", normal_style),
+                    Paragraph(str(order_number or "-"), normal_style),
+                ],
+                [
+                    Paragraph("<b>Order Date</b>", normal_style),
+                    Paragraph(str(order_date), normal_style),
+                    Paragraph("<b>Order Status</b>", normal_style),
+                    Paragraph(str(order_status), normal_style),
+                ],
+                [
+                    Paragraph("<b>Payment Method</b>", normal_style),
+                    Paragraph(str(payment_method), normal_style),
+                    Paragraph("<b>Payment Status</b>", normal_style),
+                    Paragraph(str(payment_status), normal_style),
+                ],
+                [
+                    Paragraph("<b>Tracking ID</b>", normal_style),
+                    Paragraph(str(tracking_id), normal_style),
+                    Paragraph("<b>Vendor</b>", normal_style),
+                    Paragraph(str(vendor_text), normal_style),
+                ],
+            ]
+
+            invoice_table = Table(
+                invoice_info,
+                colWidths=[
+                    32 * mm,
+                    53 * mm,
+                    32 * mm,
+                    53 * mm,
+                ],
+            )
+
+            invoice_table.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+                        ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
+                        ("BACKGROUND", (2, 0), (2, -1), colors.whitesmoke),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                        ("TOPPADDING", (0, 0), (-1, -1), 6),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ]
+                )
+            )
+
+            elements.append(invoice_table)
+
+            # -----------------------------------------------------
+            # CUSTOMER DETAILS
+            # -----------------------------------------------------
+            elements.append(
+                Paragraph(
+                    "Customer Details",
+                    heading_style,
+                )
+            )
+
+            customer_text = (
+                f"<b>{customer_name}</b><br/>"
+                f"{customer_email or ''}<br/>"
+                f"{customer_phone}"
+            )
+
+            elements.append(
+                Paragraph(
+                    customer_text,
+                    normal_style,
+                )
+            )
+
+            # -----------------------------------------------------
+            # SHIPPING ADDRESS
+            # -----------------------------------------------------
+            elements.append(
+                Paragraph(
+                    "Shipping Address",
+                    heading_style,
+                )
+            )
+
+            if isinstance(shipping_address, dict):
+
+                address_parts = [
+                    shipping_address.get("full_name"),
+                    shipping_address.get("address_line1"),
+                    shipping_address.get("address_line2"),
+                    shipping_address.get("city"),
+                    shipping_address.get("state"),
+                    shipping_address.get("postal_code"),
+                    shipping_address.get("pincode"),
+                    shipping_address.get("country"),
+                    shipping_address.get("phone"),
+                ]
+
+                address_text = "<br/>".join(
+                    str(value)
+                    for value in address_parts
+                    if value
+                )
+
+            else:
+                address_text = str(shipping_address or "")
+
+            elements.append(
+                Paragraph(
+                    address_text or "Address not available",
+                    normal_style,
+                )
+            )
+
+            # -----------------------------------------------------
+            # ITEMS TABLE
+            # -----------------------------------------------------
+            elements.append(
+                Paragraph(
+                    "Order Items",
+                    heading_style,
+                )
+            )
+
+            item_rows = [
+                [
+                    Paragraph("<b>#</b>", normal_style),
+                    Paragraph("<b>Product</b>", normal_style),
+                    Paragraph("<b>Variant / Size</b>", normal_style),
+                    Paragraph("<b>Qty</b>", normal_style),
+                    Paragraph("<b>Unit Price</b>", right_style),
+                    Paragraph("<b>Total</b>", right_style),
+                ]
+            ]
+
+            for index, item in enumerate(order_items, start=1):
+
+                product = products_by_id.get(
+                    str(item.get("product_id")),
+                    {},
+                )
+
+                variant = variants_by_id.get(
+                    str(item.get("variant_id")),
+                    {},
+                )
+
+                product_name = (
+                    item.get("product_name")
+                    or product.get("name")
+                    or product.get("title")
+                    or "Product"
+                )
+
+                variant_name = (
+                    item.get("variant_name")
+                    or variant.get("name")
+                    or variant.get("size")
+                    or variant.get("title")
+                    or "-"
+                )
+
+                quantity = (
+                    item.get("quantity")
+                    or item.get("qty")
+                    or 1
+                )
+
+                unit_price = (
+                    item.get("unit_price")
+                    or item.get("price")
+                    or item.get("selling_price")
+                    or 0
+                )
+
+                line_total = (
+                    item.get("total_price")
+                    or item.get("line_total")
+                    or item.get("subtotal")
+                    or (
+                        Decimal(str(unit_price))
+                        * Decimal(str(quantity))
+                    )
+                )
+
+                item_rows.append(
+                    [
+                        Paragraph(str(index), normal_style),
+                        Paragraph(
+                            str(product_name),
+                            normal_style,
+                        ),
+                        Paragraph(
+                            str(variant_name),
+                            normal_style,
+                        ),
+                        Paragraph(
+                            str(quantity),
+                            normal_style,
+                        ),
+                        Paragraph(
+                            f"{currency} {float(unit_price):.2f}",
+                            right_style,
+                        ),
+                        Paragraph(
+                            f"{currency} {float(line_total):.2f}",
+                            right_style,
+                        ),
+                    ]
+                )
+
+            items_table = Table(
+                item_rows,
+                colWidths=[
+                    8 * mm,
+                    55 * mm,
+                    35 * mm,
+                    12 * mm,
+                    30 * mm,
+                    32 * mm,
+                ],
+                repeatRows=1,
+            )
+
+            items_table.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                        ("TOPPADDING", (0, 0), (-1, -1), 6),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ]
+                )
+            )
+
+            elements.append(items_table)
+
+            # -----------------------------------------------------
+            # TOTALS
+            # -----------------------------------------------------
+            elements.append(Spacer(1, 10))
+
+            totals_rows = [
+                [
+                    Paragraph("<b>Subtotal</b>", normal_style),
+                    Paragraph(
+                        f"{currency} {float(subtotal):.2f}",
+                        right_style,
+                    ),
+                ],
+                [
+                    Paragraph("<b>Shipping</b>", normal_style),
+                    Paragraph(
+                        f"{currency} {float(shipping):.2f}",
+                        right_style,
+                    ),
+                ],
+                [
+                    Paragraph("<b>Discount</b>", normal_style),
+                    Paragraph(
+                        f"- {currency} {float(discount):.2f}",
+                        right_style,
+                    ),
+                ],
+                [
+                    Paragraph("<b>Tax</b>", normal_style),
+                    Paragraph(
+                        f"{currency} {float(tax):.2f}",
+                        right_style,
+                    ),
+                ],
+                [
+                    Paragraph("<b>Grand Total</b>", normal_style),
+                    Paragraph(
+                        f"<b>{currency} {float(total_amount):.2f}</b>",
+                        right_style,
+                    ),
+                ],
+            ]
+
+            totals_table = Table(
+                totals_rows,
+                colWidths=[
+                    135 * mm,
+                    37 * mm,
+                ],
+                hAlign="RIGHT",
+            )
+
+            totals_table.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+                        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                        ("TOPPADDING", (0, 0), (-1, -1), 6),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ]
+                )
+            )
+
+            elements.append(totals_table)
+
+            # -----------------------------------------------------
+            # FOOTER
+            # -----------------------------------------------------
+            elements.append(Spacer(1, 15))
+
+            elements.append(
+                Paragraph(
+                    "Thank you for choosing AUMVEDA.",
+                    ParagraphStyle(
+                        "Footer",
+                        parent=normal_style,
+                        alignment=TA_CENTER,
+                        fontSize=9,
+                    ),
+                )
+            )
+
+            elements.append(
+                Paragraph(
+                    "This is a computer-generated invoice.",
+                    ParagraphStyle(
+                        "FooterSmall",
+                        parent=normal_style,
+                        alignment=TA_CENTER,
+                        fontSize=7,
+                    ),
+                )
+            )
+
+            document.build(elements)
+
+            invoice_pdf = pdf_buffer.getvalue()
+
+            # -----------------------------------------------------
+            # 4. SEND EMAIL WITH INVOICE
+            # -----------------------------------------------------
+            if (
+                settings.resend_api_key
+                and settings.resend_from_email
+                and customer_email
+                and invoice_pdf
+            ):
+                resend.api_key = settings.resend_api_key
+                resend.Emails.send(
+                    {
+                        "from": (
+                            f"{settings.resend_from_name} "
+                            f"<{settings.resend_from_email}>"
+                        ),
+                        "to": [customer_email],
+                        "subject": (
+                            f"AUMVEDA Order Confirmation - "
+                            f"{order_number}"
+                        ),
+                        "text": f"""
+Dear {customer_name},
+
+Thank you for placing your order with AUMVEDA.
+
+Your order has been successfully created.
+
+Order Number: {order_number}
+Invoice Number: {invoice_number}
+Payment Method: {payment_method}
+Payment Status: {payment_status}
+Order Status: {order_status}
+Total Amount: {currency} {float(total_amount):.2f}
+
+Please find your invoice attached to this email.
+
+Thank you for choosing AUMVEDA.
+
+Regards,
+AUMVEDA Team
+""".strip(),
+                        "attachments": [
+                            {
+                                "filename": f"{invoice_number}.pdf",
+                                "content": base64.b64encode(
+                                    invoice_pdf
+                                ).decode("ascii"),
+                            }
+                        ],
+                    }
+                )
+
+                logger.info(
+                    "Invoice email sent successfully "
+                    "for order %s",
+                    order_number,
+                )
+
+            else:
+                logger.warning(
+                    "Resend configuration or invoice email data is missing. "
+                    "Invoice email was not sent for order %s.",
+                    order_number,
+                )
+
+        except Exception as invoice_error:
+
+            # IMPORTANT:
+            # Invoice/email failure must NOT fail the order.
+            logger.exception(
+                "Invoice generation/email failed for order %s: %s",
+                order.get("order_number"),
+                invoice_error,
+            )
+
+        # ---------------------------------------------------------
+        # 5. RETURN SUCCESSFUL ORDER
+        # ---------------------------------------------------------
         return {
             "status": "success",
             "message": "Order created successfully.",
@@ -264,7 +1014,6 @@ def create_order(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create order: {message}",
         )
-
 
 # ============================================================
 # GET ORDERS

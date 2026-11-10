@@ -41,6 +41,17 @@ class Settings(BaseSettings):
 
     cors_origins: str = ""
 
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from_email: str | None = None
+    smtp_from_name: str = "AUMVEDA"
+
+    resend_api_key: str | None = None
+    resend_from_email: str | None = None
+    resend_from_name: str = "AUMVEDA"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -59,6 +59,7 @@ export async function getHomeData({
       couponsResponse,
       newArrivalsResponse,
       campaignsResponse,
+      categoryBannersResponse,
     ] = await Promise.all([
       safeRequest('/home/app-banners', []),
       safeRequest('/home/categories', []),
@@ -67,18 +68,33 @@ export async function getHomeData({
       safeRequest('/home/coupons', []),
       safeRequest('/home/new-arrivals', []),
       safeRequest('/home/category-campaigns', []),
+
+      // Category banners uploaded from Admin Web
+      safeRequest('/home/category-banners', []),
     ]);
 
     const result = {
       hero: null,
+
+      // Existing home banners
       banners: getArray(bannersResponse),
+
+      // Existing categories
       categories: getArray(categoriesResponse),
+
+      // Existing products
       featuredProducts: getArray(productsResponse),
+
       decorations: [],
+
+      // Existing sections
       bundles: getArray(bundlesResponse),
       coupons: getArray(couponsResponse),
       newArrivals: getArray(newArrivalsResponse),
       categoryCampaigns: getArray(campaignsResponse),
+
+      // NEW: Category promotional banners
+      categoryBanners: getArray(categoryBannersResponse),
     };
 
     homeCache = result;

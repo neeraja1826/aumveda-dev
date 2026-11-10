@@ -1,5 +1,9 @@
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from 'react';
 import {
   Image,
   Pressable,
@@ -33,11 +37,15 @@ export default function DealsOfTheWeek() {
   const resetTimerRef = useRef(null);
 
   const bannerWidth = Math.min(windowWidth - 28, 600);
+
   const bannerHeight = Math.round(
     bannerWidth / BANNER_ASPECT_RATIO
   );
 
-  // Load banners from backend
+  /* ============================================================
+     LOAD APP PROMOTIONAL BANNERS
+     ============================================================ */
+
   useEffect(() => {
     let mounted = true;
 
@@ -45,14 +53,48 @@ export default function DealsOfTheWeek() {
       try {
         const homeData = await getHomeData();
 
-        if (mounted) {
-          setBanners(homeData?.banners || []);
+        if (!mounted) {
+          return;
         }
+
+        const apiBanners = Array.isArray(
+          homeData?.banners
+        )
+          ? homeData.banners
+          : [];
+
+        // Only use banners that have a valid image URL.
+        const validBanners = apiBanners.filter(
+          (banner) =>
+            banner &&
+            typeof banner.image_url === 'string' &&
+            banner.image_url.trim().length > 0
+        );
+
+        setBanners(validBanners);
+
+        // Reset carousel position when fresh banner
+        // data is loaded.
+        currentIndexRef.current = 0;
+        setActiveDot(0);
+
+        // Make sure the carousel starts from the
+        // first slide after API data loads.
+        requestAnimationFrame(() => {
+          scrollRef.current?.scrollTo({
+            x: 0,
+            animated: false,
+          });
+        });
       } catch (error) {
         console.error(
           'Failed to load app banners:',
           error?.message || error
         );
+
+        if (mounted) {
+          setBanners([]);
+        }
       }
     };
 
@@ -63,8 +105,13 @@ export default function DealsOfTheWeek() {
     };
   }, []);
 
-  // Slides list with trailing clone
-  // [Banner 0, Banner 1, Banner 2, Banner 3, Banner 0 Clone]
+  /* ============================================================
+     SLIDES
+     
+     Adds one clone at the end so the carousel can move
+     continuously from the last banner back to the first.
+     ============================================================ */
+
   const slides =
     banners.length > 0
       ? [
@@ -76,7 +123,10 @@ export default function DealsOfTheWeek() {
         ]
       : [];
 
-  // Continuous forward slide to the right
+  /* ============================================================
+     NEXT SLIDE
+     ============================================================ */
+
   const slideNext = useCallback(() => {
     if (
       isInteractingRef.current ||
@@ -96,11 +146,14 @@ export default function DealsOfTheWeek() {
       animated: true,
     });
 
-    // Update active dot immediately
+    // Update active dot immediately.
     setActiveDot(next % banners.length);
 
-    // If we just slid into the trailing clone,
-    // silently reset back to index 0 after animation.
+    /*
+      If we have moved to the trailing clone,
+      silently reset the carousel to the first
+      real banner after the animation finishes.
+    */
     if (next >= slides.length - 1) {
       if (resetTimerRef.current) {
         clearTimeout(resetTimerRef.current);
@@ -113,11 +166,19 @@ export default function DealsOfTheWeek() {
         });
 
         currentIndexRef.current = 0;
+        setActiveDot(0);
       }, 420);
     }
-  }, [windowWidth, banners.length, slides.length]);
+  }, [
+    windowWidth,
+    banners.length,
+    slides.length,
+  ]);
 
-  // Auto-play interval
+  /* ============================================================
+     AUTO PLAY
+     ============================================================ */
+
   useEffect(() => {
     if (banners.length === 0) {
       return;
@@ -140,7 +201,10 @@ export default function DealsOfTheWeek() {
     };
   }, [slideNext, banners.length]);
 
-  // Pause auto-sliding while user is dragging manually
+  /* ============================================================
+     USER STARTS DRAGGING
+     ============================================================ */
+
   const handleScrollBeginDrag = () => {
     isInteractingRef.current = true;
 
@@ -155,16 +219,25 @@ export default function DealsOfTheWeek() {
     }
   };
 
+  /* ============================================================
+     USER FINISHES SWIPING
+     ============================================================ */
+
   const handleMomentumScrollEnd = (event) => {
     if (banners.length === 0) {
       return;
     }
 
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / windowWidth);
+    const offsetX =
+      event.nativeEvent.contentOffset.x;
+
+    const index = Math.round(
+      offsetX / windowWidth
+    );
 
     if (index >= slides.length - 1) {
-      // Arrived at trailing clone
+      // Arrived at trailing clone.
+
       currentIndexRef.current = 0;
 
       scrollRef.current?.scrollTo({
@@ -175,10 +248,15 @@ export default function DealsOfTheWeek() {
       setActiveDot(0);
     } else {
       currentIndexRef.current = index;
-      setActiveDot(index % banners.length);
+
+      setActiveDot(
+        index % banners.length
+      );
     }
 
-    // Resume auto-sliding after 1.5s
+    /*
+      Resume auto sliding after 1.5 seconds.
+    */
     if (resumeTimerRef.current) {
       clearTimeout(resumeTimerRef.current);
     }
@@ -188,7 +266,10 @@ export default function DealsOfTheWeek() {
     }, 1500);
   };
 
-  // User taps a pagination dot
+  /* ============================================================
+     PAGINATION DOT PRESS
+     ============================================================ */
+
   const handleDotPress = useCallback(
     (dotIndex) => {
       if (banners.length === 0) {
@@ -196,6 +277,7 @@ export default function DealsOfTheWeek() {
       }
 
       currentIndexRef.current = dotIndex;
+
       setActiveDot(dotIndex);
 
       scrollRef.current?.scrollTo({
@@ -216,18 +298,34 @@ export default function DealsOfTheWeek() {
     [windowWidth, banners.length]
   );
 
+  /* ============================================================
+     OPEN DEALS
+     ============================================================ */
+
   const handleOpenDeals = () => {
     router.push('/deals');
   };
 
-  // Do not render the carousel until banners are available
+  /* ============================================================
+     NO BANNERS
+     ============================================================ */
+
+  // Do not render the carousel until the API
+  // returns at least one valid banner.
   if (banners.length === 0) {
     return null;
   }
 
+  /* ============================================================
+     UI
+     ============================================================ */
+
   return (
     <View style={styles.outerContainer}>
-      {/* SLIDING BANNER CAROUSEL */}
+      {/* ======================================================
+          SLIDING BANNER CAROUSEL
+      ====================================================== */}
+
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -243,7 +341,9 @@ export default function DealsOfTheWeek() {
             key={item.id}
             style={[
               styles.slideContainer,
-              { width: windowWidth },
+              {
+                width: windowWidth,
+              },
             ]}
           >
             <Pressable
@@ -264,7 +364,9 @@ export default function DealsOfTheWeek() {
               }
             >
               <Image
-                source={{ uri: item.image_url }}
+                source={{
+                  uri: item.image_url,
+                }}
                 style={styles.bannerImage}
                 resizeMode="cover"
               />
@@ -273,24 +375,33 @@ export default function DealsOfTheWeek() {
         ))}
       </ScrollView>
 
-      {/* PAGINATION DOTS */}
+      {/* ======================================================
+          PAGINATION DOTS
+      ====================================================== */}
+
       <View
         style={styles.paginationRow}
         pointerEvents="box-none"
       >
         {banners.map((banner, index) => {
-          const isActive = index === activeDot;
+          const isActive =
+            index === activeDot;
 
           return (
             <Pressable
               key={banner.id}
-              onPress={() => handleDotPress(index)}
+              onPress={() =>
+                handleDotPress(index)
+              }
               style={({ pressed }) => [
                 styles.dotTouchArea,
-                pressed && styles.dotPressed,
+                pressed &&
+                  styles.dotPressed,
               ]}
               accessibilityRole="button"
-              accessibilityLabel={`Go to slide ${index + 1}`}
+              accessibilityLabel={`Go to slide ${
+                index + 1
+              }`}
             >
               <View
                 style={[
@@ -307,6 +418,10 @@ export default function DealsOfTheWeek() {
     </View>
   );
 }
+
+/* ==============================================================
+   STYLES
+================================================================ */
 
 const styles = StyleSheet.create({
   outerContainer: {

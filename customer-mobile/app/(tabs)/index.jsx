@@ -43,7 +43,9 @@ import {
 import { getBuyAgainProducts } from '../../src/services/orderService';
 
 import LoadingScreen from '../../src/components/common/LoadingScreen';
-import HomeHeader, { getCategoryPastelTheme } from '../../src/components/home/HomeHeader';
+import HomeHeader, {
+  getCategoryPastelTheme,
+} from '../../src/components/home/HomeHeader';
 import DealsOfTheWeek from '../../src/components/home/DealsOfTheWeek';
 import ExploreAyurveda from '../../src/components/home/ExploreAyurveda';
 import FeaturedProducts from '../../src/components/home/FeaturedProducts';
@@ -56,41 +58,6 @@ import { useAuth } from '../../src/context/AuthContext';
 import JustArrived from '../../src/components/home/JustArrived';
 
 const PRODUCTS_PAGE_SIZE = 100;
-
-const CATEGORY_BANNERS = {
-  'skin care': {
-    image: require('../../assets/skin-care.png'),
-    accessibilityLabel: 'Nourish your skin naturally with Ayurvedic skin care essentials',
-  },
-  'hair care': {
-    image: require('../../assets/Hair-care.png'),
-    accessibilityLabel: 'Stronger, healthier and shinier hair with Ayurvedic hair care',
-  },
-  'health care': {
-    image: require('../../assets/Immunity.png'),
-    accessibilityLabel: 'Boost your immunity naturally with Ayurvedic formulations',
-  },
-  immunity: {
-    image: require('../../assets/Immunity.png'),
-    accessibilityLabel: 'Boost your immunity naturally with Ayurvedic formulations',
-  },
-  'women care': {
-    image: require('../../assets/Women-care.png'),
-    accessibilityLabel: 'Complete women care the Ayurvedic way',
-  },
-  'personal care': {
-    image: require('../../assets/Personal-care.png'),
-    accessibilityLabel: 'Ayurvedic personal care for your everyday essentials',
-  },
-  wellness: {
-    image: require('../../assets/Wellness.png'),
-    accessibilityLabel: 'Your daily wellness companion',
-  },
-  'wellness teas': {
-    image: require('../../assets/Wellness.png'),
-    accessibilityLabel: 'Your daily wellness companion',
-  },
-};
 
 export default function HomeScreen() {
 
@@ -131,7 +98,19 @@ export default function HomeScreen() {
     featuredProducts: [],
     bundles: [],
     decorations: [],
+
+    // App promotional banners
+    banners: [],
+
+    // Category promotional banners
+    categoryBanners: [],
+
+    // Other home sections
+    coupons: [],
+    newArrivals: [],
+    categoryCampaigns: [],
   });
+
 
   // ============================================================
   // BUY AGAIN
@@ -160,12 +139,43 @@ export default function HomeScreen() {
   const [allProductsError, setAllProductsError] = useState(null);
 
 
+  // ============================================================
+  // HEADER THEME
+  // ============================================================
+
   const activeHeaderTheme = useMemo(() => {
     return getCategoryPastelTheme(selectedCategoryName, 0);
   }, [selectedCategoryName]);
 
-  const selectedCategoryBanner =
-    CATEGORY_BANNERS[selectedCategoryName.trim().toLowerCase()];
+
+  // ============================================================
+  // SELECTED CATEGORY BANNER
+  // ============================================================
+  // Category banners now come from the API.
+  // They are matched using category_id.
+  // ============================================================
+
+  const selectedCategoryBanner = useMemo(() => {
+    if (selectedCategory === 'all') {
+      return null;
+    }
+
+    const banners = Array.isArray(data.categoryBanners)
+      ? data.categoryBanners
+      : [];
+
+    return (
+      banners.find(
+        (banner) =>
+          String(banner?.category_id) === String(selectedCategory)
+      ) || null
+    );
+  }, [data.categoryBanners, selectedCategory]);
+
+
+  // ============================================================
+  // CATEGORY SELECTION
+  // ============================================================
 
   const handleSelectCategory = (category) => {
     const categoryId = category?.id
@@ -235,6 +245,8 @@ export default function HomeScreen() {
     };
 
   }, [selectedCategory]);
+
+
   // ============================================================
   // LOADING
   // ============================================================
@@ -257,7 +269,6 @@ export default function HomeScreen() {
     try {
       setError(null);
 
-
       console.log('HOME AUTH:', {
         loggedIn: Boolean(token),
         hasToken: Boolean(token),
@@ -268,11 +279,14 @@ export default function HomeScreen() {
       });
 
       console.log(
-  'JUST ARRIVED PRODUCTS:',
-  response.newArrivals
-);
+        'JUST ARRIVED PRODUCTS:',
+        response.newArrivals
+      );
 
-   
+      console.log(
+        'CATEGORY BANNERS:',
+        response.categoryBanners
+      );
 
       setData(response);
 
@@ -288,6 +302,7 @@ export default function HomeScreen() {
     }
 
   }, [token]);
+
 
   // ============================================================
   // LOAD BUY AGAIN PRODUCTS
@@ -317,6 +332,11 @@ export default function HomeScreen() {
     }
   }, [token]);
 
+
+  // ============================================================
+  // LOAD ALL PRODUCTS
+  // ============================================================
+
   const loadAllProducts = useCallback(async () => {
     try {
       setLoadingAllProducts(true);
@@ -331,18 +351,26 @@ export default function HomeScreen() {
           limit: PRODUCTS_PAGE_SIZE,
           offset,
         });
+
         products.push(...page);
         offset += page.length;
+
       } while (page.length === PRODUCTS_PAGE_SIZE);
 
       setAllProducts(products);
+
     } catch (error) {
       console.error('All Products API Error:', error);
+
       setAllProducts([]);
-      setAllProductsError(error?.message || 'Unable to load products.');
+      setAllProductsError(
+        error?.message || 'Unable to load products.'
+      );
+
     } finally {
       setLoadingAllProducts(false);
     }
+
   }, []);
 
 
@@ -362,8 +390,6 @@ export default function HomeScreen() {
   // ============================================================
   // FONT LOADING
   // ============================================================
-
-  
 
   if (!fontsLoaded) {
     return (
@@ -386,9 +412,12 @@ export default function HomeScreen() {
     return (
       <SafeAreaView
         style={[
-        styles.safeArea,
-        { backgroundColor: activeHeaderTheme.statusBarColor },
-      ]}
+          styles.safeArea,
+          {
+            backgroundColor:
+              activeHeaderTheme.statusBarColor,
+          },
+        ]}
         edges={['top', 'bottom']}
       >
         <LoadingScreen />
@@ -405,7 +434,10 @@ export default function HomeScreen() {
     <SafeAreaView
       style={[
         styles.safeArea,
-        { backgroundColor: activeHeaderTheme.statusBarColor },
+        {
+          backgroundColor:
+            activeHeaderTheme.statusBarColor,
+        },
       ]}
       edges={['top', 'bottom']}
     >
@@ -442,17 +474,30 @@ export default function HomeScreen() {
 
             <View style={styles.categoryViewContainer}>
 
-              {selectedCategoryBanner ? (
+              {/* CATEGORY BANNER FROM API */}
+
+              {selectedCategoryBanner?.image_url ||
+              selectedCategoryBanner?.mobile_image_url ? (
                 <View style={styles.categoryBannerWrap}>
                   <Image
-                    source={selectedCategoryBanner.image}
+                    source={{
+                      uri:
+                        selectedCategoryBanner.mobile_image_url ||
+                        selectedCategoryBanner.image_url,
+                    }}
                     style={styles.categoryBanner}
                     contentFit="cover"
                     transition={200}
-                    accessibilityLabel={selectedCategoryBanner.accessibilityLabel}
+                    accessibilityLabel={
+                      selectedCategoryBanner.title ||
+                      `${selectedCategoryName} category banner`
+                    }
                   />
                 </View>
               ) : null}
+
+
+              {/* CATEGORY PRODUCTS */}
 
               {loadingCategoryProducts ? (
 
@@ -462,7 +507,15 @@ export default function HomeScreen() {
                     color={activeHeaderTheme.accent}
                   />
 
-                  <Text style={[styles.categoryLoadingText, { color: activeHeaderTheme.accent }]}>
+                  <Text
+                    style={[
+                      styles.categoryLoadingText,
+                      {
+                        color:
+                          activeHeaderTheme.accent,
+                      },
+                    ]}
+                  >
                     Loading {selectedCategoryName} products...
                   </Text>
                 </View>
@@ -489,13 +542,22 @@ export default function HomeScreen() {
               ) : (
 
                 <View style={styles.categoryEmptyWrap}>
+
                   <Ionicons
                     name="leaf-outline"
                     size={42}
                     color={activeHeaderTheme.accent}
                   />
 
-                  <Text style={[styles.categoryEmptyTitle, { color: activeHeaderTheme.accent }]}>
+                  <Text
+                    style={[
+                      styles.categoryEmptyTitle,
+                      {
+                        color:
+                          activeHeaderTheme.accent,
+                      },
+                    ]}
+                  >
                     No products found
                   </Text>
 
@@ -505,7 +567,13 @@ export default function HomeScreen() {
                   </Text>
 
                   <Pressable
-                    style={[styles.categoryBackHomeBtn, { backgroundColor: activeHeaderTheme.accent }]}
+                    style={[
+                      styles.categoryBackHomeBtn,
+                      {
+                        backgroundColor:
+                          activeHeaderTheme.accent,
+                      },
+                    ]}
                     onPress={() =>
                       handleSelectCategory({
                         id: 'all',
@@ -513,10 +581,13 @@ export default function HomeScreen() {
                       })
                     }
                   >
-                    <Text style={styles.categoryBackHomeText}>
+                    <Text
+                      style={styles.categoryBackHomeText}
+                    >
                       View All Products
                     </Text>
                   </Pressable>
+
                 </View>
 
               )}
@@ -540,35 +611,48 @@ export default function HomeScreen() {
                 categories={data.categories}
               />
 
+
               {/* BESTSELLERS */}
 
               <BestsellersRail
                 products={data.featuredProducts}
               />
+
               {!authLoading && isAuthenticated && (
-                <RecentlyViewed products={data.featuredProducts || []} />
+                <RecentlyViewed
+                  products={data.featuredProducts || []}
+                />
               )}
 
 
+              {/* AVAILABLE COUPONS */}
 
- {/* AVAILABLE COUPONS (CHIPS) */}
-              <CouponsOffers coupons={data.coupons || []} />
-
-
-              {/* FEATURED PRODUCTS */}
-
+              <CouponsOffers
+                coupons={data.coupons || []}
+              />
 
 
-         <JustArrived products={data.newArrivals || []} />
+              {/* JUST ARRIVED */}
+
+              <JustArrived
+                products={data.newArrivals || []}
+              />
+
+
+              {/* CATEGORY CAMPAIGNS */}
 
               <CategoryCampaigns
                 campaigns={data.categoryCampaigns || []}
                 onPressCampaign={(campaign) => {
-                  const category = Array.isArray(campaign.categories)
-                    ? campaign.categories[0]
-                    : campaign.categories;
+
+                  const category =
+                    Array.isArray(campaign.categories)
+                      ? campaign.categories[0]
+                      : campaign.categories;
+
                   const categoryId =
-                    category?.id ?? campaign.category_id;
+                    category?.id ??
+                    campaign.category_id;
 
                   if (!categoryId) return;
 
@@ -577,46 +661,74 @@ export default function HomeScreen() {
                     params: {
                       categoryId: String(categoryId),
                       categoryName:
-                        category?.name || campaign.title || 'Products',
+                        category?.name ||
+                        campaign.title ||
+                        'Products',
                     },
                   });
+
                 }}
               />
 
+
+              {/* ALL PRODUCTS */}
+
               <View style={styles.allProductsSection}>
+
                 <View style={styles.allProductsDivider}>
-                  <Text style={styles.allProductsHeading}> </Text>
+                  <Text style={styles.allProductsHeading}>
+                    {' '}
+                  </Text>
                 </View>
 
                 {loadingAllProducts ? (
+
                   <ActivityIndicator
                     style={styles.allProductsLoading}
                     color={activeHeaderTheme.accent}
                   />
+
                 ) : allProductsError ? (
+
                   <Text style={styles.allProductsError}>
                     {allProductsError}
                   </Text>
+
                 ) : allProducts.length > 0 ? (
+
                   <View style={styles.allProductsGrid}>
+
                     {allProducts.map((product) => (
+
                       <ProductCard
-                        key={product.id || product.slug}
+                        key={
+                          product.id ||
+                          product.slug
+                        }
                         product={product}
                         onPress={() => {
                           if (product?.slug) {
-                            router.push(`/products/${product.slug}`);
+                            router.push(
+                              `/products/${product.slug}`
+                            );
                           }
                         }}
                       />
+
                     ))}
+
                   </View>
+
                 ) : (
+
                   <Text style={styles.allProductsEmpty}>
                     No products available.
                   </Text>
+
                 )}
+
               </View>
+
 
               {/* WELLNESS BUNDLES */}
 
@@ -625,6 +737,7 @@ export default function HomeScreen() {
               />
 
             </>
+
           )}
 
         </ScrollView>

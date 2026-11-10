@@ -5,6 +5,7 @@ import {
   Image,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -17,7 +18,10 @@ import { StatusBar } from 'expo-status-bar';
 
 import ProductCard from '../src/components/home/ProductCard';
 import { getProducts } from '../src/services/productService';
+import { getHomeData } from '../src/services/homeService';
 import { useCart } from '../src/context/CartContext';
+
+const AUTO_PLAY_INTERVAL = 3800;
 
 export default function DealsScreen() {
   const router = useRouter();
@@ -25,33 +29,67 @@ export default function DealsScreen() {
   const { cartCount } = useCart();
 
   const [products, setProducts] = useState([]);
+  const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [activeBanner, setActiveBanner] = useState(0);
 
   const bannerWidth = Math.min(width - 20, 640);
-  const bannerHeight = Math.round(bannerWidth / (761 / 328));
+  const bannerHeight = Math.round(bannerWidth / 2.33);
 
   const fetchDeals = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
       setRefreshing(true);
     }
+
     try {
       setError(null);
-      const allProducts = await getProducts({ limit: 60 });
+
+      const [allProducts, homeData] = await Promise.all([
+        getProducts({ limit: 60 }),
+        getHomeData(),
+      ]);
+
       const list = Array.isArray(allProducts) ? allProducts : [];
 
       // Filter products on deal: compare_at_price > price
       const deals = list.filter((p) => {
-        const price = Number(p.price ?? p.variant?.price ?? 0);
-        const compare = Number(p.compare_at_price ?? p.variant?.compare_at_price ?? 0);
+        const price = Number(
+          p.price ?? p.variant?.price ?? 0
+        );
+
+        const compare = Number(
+          p.compare_at_price ??
+            p.variant?.compare_at_price ??
+            0
+        );
+
         return compare > price;
       });
 
-      setProducts(deals.length > 0 ? deals : list.slice(0, 16));
+      setProducts(
+        deals.length > 0
+          ? deals
+          : list.slice(0, 16)
+      );
+
+      const appBanners = Array.isArray(homeData?.banners)
+        ? homeData.banners.filter(
+            (banner) =>
+              banner?.image_url &&
+              typeof banner.image_url === 'string'
+          )
+        : [];
+
+      setBanners(appBanners);
+      setActiveBanner(0);
     } catch (err) {
       console.error('Error loading deals:', err);
-      setError(err?.message || 'Unable to load deals.');
+
+      setError(
+        err?.message || 'Unable to load deals.'
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -59,29 +97,8 @@ export default function DealsScreen() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    getProducts({ limit: 60 })
-      .then((allProducts) => {
-        if (!isMounted) return;
-        const list = Array.isArray(allProducts) ? allProducts : [];
-        const deals = list.filter((p) => {
-          const price = Number(p.price ?? p.variant?.price ?? 0);
-          const compare = Number(p.compare_at_price ?? p.variant?.compare_at_price ?? 0);
-          return compare > price;
-        });
-        setProducts(deals.length > 0 ? deals : list.slice(0, 16));
-        setLoading(false);
-      })
-      .catch((err) => {
-        if (!isMounted) return;
-        setError(err?.message || 'Unable to load deals.');
-        setLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    fetchDeals(false);
+  }, [fetchDeals]);
 
   const handleRefresh = () => {
     fetchDeals(true);
@@ -93,35 +110,94 @@ export default function DealsScreen() {
     }
   };
 
+  const handleBannerScroll = (event) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+
+    const index = Math.round(
+      offsetX / bannerWidth
+    );
+
+    if (
+      index >= 0 &&
+      index < banners.length
+    ) {
+      setActiveBanner(index);
+    }
+  };
+
+  useEffect(() => {
+    if (banners.length <= 1) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setActiveBanner((current) => {
+        const next =
+          current + 1 >= banners.length
+            ? 0
+            : current + 1;
+
+        return next;
+      });
+    }, AUTO_PLAY_INTERVAL);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [banners.length]);
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={['top', 'bottom']}
+    >
       <StatusBar style="dark" />
 
       {/* TOP NAVIGATION HEADER */}
       <View style={styles.headerBar}>
         <Pressable
           onPress={() => router.back()}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.backBtn,
+            pressed && styles.pressed,
+          ]}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="arrow-back" size={24} color="#123D2B" />
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color="#123D2B"
+          />
         </Pressable>
 
         <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerTitle}>Deals of the Week</Text>
-          <Text style={styles.headerSubtitle}>Exclusive Ayurvedic Offers</Text>
+          <Text style={styles.headerTitle}>
+            Deals of the Week
+          </Text>
+
+          <Text style={styles.headerSubtitle}>
+            Exclusive Ayurvedic Offers
+          </Text>
         </View>
 
         <Pressable
           onPress={() => router.push('/cart')}
-          style={({ pressed }) => [styles.cartBtn, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.cartBtn,
+            pressed && styles.pressed,
+          ]}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={`Cart with ${cartCount} items`}
         >
-          <Ionicons name="cart-outline" size={23} color="#123D2B" />
+          <Ionicons
+            name="cart-outline"
+            size={23}
+            color="#123D2B"
+          />
+
           {cartCount > 0 && (
             <View style={styles.cartBadge}>
               <Text style={styles.cartBadgeText}>
@@ -135,20 +211,40 @@ export default function DealsScreen() {
       {/* PRODUCTS LIST */}
       {loading ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#123D2B" />
-          <Text style={styles.loadingText}>Loading deals...</Text>
+          <ActivityIndicator
+            size="large"
+            color="#123D2B"
+          />
+
+          <Text style={styles.loadingText}>
+            Loading deals...
+          </Text>
         </View>
       ) : error ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={styles.retryBtn} onPress={() => fetchDeals(false)}>
-            <Text style={styles.retryText}>Retry</Text>
+          <Text style={styles.errorText}>
+            {error}
+          </Text>
+
+          <Pressable
+            style={styles.retryBtn}
+            onPress={() => fetchDeals(false)}
+          >
+            <Text style={styles.retryText}>
+              Retry
+            </Text>
           </Pressable>
         </View>
       ) : (
         <FlatList
           data={products}
-          keyExtractor={(item, index) => String(item?.id ?? item?.slug ?? index)}
+          keyExtractor={(item, index) =>
+            String(
+              item?.id ??
+                item?.slug ??
+                index
+            )
+          }
           numColumns={2}
           showsVerticalScrollIndicator={false}
           columnWrapperStyle={styles.row}
@@ -163,44 +259,147 @@ export default function DealsScreen() {
           ListHeaderComponent={
             <View style={styles.listHeader}>
               {/* DEALS BANNER */}
-              <View
-                style={[
-                  styles.bannerContainer,
-                  { width: bannerWidth, height: bannerHeight },
-                ]}
-              >
-                <Image
-                  source={require('../assets/Deals-of-the-week.png')}
-                  style={styles.bannerImage}
-                  resizeMode="contain"
-                />
-              </View>
+              {banners.length > 0 && (
+                <>
+                  <View
+                    style={[
+                      styles.bannerContainer,
+                      {
+                        width: bannerWidth,
+                        height: bannerHeight,
+                      },
+                    ]}
+                  >
+                    <ScrollView
+                      horizontal
+                      pagingEnabled
+                      showsHorizontalScrollIndicator={false}
+                      onScroll={
+                        handleBannerScroll
+                      }
+                      scrollEventThrottle={16}
+                    >
+                      {banners.map(
+                        (banner, index) => (
+                          <Pressable
+                            key={
+                              banner?.id ??
+                              `banner-${index}`
+                            }
+                            onPress={() =>
+                              router.push(
+                                '/deals'
+                              )
+                            }
+                            style={{
+                              width:
+                                bannerWidth,
+                              height:
+                                bannerHeight,
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel={
+                              banner?.alt_text ||
+                              banner?.title ||
+                              'Deals banner'
+                            }
+                          >
+                            <Image
+                              source={{
+                                uri: banner.image_url,
+                              }}
+                              style={
+                                styles.bannerImage
+                              }
+                              resizeMode="cover"
+                            />
+                          </Pressable>
+                        )
+                      )}
+                    </ScrollView>
+                  </View>
+
+                  {/* BANNER DOTS */}
+                  {banners.length > 1 && (
+                    <View
+                      style={
+                        styles.paginationRow
+                      }
+                    >
+                      {banners.map(
+                        (banner, index) => (
+                          <View
+                            key={
+                              banner?.id ??
+                              `dot-${index}`
+                            }
+                            style={[
+                              styles.dot,
+                              index ===
+                              activeBanner
+                                ? styles.dotActive
+                                : styles.dotInactive,
+                            ]}
+                          />
+                        )
+                      )}
+                    </View>
+                  )}
+                </>
+              )}
 
               {/* TICKER */}
               <View style={styles.tickerBar}>
                 <Text style={styles.tickerText}>
-                  ✦ UP TO 40% OFF  •  LIMITED TIME ONLY  •  FREE DISPATCH ✦
+                  ✦ UP TO 40% OFF • LIMITED TIME
+                  ONLY • FREE DISPATCH ✦
                 </Text>
               </View>
 
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionTitle}>Featured Deal Products</Text>
-                <Text style={styles.itemsCount}>{products.length} Items</Text>
+              <View
+                style={styles.sectionHeaderRow}
+              >
+                <Text
+                  style={styles.sectionTitle}
+                >
+                  Featured Deal Products
+                </Text>
+
+                <Text
+                  style={styles.itemsCount}
+                >
+                  {products.length} Items
+                </Text>
               </View>
             </View>
           }
           renderItem={({ item }) => (
             <ProductCard
               product={item}
-              onPress={() => handleProductPress(item)}
+              onPress={() =>
+                handleProductPress(item)
+              }
             />
           )}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="pricetag-outline" size={48} color="#9BB5A5" />
-              <Text style={styles.emptyTitle}>No deals active right now</Text>
-              <Text style={styles.emptySubtitle}>
-                Check back soon for new weekly offers on Ayurvedic essentials.
+              <Ionicons
+                name="pricetag-outline"
+                size={48}
+                color="#9BB5A5"
+              />
+
+              <Text
+                style={styles.emptyTitle}
+              >
+                No deals active right now
+              </Text>
+
+              <Text
+                style={styles.emptySubtitle}
+              >
+                Check back soon for new weekly
+                offers on Ayurvedic essentials.
               </Text>
             </View>
           }
@@ -299,13 +498,36 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 4,
   },
 
   bannerImage: {
     width: '100%',
     height: '100%',
     borderRadius: 20,
+  },
+
+  paginationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    gap: 4,
+  },
+
+  dot: {
+    height: 5,
+    borderRadius: 3,
+  },
+
+  dotActive: {
+    width: 20,
+    backgroundColor: '#123D2B',
+  },
+
+  dotInactive: {
+    width: 6,
+    backgroundColor: '#CAD5C8',
   },
 
   tickerBar: {
