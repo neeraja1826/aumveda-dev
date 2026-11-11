@@ -96,7 +96,25 @@ export async function getOrders(token) {
 
   return response.data;
 }
+export async function downloadOrderInvoice(token, orderId) {
+  if (!token) {
+    throw new Error('Sign in to download the invoice.');
+  }
 
+  if (!orderId) {
+    throw new Error('The order ID is missing.');
+  }
+
+  const response = await apiRequest(
+    `/orders/${encodeURIComponent(orderId)}/invoice`,
+    {
+      token,
+      responseType: 'blob',
+    }
+  );
+
+  return response;
+}
 export async function getBuyAgainProducts(token) {
   
   const response = await apiRequest('/orders/buy-again', { token });

@@ -18,6 +18,7 @@ import OrderTracking from '../../src/components/orders/OrderTracking';
 import { useAuth } from '../../src/context/AuthContext';
 import {
   createReturnRequest,
+  downloadOrderInvoice,
   getOrder,
   getOrderReturnRequests,
 } from '../../src/services/orderService';
@@ -198,6 +199,8 @@ export default function OrderDetailsScreen() {
   const [returnSubmitting, setReturnSubmitting] = useState(false);
   const [returnSubmitError, setReturnSubmitError] = useState('');
   const [returnSubmitSuccess, setReturnSubmitSuccess] = useState('');
+  const [invoiceDownloading, setInvoiceDownloading] = useState(false);
+  const [invoiceError, setInvoiceError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -260,6 +263,53 @@ export default function OrderDetailsScreen() {
       active = false;
     };
   }, [token, orderId]);
+
+  async function handleDownloadInvoice() {
+    if (!token || !orderId) {
+      router.push('/(auth)/login');
+      return;
+    }
+
+    setInvoiceDownloading(true);
+    setInvoiceError('');
+
+    try {
+      const blob = await downloadOrderInvoice(token, orderId);
+
+      if (!blob) {
+        throw new Error('Invoice PDF was not returned by the server.');
+      }
+
+      if (typeof window !== 'undefined' && window.URL) {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.download = `${order?.order_number || orderId}-invoice.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        window.URL.revokeObjectURL(url);
+      } else {
+        setInvoiceError(
+          'Invoice download is not supported on this device yet.'
+        );
+      }
+    } catch (invoiceDownloadError) {
+      console.error(
+        'Download invoice error:',
+        invoiceDownloadError
+      );
+
+      setInvoiceError(
+        invoiceDownloadError?.message ||
+          'Unable to download invoice.'
+      );
+    } finally {
+      setInvoiceDownloading(false);
+    }
+  }
 
   async function submitReturnRequest(item) {
     if (!token) {
@@ -829,6 +879,30 @@ export default function OrderDetailsScreen() {
                 </Text>
               </View>
             </View>
+
+            {invoiceError ? (
+              <Text style={styles.invoiceError}>{invoiceError}</Text>
+            ) : null}
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                styles.invoiceButton,
+                invoiceDownloading && styles.invoiceButtonDisabled,
+              ]}
+              onPress={handleDownloadInvoice}
+              disabled={invoiceDownloading}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+            >
+              {invoiceDownloading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="download-outline" size={16} color="#FFFFFF" />
+              )}
+              <Text style={styles.primaryButtonText}>
+                {invoiceDownloading ? 'Downloading…' : 'Download Invoice'}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* ============================================================
@@ -1414,6 +1488,22 @@ const styles = StyleSheet.create({
   /* RETURN REQUEST FORM & BADGES */
   returnActionWrap: {
     marginTop: 10,
+  },
+
+  invoiceButton: {
+    alignSelf: 'flex-start',
+    marginTop: 16,
+  },
+
+  invoiceButtonDisabled: {
+    opacity: 0.65,
+  },
+
+  invoiceError: {
+    color: colors.danger,
+    fontSize: 12,
+    fontFamily: 'InterRegular',
+    marginTop: 12,
   },
 
   returnActionButton: {

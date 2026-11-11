@@ -1,9 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import {
   getResource,
   updateResourceStatus,
   getOrderDetails,
+  downloadOrderInvoice,
 } from '../services/adminService.js';
 import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
@@ -31,6 +31,7 @@ export default function Orders() {
   const [orderDetails, setOrderDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState('');
+  const [invoiceDownloading, setInvoiceDownloading] = useState(false);
 
   async function openOrderDetails(order) {
     setSelectedOrder(order);
@@ -57,6 +58,42 @@ export default function Orders() {
     setDetailsError('');
   }
 
+  async function handleDownloadInvoice(order) {
+    try {
+      const orderId = order?.id;
+
+      if (!orderId) {
+        throw new Error('Order ID is missing.');
+      }
+
+      setInvoiceDownloading(true);
+
+      const blob = await downloadOrderInvoice(orderId);
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = `AUMVEDA-Invoice-${
+        order.order_number || orderId
+      }.pdf`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (requestError) {
+      console.error('Invoice download failed:', requestError);
+
+      setDetailsError(
+        requestError.message || 'Unable to download invoice.'
+      );
+    } finally {
+      setInvoiceDownloading(false);
+    }
+  }
+
   useEffect(() => {
     let active = true;
 
@@ -77,7 +114,9 @@ export default function Orders() {
       })
       .catch((requestError) => {
         if (active) {
-          setError(requestError.message || 'Unable to load orders.');
+          setError(
+            requestError.message || 'Unable to load orders.'
+          );
         }
       })
       .finally(() => {
@@ -99,17 +138,27 @@ export default function Orders() {
       await updateResourceStatus('orders', order.id, value);
       setReload((current) => current + 1);
     } catch (requestError) {
-      setError(requestError.message || 'Unable to update order status.');
+      setError(
+        requestError.message || 'Unable to update order status.'
+      );
     } finally {
       setUpdatingId('');
     }
   }
 
   const orderStatusSummary = {
-    pending: items.filter((order) => order.status === 'pending').length,
-    processing: items.filter((order) => order.status === 'processing').length,
-    shipped: items.filter((order) => order.status === 'shipped').length,
-    delivered: items.filter((order) => order.status === 'delivered').length,
+    pending: items.filter(
+      (order) => order.status === 'pending'
+    ).length,
+    processing: items.filter(
+      (order) => order.status === 'processing'
+    ).length,
+    shipped: items.filter(
+      (order) => order.status === 'shipped'
+    ).length,
+    delivered: items.filter(
+      (order) => order.status === 'delivered'
+    ).length,
   };
 
   return (
@@ -170,6 +219,7 @@ export default function Orders() {
             aria-label="Filter orders by status"
           >
             <option value="">All statuses</option>
+
             {statuses.map((value) => (
               <option key={value} value={value}>
                 {value.charAt(0).toUpperCase() + value.slice(1)}
@@ -185,10 +235,15 @@ export default function Orders() {
         )}
 
         {loading ? (
-          <div className="loading-state">Loading orders…</div>
+          <div className="loading-state">
+            Loading orders…
+          </div>
         ) : items.length === 0 ? (
           <div className="empty-state orders-empty-state">
-            <div className="orders-empty-icon" aria-hidden="true">
+            <div
+              className="orders-empty-icon"
+              aria-hidden="true"
+            >
               <svg
                 viewBox="0 0 48 48"
                 width="44"
@@ -197,15 +252,23 @@ export default function Orders() {
                 stroke="currentColor"
                 strokeWidth="1.6"
               >
-                <rect x="9" y="7" width="30" height="34" rx="5" />
+                <rect
+                  x="9"
+                  y="7"
+                  width="30"
+                  height="34"
+                  rx="5"
+                />
                 <path d="M17 17h14M17 24h14M17 31h8" />
               </svg>
             </div>
+
             <h3>
               {status
                 ? `No ${status} orders`
                 : 'No orders yet'}
             </h3>
+
             <p>
               {status
                 ? 'Try selecting another order status.'
@@ -230,7 +293,9 @@ export default function Orders() {
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.order_number || item.id}</td>
+                    <td>
+                      {item.order_number || item.id}
+                    </td>
 
                     <td>
                       {item.recipient_name ||
@@ -242,12 +307,10 @@ export default function Orders() {
                     <td>
                       {item.total_amount == null
                         ? '—'
-                        : `₹${Number(item.total_amount).toLocaleString(
-                            'en-IN'
-                          )}`}
+                        : `₹${Number(
+                            item.total_amount
+                          ).toLocaleString('en-IN')}`}
                     </td>
-
-                   
 
                     <td>
                       <span
@@ -263,9 +326,9 @@ export default function Orders() {
 
                     <td>
                       {item.created_at
-                        ? new Date(item.created_at).toLocaleDateString(
-                            'en-IN'
-                          )
+                        ? new Date(
+                            item.created_at
+                          ).toLocaleDateString('en-IN')
                         : '—'}
                     </td>
 
@@ -274,15 +337,22 @@ export default function Orders() {
                         value={item.status || 'pending'}
                         disabled={updatingId !== ''}
                         onChange={(event) =>
-                          changeStatus(item, event.target.value)
+                          changeStatus(
+                            item,
+                            event.target.value
+                          )
                         }
                         aria-label={`Status for order ${
                           item.order_number || item.id
                         }`}
                       >
                         {statuses.map((value) => (
-                          <option key={value} value={value}>
-                            {value.charAt(0).toUpperCase() + value.slice(1)}
+                          <option
+                            key={value}
+                            value={value}
+                          >
+                            {value.charAt(0).toUpperCase() +
+                              value.slice(1)}
                           </option>
                         ))}
                       </select>
@@ -292,7 +362,9 @@ export default function Orders() {
                       <button
                         type="button"
                         className="secondary-button"
-                        onClick={() => openOrderDetails(item)}
+                        onClick={() =>
+                          openOrderDetails(item)
+                        }
                       >
                         View details
                       </button>
@@ -331,9 +403,13 @@ export default function Orders() {
             <button
               type="button"
               className="secondary-button"
-              disabled={offset + pageSize >= total || loading}
+              disabled={
+                offset + pageSize >= total || loading
+              }
               onClick={() =>
-                setOffset((current) => current + pageSize)
+                setOffset(
+                  (current) => current + pageSize
+                )
               }
             >
               Next
@@ -349,11 +425,14 @@ export default function Orders() {
         >
           <div
             className="order-modal"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
           >
             <div className="order-modal-header">
               <div>
                 <h2>Order Details</h2>
+
                 <p>
                   {orderDetails?.order_number ||
                     selectedOrder.order_number ||
@@ -361,155 +440,256 @@ export default function Orders() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                className="order-modal-close"
-                onClick={closeOrderDetails}
-                aria-label="Close order details"
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                }}
               >
-                ×
-              </button>
+                {orderDetails?.payment_status ===
+                  'paid' && (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                      handleDownloadInvoice(
+                        orderDetails
+                      )
+                    }
+                    disabled={invoiceDownloading}
+                  >
+                    {invoiceDownloading
+                      ? 'Downloading…'
+                      : 'Download Invoice'}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="order-modal-close"
+                  onClick={closeOrderDetails}
+                  aria-label="Close order details"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
-            {detailsLoading && <p>Loading order details...</p>}
+            {detailsLoading && (
+              <p>Loading order details...</p>
+            )}
 
             {detailsError && (
-              <p className="order-modal-error">{detailsError}</p>
+              <p className="order-modal-error">
+                {detailsError}
+              </p>
             )}
 
             {!detailsLoading && orderDetails && (
               <div className="order-modal-content">
                 <section className="order-detail-section">
                   <h3>Order Information</h3>
+
                   <p>
                     <strong>Order Number:</strong>{' '}
                     {orderDetails.order_number || '—'}
                   </p>
+
                   <p>
                     <strong>Order Status:</strong>{' '}
                     {orderDetails.status || '—'}
                   </p>
-                  <p>
-  <strong>Payment Status:</strong>{' '}
-  <span
-    className={`payment-status-badge ${
-      orderDetails.payment_status === 'paid'
-        ? 'payment-status-paid'
-        : 'payment-status-pending'
-    }`}
-  >
-    {orderDetails.payment_status || 'Unknown'}
-  </span>
-</p>
 
-{orderDetails.status === 'delivered' &&
-  orderDetails.payment_status !== 'paid' && (
-    <p className="payment-warning">
-      Payment verification required: this order is delivered,
-      but payment is not marked as paid.
-    </p>
-  )}
+                  <p>
+                    <strong>Payment Status:</strong>{' '}
+                    <span
+                      className={`payment-status-badge ${
+                        orderDetails.payment_status ===
+                        'paid'
+                          ? 'payment-status-paid'
+                          : 'payment-status-pending'
+                      }`}
+                    >
+                      {orderDetails.payment_status ||
+                        'Unknown'}
+                    </span>
+                  </p>
+
+                  {orderDetails.status ===
+                    'delivered' &&
+                    orderDetails.payment_status !==
+                      'paid' && (
+                      <p className="payment-warning">
+                        Payment verification required:
+                        this order is delivered, but
+                        payment is not marked as paid.
+                      </p>
+                    )}
+
                   <p>
                     <strong>Payment Method:</strong>{' '}
-                    {orderDetails.payment_method?.toUpperCase() || '—'}
+                    {orderDetails.payment_method?.toUpperCase() ||
+                      '—'}
                   </p>
+
                   <p>
                     <strong>Order Date:</strong>{' '}
                     {orderDetails.created_at
-                      ? new Date(orderDetails.created_at).toLocaleString()
+                      ? new Date(
+                          orderDetails.created_at
+                        ).toLocaleString()
                       : '—'}
                   </p>
                 </section>
 
                 <section className="order-detail-section">
                   <h3>Shipping Address</h3>
+
                   {orderDetails.shipping_address ? (
                     <>
                       <p>
                         <strong>
-                          {orderDetails.shipping_address.recipient_name || '—'}
+                          {orderDetails.shipping_address
+                            .recipient_name || '—'}
                         </strong>
                       </p>
+
                       <p>
-                        {orderDetails.shipping_address.address_line1 || ''}
-                        {orderDetails.shipping_address.address_line2
+                        {orderDetails.shipping_address
+                          .address_line1 || ''}
+
+                        {orderDetails.shipping_address
+                          .address_line2
                           ? `, ${orderDetails.shipping_address.address_line2}`
                           : ''}
                       </p>
+
                       <p>
                         {[
-                          orderDetails.shipping_address.city,
-                          orderDetails.shipping_address.state,
-                          orderDetails.shipping_address.postal_code,
+                          orderDetails.shipping_address
+                            .city,
+                          orderDetails.shipping_address
+                            .state,
+                          orderDetails.shipping_address
+                            .postal_code,
                         ]
                           .filter(Boolean)
                           .join(', ')}
                       </p>
-                      <p>{orderDetails.shipping_address.country || ''}</p>
+
                       <p>
-                        Phone: {orderDetails.shipping_address.phone || '—'}
+                        {orderDetails.shipping_address
+                          .country || ''}
+                      </p>
+
+                      <p>
+                        Phone:{' '}
+                        {orderDetails.shipping_address
+                          .phone || '—'}
                       </p>
                     </>
                   ) : (
-                    <p>No shipping address available.</p>
+                    <p>
+                      No shipping address available.
+                    </p>
                   )}
                 </section>
 
                 <section className="order-detail-section">
                   <h3>Order Items</h3>
 
-                  {(orderDetails.order_items || []).length > 0 ? (
+                  {(orderDetails.order_items || [])
+                    .length > 0 ? (
                     <div className="order-items-list">
-                      {orderDetails.order_items.map((item) => (
-                        <div className="order-item" key={item.id}>
-                          <div>
-                            <strong>{item.product_name || 'Product'}</strong>
-                            <p>
-                              SKU: {item.sku || '—'}
-                              {item.variant_name
-                                ? ` · ${item.variant_name}`
-                                : ''}
-                            </p>
-                            <p>Quantity: {item.quantity ?? 0}</p>
-                          </div>
+                      {orderDetails.order_items.map(
+                        (item) => (
+                          <div
+                            className="order-item"
+                            key={item.id}
+                          >
+                            <div>
+                              <strong>
+                                {item.product_name ||
+                                  'Product'}
+                              </strong>
 
-                          <strong>
-                            ₹{Number(item.total_price ?? 0).toFixed(2)}
-                          </strong>
-                        </div>
-                      ))}
+                              <p>
+                                SKU: {item.sku || '—'}
+                                {item.variant_name
+                                  ? ` · ${item.variant_name}`
+                                  : ''}
+                              </p>
+
+                              <p>
+                                Quantity:{' '}
+                                {item.quantity ?? 0}
+                              </p>
+                            </div>
+
+                            <strong>
+                              ₹
+                              {Number(
+                                item.total_price ?? 0
+                              ).toFixed(2)}
+                            </strong>
+                          </div>
+                        )
+                      )}
                     </div>
                   ) : (
-                    <p>No order items available.</p>
+                    <p>
+                      No order items available.
+                    </p>
                   )}
                 </section>
 
                 <section className="order-detail-section order-price-summary">
                   <h3>Price Summary</h3>
+
                   <p>
                     <span>Subtotal</span>
                     <span>
-                      ₹{Number(orderDetails.subtotal ?? 0).toFixed(2)}
+                      ₹
+                      {Number(
+                        orderDetails.subtotal ?? 0
+                      ).toFixed(2)}
                     </span>
                   </p>
+
                   <p>
                     <span>Discount</span>
                     <span>
-                      −₹{Number(orderDetails.discount ?? 0).toFixed(2)}
+                      −₹
+                      {Number(
+                        orderDetails.discount ?? 0
+                      ).toFixed(2)}
                     </span>
                   </p>
+
                   <p>
                     <span>Shipping</span>
                     <span>
-                      ₹{Number(orderDetails.shipping ?? 0).toFixed(2)}
+                      ₹
+                      {Number(
+                        orderDetails.shipping ?? 0
+                      ).toFixed(2)}
                     </span>
                   </p>
+
                   <p>
                     <span>Tax</span>
-                    <span>₹{Number(orderDetails.tax ?? 0).toFixed(2)}</span>
+                    <span>
+                      ₹
+                      {Number(
+                        orderDetails.tax ?? 0
+                      ).toFixed(2)}
+                    </span>
                   </p>
+
                   <p className="order-grand-total">
                     <strong>Total</strong>
+
                     <strong>
                       ₹
                       {Number(
@@ -524,25 +704,35 @@ export default function Orders() {
                 {orderDetails.billing_address && (
                   <section className="order-detail-section">
                     <h3>Billing Address</h3>
+
                     <p>
                       <strong>
-                        {orderDetails.billing_address.recipient_name || '—'}
+                        {orderDetails.billing_address
+                          .recipient_name || '—'}
                       </strong>
                     </p>
+
                     <p>
                       {[
-                        orderDetails.billing_address.address_line1,
-                        orderDetails.billing_address.address_line2,
+                        orderDetails.billing_address
+                          .address_line1,
+                        orderDetails.billing_address
+                          .address_line2,
                         orderDetails.billing_address.city,
                         orderDetails.billing_address.state,
-                        orderDetails.billing_address.postal_code,
-                        orderDetails.billing_address.country,
+                        orderDetails.billing_address
+                          .postal_code,
+                        orderDetails.billing_address
+                          .country,
                       ]
                         .filter(Boolean)
                         .join(', ')}
                     </p>
+
                     <p>
-                      Phone: {orderDetails.billing_address.phone || '—'}
+                      Phone:{' '}
+                      {orderDetails.billing_address
+                        .phone || '—'}
                     </p>
                   </section>
                 )}
@@ -550,7 +740,9 @@ export default function Orders() {
                 {orderDetails.customer_notes && (
                   <section className="order-detail-section">
                     <h3>Customer Notes</h3>
-                    <p>{orderDetails.customer_notes}</p>
+                    <p>
+                      {orderDetails.customer_notes}
+                    </p>
                   </section>
                 )}
               </div>
@@ -796,34 +988,35 @@ export default function Orders() {
             gap: 6px;
           }
         }
-          .payment-status-badge {
-  display: inline-block;
-  padding: 4px 9px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: capitalize;
-}
 
-.payment-status-paid {
-  color: #216e41;
-  background: #e7f5eb;
-}
+        .payment-status-badge {
+          display: inline-block;
+          padding: 4px 9px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: capitalize;
+        }
 
-.payment-status-pending {
-  color: #8a5a00;
-  background: #fff3d6;
-}
+        .payment-status-paid {
+          color: #216e41;
+          background: #e7f5eb;
+        }
 
-.payment-warning {
-  margin-top: 12px !important;
-  padding: 10px 12px;
-  border: 1px solid #f0d18a;
-  border-radius: 8px;
-  background: #fff8e8;
-  color: #805600 !important;
-  font-size: 13px;
-}
+        .payment-status-pending {
+          color: #8a5a00;
+          background: #fff3d6;
+        }
+
+        .payment-warning {
+          margin-top: 12px !important;
+          padding: 10px 12px;
+          border: 1px solid #f0d18a;
+          border-radius: 8px;
+          background: #fff8e8;
+          color: #805600 !important;
+          font-size: 13px;
+        }
       `}</style>
     </section>
   );

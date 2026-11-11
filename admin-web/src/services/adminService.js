@@ -1,4 +1,3 @@
-
 import { apiRequest } from './api.js';
 
 const resources = {
@@ -291,6 +290,47 @@ export const getOrderDetails = (orderId) =>
   apiRequest(
     `/admin/orders/${encodeURIComponent(orderId)}`
   );
+
+/* ============================================================
+   ORDER INVOICE
+============================================================ */
+
+export const downloadOrderInvoice = async (orderId) => {
+  const token = localStorage.getItem('admin_access_token');
+
+  if (!token) {
+    throw new Error('Admin authentication required.');
+  }
+
+  const baseUrl =
+    import.meta.env.VITE_API_BASE_URL ||
+    'http://127.0.0.1:8001/api/v1';
+
+  const response = await fetch(
+    `${baseUrl}/admin/orders/${encodeURIComponent(orderId)}/invoice`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    let message = 'Unable to download invoice.';
+
+    try {
+      const errorData = await response.json();
+      message = errorData.detail || message;
+    } catch (_) {
+      // Response was not JSON.
+    }
+
+    throw new Error(message);
+  }
+
+  return response.blob();
+};
 
 /* ============================================================
    RETURNS
@@ -626,7 +666,9 @@ export async function getBanners(
   const queryString = query.toString();
 
   return apiRequest(
-    `/admin/banners${queryString ? `?${queryString}` : ''}`
+    `/admin/banners${
+      queryString ? `?${queryString}` : ''
+    }`
   );
 }
 
@@ -723,6 +765,7 @@ export async function createCategoryBanner(
     }
   );
 }
+
 /* ============================================================
    ADMIN CATEGORY CAMPAIGNS
 ============================================================ */
@@ -754,14 +797,12 @@ export async function getCategoryCampaigns(params = {}) {
   );
 }
 
-
 export async function createCategoryCampaign(formData) {
   return apiRequest('/admin/banners/category-campaigns', {
     method: 'POST',
     body: formData,
   });
 }
-
 
 export async function updateCategoryCampaign(
   campaignId,
@@ -777,7 +818,6 @@ export async function updateCategoryCampaign(
     }
   );
 }
-
 
 export async function deleteCategoryCampaign(
   campaignId,
@@ -796,20 +836,31 @@ export async function deleteCategoryCampaign(
     }
   );
 }
+
 export async function getShopByNeedImages() {
   return apiRequest('/admin/banners/storage/shop-by-need');
 }
+
 export async function syncShopByNeed() {
-  return apiRequest('/admin/banners/storage/sync-shop-by-need', {
-    method: 'POST',
-  });
+  return apiRequest(
+    '/admin/banners/storage/sync-shop-by-need',
+    {
+      method: 'POST',
+    }
+  );
 }
+
 export async function getMainPromoBanners() {
-  return apiRequest('/admin/banners/storage/main-promo-banner');
+  return apiRequest(
+    '/admin/banners/storage/main-promo-banner'
+  );
 }
 
 export async function syncMainPromoBanners() {
-  return apiRequest('/admin/banners/storage/sync-main-promo-banner', {
-    method: 'POST',
-  });
+  return apiRequest(
+    '/admin/banners/storage/sync-main-promo-banner',
+    {
+      method: 'POST',
+    }
+  );
 }

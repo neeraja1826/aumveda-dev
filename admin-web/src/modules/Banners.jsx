@@ -179,6 +179,8 @@ export default function Banners() {
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [editingAppBanner, setEditingAppBanner] = useState(null);
+  const [appBannerEditSaving, setAppBannerEditSaving] = useState(false);
 
   const [previewUrl, setPreviewUrl] = useState('');
   const [dragActive, setDragActive] = useState(false);
@@ -209,6 +211,8 @@ export default function Banners() {
   const [categoryForm, setCategoryForm] = useState(
     INITIAL_CATEGORY_FORM
   );
+  const [editingCategoryBannerId, setEditingCategoryBannerId] =
+    useState(null);
 
   /* ==========================================================
      CATEGORY CAMPAIGNS
@@ -221,6 +225,10 @@ export default function Banners() {
   const [campaignSuccess, setCampaignSuccess] = useState('');
   const [webCategoryCampaigns, setWebCategoryCampaigns] = useState([]);
   const [webCategoryCampaignLoading, setWebCategoryCampaignLoading] =
+    useState(false);
+  const [editingWebCategoryCampaign, setEditingWebCategoryCampaign] =
+    useState(null);
+  const [webCategoryCampaignEditSaving, setWebCategoryCampaignEditSaving] =
     useState(false);
   const [campaignForm, setCampaignForm] = useState({
     title: '',
@@ -269,6 +277,8 @@ export default function Banners() {
   const [showShopByNeedCreate, setShowShopByNeedCreate] = useState(false);
   const [shopByNeedCreateSaving, setShopByNeedCreateSaving] =
     useState(false);
+  const [editingShopByNeed, setEditingShopByNeed] = useState(null);
+  const [shopByNeedEditSaving, setShopByNeedEditSaving] = useState(false);
 
   /* ==========================================================
      MAIN PROMO BANNERS
@@ -294,7 +304,10 @@ export default function Banners() {
       setLoading(true);
       setError('');
 
-      const response = await getBanners();
+      const response = await getBanners({
+        platform: 'app',
+        placement: 'home',
+      });
 
       setBanners(response?.items || []);
     } catch (err) {
@@ -334,8 +347,25 @@ export default function Banners() {
       setShopByNeedLoading(true);
       setShopByNeedError('');
 
-      const response = await getShopByNeedImages();
-      setShopByNeedImages(response?.files || []);
+      const [storageResponse, bannerResponse] = await Promise.all([
+        getShopByNeedImages(),
+        getBanners({
+          platform: 'web',
+          placement: 'shop-by-need',
+        }),
+      ]);
+      const bannerByPath = new Map(
+        (bannerResponse?.items || []).map((banner) => [
+          banner.storage_path,
+          banner,
+        ])
+      );
+      setShopByNeedImages(
+        (storageResponse?.files || []).map((file) => ({
+          ...file,
+          ...(bannerByPath.get(file.storage_path) || {}),
+        }))
+      );
       return true;
     } catch (error) {
       console.error(
@@ -357,13 +387,32 @@ export default function Banners() {
       setShopByNeedError('');
       setShopByNeedSuccess('');
 
-      await createBanner(formData);
+      const sortOrder = Number(formData.get('sort_order'));
+      const existingAtPosition = shopByNeedImages.find(
+        (item) => Number(item.sort_order) === sortOrder && item.id
+      );
+      if (
+        existingAtPosition &&
+        !window.confirm(
+          `A Shop by Need banner already exists at position ${sortOrder}. Update that banner instead?`
+        )
+      ) {
+        return;
+      }
+
+      if (existingAtPosition) {
+        await updateBanner(existingAtPosition.id, formData);
+      } else {
+        await createBanner(formData);
+      }
       setShowShopByNeedCreate(false);
 
       const loaded = await loadShopByNeedImages();
       if (loaded) {
         setShopByNeedSuccess(
-          'Shop by Need banner created successfully.'
+          existingAtPosition
+            ? 'Shop by Need banner updated successfully.'
+            : 'Shop by Need banner created successfully.'
         );
       }
     } catch (error) {
@@ -373,6 +422,25 @@ export default function Banners() {
       );
     } finally {
       setShopByNeedCreateSaving(false);
+    }
+  };
+
+  const handleEditShopByNeed = async (bannerId, formData) => {
+    try {
+      setShopByNeedEditSaving(true);
+      setShopByNeedError('');
+      setShopByNeedSuccess('');
+      await updateBanner(bannerId, formData);
+      setEditingShopByNeed(null);
+      await loadShopByNeedImages();
+      setShopByNeedSuccess('Shop by Need banner updated successfully.');
+    } catch (error) {
+      console.error('SHOP BY NEED UPDATE ERROR:', error);
+      setShopByNeedError(
+        error?.message || 'Unable to update Shop by Need banner'
+      );
+    } finally {
+      setShopByNeedEditSaving(false);
     }
   };
 
@@ -449,8 +517,26 @@ export default function Banners() {
       setMainPromoError('');
       setMainPromoSuccess('');
 
-      await createBanner(formData);
-      setMainPromoSuccess('Promo banner created successfully.');
+      const sortOrder = Number(formData.get('sort_order'));
+      const existingAtPosition = mainPromoBanners.find(
+        (banner) => Number(banner.sort_order) === sortOrder
+      );
+      if (
+        existingAtPosition &&
+        !window.confirm(
+          `A Main Promo banner already exists at position ${sortOrder}. Update that banner instead?`
+        )
+      ) {
+        return;
+      }
+
+      if (existingAtPosition) {
+        await updateBanner(existingAtPosition.id, formData);
+        setMainPromoSuccess('Main Promo banner updated successfully.');
+      } else {
+        await createBanner(formData);
+        setMainPromoSuccess('Promo banner created successfully.');
+      }
       setShowMainPromoCreate(false);
 
       await loadMainPromoBanners();
@@ -643,8 +729,26 @@ export default function Banners() {
         formData.append('ends_at', webHeroForm.ends_at);
       }
 
-      await createWebHeroBanner(formData);
-      setWebHeroSuccess('Web Hero Banner uploaded successfully.');
+      const existingAtPosition = webHeroBanners.find(
+        (banner) =>
+          Number(banner.sort_order) === Number(webHeroForm.sort_order)
+      );
+      if (
+        existingAtPosition &&
+        !window.confirm(
+          `A Web Hero banner already exists at position ${webHeroForm.sort_order}. Update that banner instead?`
+        )
+      ) {
+        return;
+      }
+
+      if (existingAtPosition) {
+        await updateBanner(existingAtPosition.id, formData);
+        setWebHeroSuccess('Web Hero Banner updated successfully.');
+      } else {
+        await createWebHeroBanner(formData);
+        setWebHeroSuccess('Web Hero Banner uploaded successfully.');
+      }
       resetWebHeroForm();
       await loadWebHeroBanners();
     } catch (error) {
@@ -703,6 +807,85 @@ export default function Banners() {
       setDeleteBannerId(null);
     }
   };
+
+  const handleDeleteManagedBanner = async ({
+    bannerId,
+    label,
+    reload,
+    setError,
+    setSuccess,
+  }) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this ${label}? This will also remove its image from Storage.`
+    );
+
+    if (!confirmed) return false;
+
+    try {
+      setDeleteSaving(true);
+      setDeleteBannerId(bannerId);
+      setError('');
+      setSuccess('');
+
+      await deleteBanner(bannerId);
+      const refreshed = await reload();
+
+      if (refreshed !== false) {
+        setSuccess(`${label} deleted successfully.`);
+      }
+      return true;
+    } catch (error) {
+      console.error(`${label.toUpperCase()} DELETE ERROR:`, error);
+      setError(
+        error?.message || `Unable to delete ${label.toLowerCase()}`
+      );
+      return false;
+    } finally {
+      setDeleteSaving(false);
+      setDeleteBannerId(null);
+    }
+  };
+
+  const handleDeleteAppBanner = (bannerId) =>
+    handleDeleteManagedBanner({
+      bannerId,
+      label: 'App banner',
+      reload: loadBanners,
+      setError,
+      setSuccess,
+    });
+
+  const handleDeleteCategoryBanner = async (bannerId) => {
+    const deleted = await handleDeleteManagedBanner({
+      bannerId,
+      label: 'App category banner',
+      reload: loadCategoryBanners,
+      setError: setCategoryError,
+      setSuccess: setCategorySuccess,
+    });
+
+    if (deleted && editingCategoryBannerId === bannerId) {
+      resetCategoryForm();
+    }
+  };
+
+  const handleDeleteShopByNeedBanner = (bannerId) =>
+    handleDeleteManagedBanner({
+      bannerId,
+      label: 'Shop by Need banner',
+      reload: loadShopByNeedImages,
+      setError: setShopByNeedError,
+      setSuccess: setShopByNeedSuccess,
+    });
+
+  const handleDeleteWebCategoryCampaign = (bannerId) =>
+    handleDeleteManagedBanner({
+      bannerId,
+      label: 'Web category campaign',
+      reload: loadWebCategoryCampaigns,
+      setError: setCampaignError,
+      setSuccess: setCampaignSuccess,
+    });
 
   /* ==========================================================
      LOAD CATEGORIES
@@ -816,6 +999,25 @@ export default function Banners() {
       setWebCategoryCampaigns([]);
     } finally {
       setWebCategoryCampaignLoading(false);
+    }
+  };
+
+  const handleEditWebCategoryCampaign = async (bannerId, formData) => {
+    try {
+      setWebCategoryCampaignEditSaving(true);
+      setCampaignError('');
+      setCampaignSuccess('');
+      await updateBanner(bannerId, formData);
+      setEditingWebCategoryCampaign(null);
+      await loadWebCategoryCampaigns();
+      setCampaignSuccess('Web category campaign updated successfully.');
+    } catch (error) {
+      console.error('WEB CATEGORY CAMPAIGN UPDATE ERROR:', error);
+      setCampaignError(
+        error?.message || 'Unable to update Web category campaign'
+      );
+    } finally {
+      setWebCategoryCampaignEditSaving(false);
     }
   };
 
@@ -1086,12 +1288,26 @@ export default function Banners() {
       );
 
       formData.append(
+        'platform',
+        'app'
+      );
+
+      formData.append(
+        'placement',
+        'home'
+      );
+
+      formData.append(
         'display_location',
         form.display_location
       );
 
       formData.append(
         'display_order',
+        String(form.display_order)
+      );
+      formData.append(
+        'sort_order',
         String(form.display_order)
       );
 
@@ -1114,11 +1330,28 @@ export default function Banners() {
         );
       }
 
-      await createBanner(formData);
-
-      setSuccess(
-        'Banner uploaded successfully.'
+      const existingAtPosition = banners.find(
+        (banner) =>
+          (banner.metadata?.display_location || 'Deals of the Week') ===
+            form.display_location &&
+          Number(banner.sort_order) === Number(form.display_order)
       );
+      if (
+        existingAtPosition &&
+        !window.confirm(
+          `A promotional banner already exists at position ${form.display_order}. Update that banner instead?`
+        )
+      ) {
+        return;
+      }
+
+      if (existingAtPosition) {
+        await updateBanner(existingAtPosition.id, formData);
+        setSuccess('Existing promotional banner updated successfully.');
+      } else {
+        await createBanner(formData);
+        setSuccess('Banner uploaded successfully.');
+      }
 
       resetForm();
 
@@ -1135,6 +1368,23 @@ export default function Banners() {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleEditAppBanner = async (bannerId, formData) => {
+    try {
+      setAppBannerEditSaving(true);
+      setError('');
+      setSuccess('');
+      await updateBanner(bannerId, formData);
+      setSuccess('App promotional banner updated successfully.');
+      setEditingAppBanner(null);
+      await loadBanners();
+    } catch (err) {
+      console.error('APP BANNER UPDATE ERROR:', err);
+      setError(err?.message || 'Unable to update App promotional banner');
+    } finally {
+      setAppBannerEditSaving(false);
     }
   };
 
@@ -1317,6 +1567,7 @@ export default function Banners() {
       ...INITIAL_CATEGORY_FORM,
     });
 
+    setEditingCategoryBannerId(null);
     setCategoryError('');
   };
 
@@ -1339,7 +1590,7 @@ export default function Banners() {
       return;
     }
 
-    if (!categoryForm.image) {
+    if (!categoryForm.image && !editingCategoryBannerId) {
       setCategoryError(
         'Please select a category banner image.'
       );
@@ -1357,43 +1608,55 @@ export default function Banners() {
         categoryForm.category_id
       );
 
-      formData.append(
-        'image',
-        categoryForm.image
-      );
+      if (categoryForm.image) {
+        formData.append('image', categoryForm.image);
+      }
 
-      formData.append(
-        'display_order',
-        String(
-          categoryForm.display_order
-        )
-      );
+      formData.append('sort_order', String(categoryForm.display_order));
 
       formData.append(
         'publish_status',
         categoryForm.publish_status
       );
-
-      if (categoryForm.starts_at) {
-        formData.append(
-          'starts_at',
-          categoryForm.starts_at
-        );
-      }
-
-      if (categoryForm.ends_at) {
-        formData.append(
-          'ends_at',
-          categoryForm.ends_at
-        );
-      }
-
-      await createCategoryBanner(
-        formData
+      formData.append(
+        'is_visible',
+        String(categoryForm.publish_status === 'published')
       );
 
+      const existingAtPosition = categoryBanners.find(
+        (banner) =>
+          banner.category_id === categoryForm.category_id &&
+          Number(banner.sort_order) === Number(categoryForm.display_order) &&
+          String(banner.id) !== String(editingCategoryBannerId)
+      );
+      const updateId = existingAtPosition?.id || editingCategoryBannerId;
+
+      if (
+        existingAtPosition &&
+        !window.confirm(
+          `A ${existingAtPosition.categories?.name || 'category'} banner already exists at position ${categoryForm.display_order}. Update that banner instead?`
+        )
+      ) {
+        return;
+      }
+
+      formData.append('starts_at', categoryForm.starts_at);
+      formData.append('ends_at', categoryForm.ends_at);
+
+      if (updateId) {
+        await updateBanner(updateId, formData);
+      } else {
+        formData.append(
+          'display_order',
+          String(categoryForm.display_order)
+        );
+        await createCategoryBanner(formData);
+      }
+
       setCategorySuccess(
-        'Category banner uploaded successfully.'
+        updateId
+          ? 'Category banner updated successfully.'
+          : 'Category banner uploaded successfully.'
       );
 
       resetCategoryForm();
@@ -1412,6 +1675,21 @@ export default function Banners() {
     } finally {
       setCategorySaving(false);
     }
+  };
+
+  const handleEditCategoryBanner = (banner) => {
+    setEditingCategoryBannerId(banner.id);
+    setCategoryForm({
+      category_id: banner.category_id || '',
+      image: null,
+      display_order: banner.sort_order ?? 1,
+      publish_status: banner.publish_status || 'draft',
+      starts_at: banner.starts_at?.slice(0, 16) || '',
+      ends_at: banner.ends_at?.slice(0, 16) || '',
+    });
+    setCategoryPreviewUrl(banner.image_url || '');
+    setCategoryError('');
+    setCategorySuccess('');
   };
 
   /* ==========================================================
@@ -1525,8 +1803,25 @@ export default function Banners() {
     try {
       setCampaignSaving(true);
 
+      const platform = bannerPlatform || 'app';
+      const existingAtPosition = categoryCampaigns.find(
+        (campaign) =>
+          campaign.category_id === campaignForm.category_id &&
+          Number(campaign.sort_order) === Number(campaignForm.sort_order) &&
+          String(campaign.id) !== String(editingCampaignId)
+      );
+      if (
+        existingAtPosition &&
+        !window.confirm(
+          `A ${categories.find((category) => category.id === campaignForm.category_id)?.name || 'category'} campaign already exists at position ${campaignForm.sort_order}. Update that campaign instead?`
+        )
+      ) {
+        return;
+      }
+
+      const updateId = existingAtPosition?.id || editingCampaignId;
       const formData = new FormData();
-      formData.append('platform', 'app');
+      formData.append('platform', platform);
       formData.append('title', campaignForm.title.trim());
       formData.append('category_id', campaignForm.category_id);
       formData.append(
@@ -1539,8 +1834,8 @@ export default function Banners() {
         formData.append('image', campaignForm.image);
       }
 
-      if (editingCampaignId) {
-        await updateCategoryCampaign(editingCampaignId, formData);
+      if (updateId) {
+        await updateCategoryCampaign(updateId, formData);
         setCampaignSuccess(
           'Category campaign updated successfully.'
         );
@@ -1590,7 +1885,7 @@ export default function Banners() {
       setCampaignError('');
       setCampaignSuccess('');
 
-      await deleteCategoryCampaign(campaign.id, 'app');
+      await deleteCategoryCampaign(campaign.id, bannerPlatform || 'app');
       setCampaignSuccess(
         'Category campaign deleted successfully.'
       );
@@ -1836,6 +2131,14 @@ export default function Banners() {
               removeImage={removeImage}
               resetForm={resetForm}
               handleSubmit={handleSubmit}
+              onStartEdit={setEditingAppBanner}
+              editingBanner={editingAppBanner}
+              editSaving={appBannerEditSaving}
+              onCloseEdit={() => setEditingAppBanner(null)}
+              onEditBanner={handleEditAppBanner}
+              onDeleteBanner={handleDeleteAppBanner}
+              deleteSaving={deleteSaving}
+              deleteBannerId={deleteBannerId}
               publishedCount={
                 publishedCount
               }
@@ -1913,6 +2216,11 @@ export default function Banners() {
               handleCategorySubmit={
                 handleCategorySubmit
               }
+              editingCategoryBannerId={editingCategoryBannerId}
+              onEditCategoryBanner={handleEditCategoryBanner}
+              onDeleteCategoryBanner={handleDeleteCategoryBanner}
+              deleteSaving={deleteSaving}
+              deleteBannerId={deleteBannerId}
               getStatusStyle={
                 getStatusStyle
               }
@@ -2077,12 +2385,57 @@ export default function Banners() {
                             {campaign.storage_path}
                           </span>
                         )}
+                        {campaign.id && (
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => setEditingWebCategoryCampaign(campaign)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDeleteWebCategoryCampaign(campaign.id)
+                              }
+                              disabled={
+                                deleteSaving &&
+                                deleteBannerId === campaign.id
+                              }
+                              style={deleteButtonStyle}
+                            >
+                              {deleteSaving &&
+                              deleteBannerId === campaign.id
+                                ? 'Deleting...'
+                                : 'Delete'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </article>
                   ))}
                 </div>
               )}
             </section>
+            {campaignError && (
+              <Alert type="error" message={campaignError} />
+            )}
+            {campaignSuccess && (
+              <Alert type="success" message={campaignSuccess} />
+            )}
+            {editingWebCategoryCampaign && (
+              <WebMainPromoEditModal
+                key={editingWebCategoryCampaign.id}
+                banner={editingWebCategoryCampaign}
+                saving={webCategoryCampaignEditSaving}
+                bannerLabel="Web Category Campaign"
+                validateRatio={false}
+                previewAspectRatio="16 / 9"
+                onClose={() => setEditingWebCategoryCampaign(null)}
+                onSave={handleEditWebCategoryCampaign}
+              />
+            )}
           </>
         )}
 
@@ -2285,12 +2638,53 @@ export default function Banners() {
                         >
                           {item.storage_path}
                         </span>
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          disabled={!item.id || shopByNeedEditSaving}
+                          title={
+                            item.id
+                              ? 'Edit this Shop by Need banner'
+                              : 'Sync existing images to enable editing'
+                          }
+                          onClick={() => item.id && setEditingShopByNeed(item)}
+                        >
+                          Edit
+                        </button>
+                        {item.id && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteShopByNeedBanner(item.id)}
+                            disabled={
+                              deleteSaving &&
+                              deleteBannerId === item.id
+                            }
+                            style={deleteButtonStyle}
+                          >
+                            {deleteSaving &&
+                            deleteBannerId === item.id
+                              ? 'Deleting...'
+                              : 'Delete'}
+                          </button>
+                        )}
                       </div>
                     </article>
                   ))}
                 </div>
               )}
             </section>
+            {editingShopByNeed && (
+              <WebMainPromoEditModal
+                key={editingShopByNeed.id}
+                banner={editingShopByNeed}
+                saving={shopByNeedEditSaving}
+                bannerLabel="Shop by Need Banner"
+                validateRatio={false}
+                previewAspectRatio="16 / 9"
+                onClose={() => setEditingShopByNeed(null)}
+                onSave={handleEditShopByNeed}
+              />
+            )}
             {showShopByNeedCreate && (
               <WebShopByNeedCreateModal
                 saving={shopByNeedCreateSaving}
@@ -3168,6 +3562,8 @@ function WebMainPromoEditModal({
 }) {
   const [form, setForm] = useState({
     title: banner.title || '',
+    display_location:
+      banner.metadata?.display_location || banner.title || '',
     sort_order: banner.sort_order ?? 1,
     publish_status: banner.publish_status || 'published',
     is_visible: banner.is_visible !== false,
@@ -3239,6 +3635,9 @@ function WebMainPromoEditModal({
     const formData = new FormData();
     formData.append('title', form.title);
     formData.append('sort_order', String(form.sort_order));
+    if (banner.platform === 'app') {
+      formData.append('display_location', form.display_location);
+    }
     formData.append('publish_status', form.publish_status);
     formData.append('is_visible', String(form.is_visible));
     formData.append('starts_at', form.starts_at);
@@ -3357,6 +3756,22 @@ function WebMainPromoEditModal({
                 style={inputStyle}
               />
             </FormField>
+            {banner.platform === 'app' && (
+              <FormField label="Display Location">
+                <select
+                  value={form.display_location}
+                  name="display_location"
+                  onChange={handleChange}
+                  style={inputStyle}
+                >
+                  {DISPLAY_LOCATIONS.map((location) => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            )}
 
             <div
               style={{
@@ -4277,6 +4692,14 @@ function AppBannerManagement({
   removeImage,
   resetForm,
   handleSubmit,
+  onStartEdit,
+  editingBanner,
+  editSaving,
+  onCloseEdit,
+  onEditBanner,
+  onDeleteBanner,
+  deleteSaving,
+  deleteBannerId,
   publishedCount,
   draftCount,
   getStatusStyle,
@@ -4543,7 +4966,21 @@ function AppBannerManagement({
         banners={banners}
         loading={loading}
         getStatusStyle={getStatusStyle}
+        onEdit={onStartEdit}
+        onDelete={onDeleteBanner}
+        deleteSaving={deleteSaving}
+        deleteBannerId={deleteBannerId}
       />
+      {editingBanner && (
+        <WebMainPromoEditModal
+          key={editingBanner.id}
+          banner={editingBanner}
+          saving={editSaving}
+          bannerLabel="App Promotional Banner"
+          onClose={onCloseEdit}
+          onSave={onEditBanner}
+        />
+      )}
     </>
   );
 }
@@ -4570,6 +5007,11 @@ function CategoryBannerManagement({
   removeCategoryImage,
   resetCategoryForm,
   handleCategorySubmit,
+  editingCategoryBannerId,
+  onEditCategoryBanner,
+  onDeleteCategoryBanner,
+  deleteSaving,
+  deleteBannerId,
   getStatusStyle,
 }) {
   return (
@@ -4644,7 +5086,9 @@ function CategoryBannerManagement({
                   color: '#123D2B',
                 }}
               >
-                Add App Category Banner
+                {editingCategoryBannerId
+                  ? 'Edit App Category Banner'
+                  : 'Add App Category Banner'}
               </h2>
 
               <p
@@ -4819,7 +5263,11 @@ function CategoryBannerManagement({
               onClear={
                 resetCategoryForm
               }
-              saveText="Save Category Banner"
+              saveText={
+                editingCategoryBannerId
+                  ? 'Update Category Banner'
+                  : 'Save Category Banner'
+              }
             />
           </div>
         </form>
@@ -4831,6 +5279,10 @@ function CategoryBannerManagement({
         banners={categoryBanners}
         loading={categoryLoading}
         getStatusStyle={getStatusStyle}
+        onEdit={onEditCategoryBanner}
+        onDelete={onDeleteCategoryBanner}
+        deleteSaving={deleteSaving}
+        deleteBannerId={deleteBannerId}
       />
     </>
   );
@@ -5180,6 +5632,10 @@ function ExistingCategoryBanners({
   banners,
   loading,
   getStatusStyle,
+  onEdit,
+  onDelete,
+  deleteSaving = false,
+  deleteBannerId = null,
 }) {
   return (
     <section
@@ -5249,6 +5705,12 @@ function ExistingCategoryBanners({
                       banner.categories
                         ?.slug ||
                       'App Category'
+                    }
+                    onEdit={onEdit ? () => onEdit(banner) : null}
+                    onDelete={onDelete ? () => onDelete(banner.id) : null}
+                    deleting={
+                      deleteSaving &&
+                      deleteBannerId === banner.id
                     }
                   />
                 );
@@ -6042,6 +6504,20 @@ const inputStyle = {
   color: '#24352B',
   fontSize: 12,
   outline: 'none',
+};
+
+const deleteButtonStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: 40,
+  padding: '0 15px',
+  color: '#A3332A',
+  background: '#FFF5F4',
+  border: '1px solid #F0C7C3',
+  borderRadius: 11,
+  fontSize: 12.5,
+  fontWeight: 600,
 };
 
 /* ============================================================
