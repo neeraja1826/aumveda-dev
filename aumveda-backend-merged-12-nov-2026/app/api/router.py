@@ -1,0 +1,90 @@
+from fastapi import APIRouter
+
+from app.api.vendor.router import vendor_router
+
+from app.api.admin import (
+    banners as admin_banners,
+    categories as admin_categories,
+    customers as admin_customers,
+    dashboard as admin_dashboard,
+    finance as admin_finance,
+    inventory as admin_inventory,
+    orders as admin_orders,
+    products as admin_products,
+    reports as admin_reports,
+    returns as admin_returns,
+    reviews as admin_reviews,
+    settings as admin_settings,
+    vendors as admin_vendors,
+    product_images as admin_product_images,
+    coupons as admin_coupons,
+    notifications as admin_notifications,
+    support as admin_support,
+)
+
+from app.api.routes import (
+    addresses,
+    auth,
+    cart,
+    categories,
+    database,
+    health,
+    home,
+    orders,
+    products,
+    profile,
+    returns,
+    reviews,
+    wishlist,
+    support,
+    site_settings,
+)
+
+
+api_router = APIRouter()
+
+# Legacy vendor platform routes retained from the Web backend.
+api_router.include_router(vendor_router)
+
+
+# ============================================================
+# Customer API routes
+# ============================================================
+
+api_router.include_router(health.router)
+api_router.include_router(returns.router)
+api_router.include_router(reviews.router)
+api_router.include_router(database.router)
+api_router.include_router(auth.router)
+api_router.include_router(home.router)
+api_router.include_router(products.router)
+api_router.include_router(categories.router)
+api_router.include_router(profile.router)
+api_router.include_router(addresses.router)
+api_router.include_router(wishlist.router)
+api_router.include_router(cart.router)
+api_router.include_router(orders.router)
+api_router.include_router(admin_product_images.router)
+api_router.include_router(support.router)
+api_router.include_router(site_settings.router)
+
+# ============================================================
+# Admin API routes
+# ============================================================
+
+api_router.include_router(admin_dashboard.router)
+api_router.include_router(admin_banners.router)
+api_router.include_router(admin_vendors.router)
+api_router.include_router(admin_products.router)
+api_router.include_router(admin_categories.router)
+api_router.include_router(admin_customers.router)
+api_router.include_router(admin_orders.router)
+api_router.include_router(admin_inventory.router)
+api_router.include_router(admin_reviews.router)
+api_router.include_router(admin_finance.router)
+api_router.include_router(admin_reports.router)
+api_router.include_router(admin_settings.router)
+api_router.include_router(admin_returns.router)
+api_router.include_router(admin_coupons.router)
+api_router.include_router(admin_notifications.router)
+api_router.include_router(admin_support.router)

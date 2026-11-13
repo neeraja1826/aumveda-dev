@@ -161,7 +161,7 @@ const WEB_BANNER_TYPES = [
    MAIN COMPONENT
 ============================================================ */
 
-export default function Banners() {
+export default function ContentManagement() {
   /* ==========================================================
      NAVIGATION
   ========================================================== */

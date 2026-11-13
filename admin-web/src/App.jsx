@@ -25,7 +25,7 @@ import Login from './modules/Login.jsx';
 import Coupons from './modules/Coupons.jsx';
 import Notifications from './modules/Notifications.jsx';
 import Support from './modules/Support.jsx';
-import Banners from './modules/Banners.jsx';
+import ContentManagement from './modules/ContentManagement.jsx';
 
 import { getAdminToken, setAdminToken } from './services/api.js';
 
@@ -77,8 +77,8 @@ function AdminLayout({ onLogout }) {
             />
 
             <Route
-              path="/admin/banners"
-              element={<Banners />}
+              path="/admin/content-management"
+              element={<ContentManagement />}
             />
 
             <Route
