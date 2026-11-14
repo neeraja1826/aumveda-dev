@@ -277,37 +277,49 @@ export default function Reports() {
 
         .reports-page .report-controls select,
         .reports-page .report-controls input {
-          min-height: 37px;
-          padding: 8px 10px;
-          border: 1px solid #dfe5dc;
-          border-radius: 8px;
-          background: #fff;
-          color: #344438;
+          min-height: 42px;
+          padding: 0 14px;
+          border: 1px solid #D5E4D2;
+          border-radius: 10px;
+          background: #FFFFFF;
+          color: #123D2B;
           font: inherit;
-          font-size: 12px;
+          font-size: 13px;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .reports-page .report-controls select:focus,
+        .reports-page .report-controls input:focus {
+          border-color: #276345;
+          box-shadow: 0 0 0 3px rgba(39, 99, 69, 0.12);
+          outline: none;
         }
 
         .reports-page .report-controls input {
-          width: 200px;
+          width: 220px;
           min-width: 0;
         }
 
         .reports-page .report-refresh,
         .reports-page .report-retry {
-          min-height: 36px;
-          padding: 8px 11px;
-          border: 1px solid #dce4d8;
-          border-radius: 8px;
-          background: #fff;
-          color: #344b39;
+          min-height: 42px;
+          padding: 0 16px;
+          border: 1px solid #D5E4D2;
+          border-radius: 10px;
+          background: #FFFFFF;
+          color: #123D2B;
           font: inherit;
-          font-size: 12px;
+          font-size: 12.5px;
+          font-weight: 600;
           cursor: pointer;
+          transition: all 0.18s ease;
         }
 
         .reports-page .report-refresh:hover,
         .reports-page .report-retry:hover {
-          background: #f5f7f3;
+          background: #F8FAF7;
+          border-color: #276345;
+          transform: translateY(-1px);
         }
 
         .reports-page .report-count {

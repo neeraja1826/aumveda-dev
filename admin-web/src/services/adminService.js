@@ -149,11 +149,6 @@ export function updateResourceStatus(
         value
       )}`,
 
-    reviews:
-      `/admin/reviews/${encodedId}/status?new_status=${encodeURIComponent(
-        value
-      )}`,
-
     customers:
       `/admin/customers/${encodedId}/active?is_active=${encodeURIComponent(
         value
@@ -170,6 +165,23 @@ export function updateResourceStatus(
     method: 'PATCH',
   });
 }
+
+export const deleteAdminReview = (reviewId) =>
+  apiRequest(
+    `/admin/reviews/${encodeURIComponent(reviewId)}`,
+    {
+      method: 'DELETE',
+    }
+  );
+
+export const updateCustomer = (customerId, changes) =>
+  apiRequest(
+    `/admin/customers/${encodeURIComponent(customerId)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(changes),
+    }
+  );
 
 /* ============================================================
    CATEGORY UPDATE
@@ -244,7 +256,7 @@ export const updateVendorActiveStatus = (
 
 export const getVendorDetails = (vendorId) =>
   apiRequest(
-    `/admin/vendors/${encodeURIComponent(vendorId)}`
+    `/admin/vendors/${encodeURIComponent(vendorId)}/details`
   );
 
 export async function createVendor(payload) {
@@ -861,6 +873,253 @@ export async function syncMainPromoBanners() {
     '/admin/banners/storage/sync-main-promo-banner',
     {
       method: 'POST',
+    }
+  );
+}
+// ============================================================
+// CONTENT MANAGEMENT
+// ============================================================
+
+// ============================================================
+// CONTENT MANAGEMENT
+// ============================================================
+
+/* ============================================================
+   CONTENT MANAGEMENT - SECTIONS
+============================================================ */
+
+export async function getContentManagementSections(
+  platform = 'web',
+  pageKey = 'home'
+) {
+  const query = new URLSearchParams({
+    platform,
+    page_key: pageKey,
+  });
+
+  return apiRequest(
+    `/admin/content-management?${query.toString()}`
+  );
+}
+
+export async function getContentManagementSection(
+  sectionId
+) {
+  if (!sectionId) {
+    throw new Error('Section ID is required.');
+  }
+
+  return apiRequest(
+    `/admin/content-management/sections/${encodeURIComponent(
+      sectionId
+    )}`
+  );
+}
+
+export async function uploadContentManagementImage(
+  sectionId,
+  image
+) {
+  if (!sectionId) {
+    throw new Error('Section ID is required.');
+  }
+
+  if (!(image instanceof File)) {
+    throw new Error('An image file is required.');
+  }
+
+  const formData = new FormData();
+  formData.append('image', image);
+
+  return apiRequest(
+    `/admin/content-management/sections/${encodeURIComponent(
+      sectionId
+    )}/image`,
+    {
+      method: 'POST',
+      body: formData,
+    }
+  );
+}
+
+export async function createContentManagementSection(
+  payload
+) {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Section data is required.');
+  }
+
+  return apiRequest(
+    '/admin/content-management/sections',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function updateContentManagementSection(
+  sectionId,
+  payload
+) {
+  if (!sectionId) {
+    throw new Error('Section ID is required.');
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Section data is required.');
+  }
+
+  return apiRequest(
+    `/admin/content-management/sections/${encodeURIComponent(
+      sectionId
+    )}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function updateContentManagementVisibility(
+  sectionId,
+  isVisible
+) {
+  if (!sectionId) {
+    throw new Error('Section ID is required.');
+  }
+
+  return apiRequest(
+    `/admin/content-management/sections/${encodeURIComponent(
+      sectionId
+    )}/visibility`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        is_visible: Boolean(isVisible),
+      }),
+    }
+  );
+}
+
+export async function reorderContentManagementSections(
+  sections
+) {
+  if (!Array.isArray(sections)) {
+    throw new Error('Sections must be an array.');
+  }
+
+  return apiRequest(
+    '/admin/content-management/sections/reorder',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        sections: sections.map(
+          (section, index) => ({
+            id: section.id,
+            sort_order: index + 1,
+          })
+        ),
+      }),
+    }
+  );
+}
+
+export async function deleteContentManagementSection(
+  sectionId
+) {
+  if (!sectionId) {
+    throw new Error('Section ID is required.');
+  }
+
+  return apiRequest(
+    `/admin/content-management/sections/${encodeURIComponent(
+      sectionId
+    )}`,
+    {
+      method: 'DELETE',
+    }
+  );
+}
+
+
+/* ============================================================
+   CONTENT MANAGEMENT - SECTION ITEMS
+============================================================ */
+
+export async function getContentManagementItems(
+  sectionId
+) {
+  if (!sectionId) {
+    throw new Error('Section ID is required.');
+  }
+
+  return apiRequest(
+    `/admin/content-management/sections/${encodeURIComponent(
+      sectionId
+    )}/items`
+  );
+}
+
+export async function createContentManagementItem(
+  sectionId,
+  payload
+) {
+  if (!sectionId) {
+    throw new Error('Section ID is required.');
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Item data is required.');
+  }
+
+  return apiRequest(
+    `/admin/content-management/sections/${encodeURIComponent(
+      sectionId
+    )}/items`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function updateContentManagementItem(
+  itemId,
+  payload
+) {
+  if (!itemId) {
+    throw new Error('Item ID is required.');
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Item data is required.');
+  }
+
+  return apiRequest(
+    `/admin/content-management/items/${encodeURIComponent(
+      itemId
+    )}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function deleteContentManagementItem(
+  itemId
+) {
+  if (!itemId) {
+    throw new Error('Item ID is required.');
+  }
+
+  return apiRequest(
+    `/admin/content-management/items/${encodeURIComponent(
+      itemId
+    )}`,
+    {
+      method: 'DELETE',
     }
   );
 }

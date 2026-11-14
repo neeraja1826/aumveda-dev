@@ -136,7 +136,6 @@ export function AyurvedicHeroBanner({
       <div className="aumveda-hero-content">
         {eyebrow && <span className="aumveda-hero-eyebrow">{eyebrow}</span>}
         <h2>{title}</h2>
-        {description && <p>{description}</p>}
       </div>
 
       <div className="aumveda-hero-aside">

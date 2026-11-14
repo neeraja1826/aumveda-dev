@@ -326,11 +326,11 @@ const [stockFilter, setStockFilter] = useState('all');
   max-width: 480px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
-  padding: 24px;
-  border: 1px solid #e5e9e4;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.2);
+  padding: 28px;
+  border: 1px solid #E2ECE0;
+  border-radius: 20px;
+  background: #FFFFFF;
+  box-shadow: 0 24px 70px rgba(18, 61, 43, 0.22);
 }
 
 .inventory-page .transaction-modal {
@@ -340,14 +340,14 @@ const [stockFilter, setStockFilter] = useState('all');
 .inventory-page .transaction-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
 .inventory-page .transaction-detail-item {
-  padding: 13px 14px;
-  border: 1px solid #e5e9e4;
-  border-radius: 10px;
-  background: #fafbf8;
+  padding: 15px 16px;
+  border: 1px solid #E2ECE0;
+  border-radius: 12px;
+  background: #F8FAF7;
 }
 
 .inventory-page .transaction-detail-item.full {
@@ -357,7 +357,7 @@ const [stockFilter, setStockFilter] = useState('all');
 .inventory-page .transaction-detail-label {
   display: block;
   margin-bottom: 5px;
-  color: #788278;
+  color: #5F6E64;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -365,8 +365,8 @@ const [stockFilter, setStockFilter] = useState('all');
 }
 
 .inventory-page .transaction-detail-value {
-  color: #263c30;
-  font-size: 13px;
+  color: #123D2B;
+  font-size: 13.5px;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }

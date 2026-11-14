@@ -76,6 +76,13 @@ function formatDiscount(coupon) {
   return `₹${Number(coupon.discount_value).toLocaleString('en-IN')} OFF`;
 }
 
+function getPlacementLabel(location) {
+  return (
+    COUPON_PLACEMENTS.find((item) => item.value === location)?.label ||
+    location
+  );
+}
+
 export default function Coupons() {
   const [coupons, setCoupons] = useState([]);
   const [search, setSearch] = useState('');
@@ -299,9 +306,6 @@ export default function Coupons() {
         <div>
           <span className="coupons-eyebrow">PROMOTIONS & OFFERS</span>
           <h2>Coupons</h2>
-          <p>
-            Create and manage discount coupons for your AUMVEDA customers.
-          </p>
         </div>
 
         <button
@@ -320,7 +324,7 @@ export default function Coupons() {
       <div className="coupon-stats">
         <div className="coupon-stat-card">
           <span className="coupon-stat-icon"><TicketPercent size={20} /></span>
-          <div>
+          <div className="coupon-stat-info">
             <small>Total coupons</small>
             <strong>{coupons.length}</strong>
           </div>
@@ -328,7 +332,7 @@ export default function Coupons() {
 
         <div className="coupon-stat-card">
           <span className="coupon-stat-icon"><Tag size={20} /></span>
-          <div>
+          <div className="coupon-stat-info">
             <small>Active coupons</small>
             <strong>{coupons.filter((item) => item.is_active).length}</strong>
           </div>
@@ -336,7 +340,7 @@ export default function Coupons() {
 
         <div className="coupon-stat-card">
           <span className="coupon-stat-icon"><Power size={20} /></span>
-          <div>
+          <div className="coupon-stat-info">
             <small>Inactive coupons</small>
             <strong>{coupons.filter((item) => !item.is_active).length}</strong>
           </div>
@@ -366,11 +370,8 @@ export default function Coupons() {
 
       <div className="coupon-table-card">
         <div className="coupon-table-title">
-          <div>
-            <h3>All Coupons</h3>
-            <p>Manage your discount campaigns</p>
-          </div>
-          <span>{coupons.length} coupons</span>
+          <h3>All Coupons</h3>
+          <span className="count-badge">{coupons.length} {coupons.length === 1 ? 'coupon' : 'coupons'}</span>
         </div>
 
         {loading ? (
@@ -387,6 +388,7 @@ export default function Coupons() {
               <thead>
                 <tr>
                   <th>Coupon</th>
+                  <th>Displayed / applied</th>
                   <th>Discount</th>
                   <th>Minimum order</th>
                   <th>Valid until</th>
@@ -403,6 +405,23 @@ export default function Coupons() {
                         {coupon.code}
                       </strong>
                       <small>{coupon.description || 'No description'}</small>
+                    </td>
+
+                    <td>
+                      <div className="coupon-location-list">
+                        {Array.isArray(coupon.display_locations) &&
+                        coupon.display_locations.length > 0 ? (
+                          coupon.display_locations.map((location) => (
+                            <span key={location}>
+                              {getPlacementLabel(location)}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="is-unspecified">
+                            Not specified
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td>
@@ -431,6 +450,7 @@ export default function Coupons() {
                           type="button"
                           className="coupon-view-btn"
                           title="View coupon details"
+                          aria-label={`View ${coupon.code} details`}
                           onClick={() => openDetails(coupon)}
                         >
                           <Eye size={16} />
@@ -439,6 +459,7 @@ export default function Coupons() {
                         <button
                           type="button"
                           title="Edit coupon"
+                          aria-label={`Edit ${coupon.code}`}
                           onClick={() => openEditForm(coupon)}
                         >
                           <Pencil size={16} />
@@ -447,6 +468,7 @@ export default function Coupons() {
                         <button
                           type="button"
                           title={coupon.is_active ? 'Deactivate' : 'Activate'}
+                          aria-label={`${coupon.is_active ? 'Deactivate' : 'Activate'} ${coupon.code}`}
                           onClick={() => toggleStatus(coupon)}
                         >
                           <Power size={16} />
@@ -462,15 +484,25 @@ export default function Coupons() {
       </div>
 
       {selectedCoupon && (
-        <div className="coupon-modal-backdrop" onClick={closeDetails}>
+        <div
+          className="coupon-modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeDetails();
+          }}
+        >
           <div
             className="coupon-modal coupon-details-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="coupon-details-title"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="coupon-modal-header">
               <div>
                 <span className="coupons-eyebrow">COUPON DETAILS</span>
-                <h3>{selectedCoupon.code || 'Coupon'}</h3>
+                <h3 id="coupon-details-title">
+                  {selectedCoupon.code || 'Coupon'}
+                </h3>
               </div>
 
               <button
@@ -535,9 +567,9 @@ export default function Coupons() {
               <div>
                 {(selectedCoupon.display_locations || []).length
                   ? selectedCoupon.display_locations.map((location) => (
-                      <span key={location}>{
-                        COUPON_PLACEMENTS.find((item) => item.value === location)?.label || location
-                      }</span>
+                      <span key={location}>
+                        {getPlacementLabel(location)}
+                      </span>
                     ))
                   : <span>Not specified</span>}
               </div>
@@ -568,12 +600,30 @@ export default function Coupons() {
       )}
 
       {showForm && (
-        <div className="coupon-modal-backdrop">
-          <div className="coupon-modal">
+        <div
+          className="coupon-modal-backdrop"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              !saving
+            ) {
+              closeForm();
+            }
+          }}
+        >
+          <div
+            className="coupon-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="coupon-form-title"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="coupon-modal-header">
               <div>
                 <span className="coupons-eyebrow">COUPON MANAGEMENT</span>
-                <h3>{editingId ? 'Edit Coupon' : 'Create New Coupon'}</h3>
+                <h3 id="coupon-form-title">
+                  {editingId ? 'Edit Coupon' : 'Create New Coupon'}
+                </h3>
               </div>
 
               <button
@@ -770,64 +820,533 @@ export default function Coupons() {
         </div>
       )}
       <style>{`
+        .coupons-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        }
+        .coupons-eyebrow {
+          display: block;
+          color: #276345;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 1.6px;
+          text-transform: uppercase;
+          margin-bottom: 3px;
+        }
+        .coupons-heading h2 {
+          margin: 0;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 26px;
+          font-weight: 700;
+          color: #123D2B;
+        }
+        .coupon-primary-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 40px;
+          padding: 0 18px;
+          border: 1px solid #123D2B;
+          border-radius: 11px;
+          background: linear-gradient(135deg, #173F1D 0%, #123D2B 100%);
+          color: #FFFFFF;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 3px 10px rgba(18, 61, 43, 0.16);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .coupon-primary-btn:hover:not(:disabled) {
+          transform: translateY(-1.5px);
+          box-shadow: 0 6px 16px rgba(18, 61, 43, 0.24);
+        }
+        .coupon-stats {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
+          margin-bottom: 22px;
+        }
+        .coupon-stat-card {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 20px 24px;
+          background: #FFFFFF;
+          border: 1px solid #E2ECE0;
+          border-radius: 16px;
+          box-shadow: 0 4px 16px -2px rgba(18, 61, 43, 0.04);
+          transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
+        }
+        .coupon-stat-card:hover {
+          transform: translateY(-2.5px);
+          box-shadow: 0 10px 24px -4px rgba(18, 61, 43, 0.09);
+          border-color: #BED8BD;
+        }
+        .coupon-stat-icon {
+          display: grid;
+          place-items: center;
+          width: 46px;
+          height: 46px;
+          border-radius: 12px;
+          background: #E8F2E7;
+          color: #123D2B;
+          border: 1px solid #CDE2CB;
+          flex-shrink: 0;
+        }
+        .coupon-stat-info small {
+          display: block;
+          color: #5F6E64;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 4px;
+        }
+        .coupon-stat-info strong {
+          display: block;
+          color: #123D2B;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 26px;
+          font-weight: 700;
+          line-height: 1;
+        }
+        .coupon-toolbar {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 18px;
+        }
+        .coupon-search {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-height: 42px;
+          padding: 0 14px;
+          border: 1px solid #D5E4D2;
+          border-radius: 10px;
+          background: #FFFFFF;
+          flex: 1;
+          max-width: 420px;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .coupon-search:focus-within {
+          border-color: #276345;
+          box-shadow: 0 0 0 3px rgba(39, 99, 69, 0.12);
+        }
+        .coupon-search input {
+          border: 0;
+          outline: none;
+          font-size: 13px;
+          color: #123D2B;
+          width: 100%;
+        }
+        .coupon-toolbar select {
+          min-height: 42px;
+          padding: 0 34px 0 14px;
+          border: 1px solid #D5E4D2;
+          border-radius: 10px;
+          background: #FFFFFF;
+          color: #123D2B;
+          font-size: 13px;
+          font-weight: 500;
+          appearance: none;
+          -webkit-appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23276345' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 12px center;
+          background-size: 12px;
+          cursor: pointer;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .coupon-toolbar select:focus {
+          border-color: #276345;
+          box-shadow: 0 0 0 3px rgba(39, 99, 69, 0.12);
+          outline: none;
+        }
+        .coupon-table-card {
+          background: #FFFFFF;
+          border: 1px solid #E2ECE0;
+          border-radius: 16px;
+          box-shadow: 0 4px 20px -2px rgba(18, 61, 43, 0.04);
+          overflow: hidden;
+        }
+        .coupon-table-title {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 24px;
+          border-bottom: 1px solid #EDF3EC;
+          background: #FFFFFF;
+        }
+        .coupon-table-title h3 {
+          margin: 0;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 18px;
+          color: #123D2B;
+          font-weight: 700;
+        }
+        .count-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 12px;
+          border-radius: 20px;
+          background: #E8F2E7;
+          color: #123D2B;
+          font-size: 12px;
+          font-weight: 600;
+          border: 1px solid #CDE2CB;
+        }
+        .coupon-table-scroll {
+          overflow-x: auto;
+        }
+        .coupon-table {
+          width: 100%;
+          border-collapse: collapse;
+          text-align: left;
+          font-size: 13px;
+        }
+        .coupon-table th {
+          padding: 14px 20px;
+          color: #43624D;
+          background: #F6F9F5;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          white-space: nowrap;
+          border-bottom: 1px solid #E2ECE0;
+        }
+        .coupon-table td {
+          padding: 16px 20px;
+          color: #1E2D24;
+          border-bottom: 1px solid #EDF3EC;
+          vertical-align: middle;
+        }
+        .coupon-table tbody tr {
+          transition: background-color 0.15s ease;
+        }
+        .coupon-table tbody tr:hover {
+          background: #F8FBF7;
+        }
+        .coupon-code {
+          display: inline-block;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 13px;
+          font-weight: 700;
+          color: #123D2B;
+          background: #F4F8F3;
+          padding: 3px 8px;
+          border-radius: 6px;
+          border: 1px solid #DCE9DA;
+          letter-spacing: 0.5px;
+        }
+        .coupon-table td small {
+          display: block;
+          margin-top: 5px;
+          color: #5F6E64;
+          font-size: 12px;
+          line-height: 1.4;
+        }
+        .coupon-actions {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .coupon-actions button,
         .coupon-view-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 34px;
-          height: 34px;
-          border: 1px solid #dfe6dc;
+          width: 32px;
+          height: 32px;
+          border: 1px solid #D5E4D2;
           border-radius: 8px;
-          background: #fff;
-          color: #31563f;
+          background: #FAFDF9;
+          color: #123D2B;
           cursor: pointer;
+          transition: all 0.18s ease;
         }
+        .coupons-page .coupon-actions button,
+        .coupons-page .coupon-actions .coupon-view-btn {
+          box-sizing: border-box;
+          width: 34px !important;
+          min-width: 34px !important;
+          height: 34px !important;
+          min-height: 34px !important;
+          padding: 0 !important;
+          flex: 0 0 34px;
+        }
+        .coupons-page .coupon-actions button svg {
+          display: block;
+          width: 16px;
+          height: 16px;
+          flex: 0 0 16px;
+        }
+        .coupon-actions button:hover,
         .coupon-view-btn:hover {
-          background: #f5f8f3;
+          background: #123D2B;
+          color: #FFFFFF;
+          border-color: #123D2B;
+          transform: translateY(-1px);
+        }
+        .coupon-location-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+          min-width: 120px;
+        }
+        .coupon-location-list span {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 8px;
+          border: 1px solid #D7E8D3;
+          border-radius: 999px;
+          background: #F1F7EE;
+          color: #28523A;
+          font-size: 10px;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+        .coupon-location-list .is-unspecified {
+          border-color: #E5E8E4;
+          background: #F7F8F6;
+          color: #707A72;
+          font-weight: 400;
         }
         .coupon-details-modal {
           max-width: 680px;
         }
+        .coupons-page .coupon-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 1100;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          overflow-y: auto;
+          background: rgba(14, 40, 28, 0.52);
+          backdrop-filter: blur(7px);
+          -webkit-backdrop-filter: blur(7px);
+        }
+        .coupons-page .coupon-modal {
+          box-sizing: border-box;
+          width: min(720px, 100%);
+          max-height: calc(100vh - 48px);
+          overflow-y: auto;
+          background: #FFFFFF;
+          border: 1px solid #E2ECE0;
+          border-radius: 18px;
+          box-shadow: 0 24px 70px rgba(18, 61, 43, 0.22);
+        }
+        .coupons-page .coupon-modal-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 20px;
+        }
+        .coupons-page .coupon-modal-header > div {
+          min-width: 0;
+        }
+        .coupons-page .coupon-modal-header h3 {
+          margin: 4px 0 0;
+          color: #123D2B;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 21px;
+        }
+        .coupons-page .coupon-close-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 36px;
+          width: 36px;
+          height: 36px;
+          padding: 0;
+        }
+        .coupons-page .coupon-modal > form {
+          padding: 22px 28px 28px;
+        }
+        .coupons-page .coupon-form-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+        }
+        .coupons-page .coupon-field {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          min-width: 0;
+          color: #31483A;
+          font-size: 12px;
+          font-weight: 600;
+        }
+        .coupons-page .coupon-field.full-width {
+          grid-column: 1 / -1;
+        }
+        .coupons-page .coupon-field input,
+        .coupons-page .coupon-field select {
+          box-sizing: border-box;
+          width: 100%;
+          min-width: 0;
+          height: 42px;
+          padding: 0 12px;
+          border: 1px solid #D5E4D2;
+          border-radius: 9px;
+          outline: none;
+          background: #FFFFFF;
+          color: #123D2B;
+          font: inherit;
+          font-size: 13px;
+          font-weight: 400;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .coupons-page .coupon-field input:focus,
+        .coupons-page .coupon-field select:focus {
+          border-color: #276345;
+          box-shadow: 0 0 0 3px rgba(39, 99, 69, 0.12);
+        }
+        .coupons-page .coupon-placement-section {
+          margin-top: 22px;
+          padding: 18px;
+          border: 1px solid #E2ECE0;
+          border-radius: 12px;
+          background: #F8FAF7;
+        }
+        .coupons-page .coupon-placement-section h4 {
+          margin: 0;
+          color: #123D2B;
+          font-size: 13px;
+        }
+        .coupons-page .coupon-placement-section > p {
+          margin: 5px 0 14px;
+          color: #68786C;
+          font-size: 12px;
+        }
+        .coupons-page .coupon-placement-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 9px;
+        }
+        .coupons-page .coupon-placement-grid label,
+        .coupons-page .coupon-checkboxes label {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          min-height: 40px;
+          padding: 8px 11px;
+          border: 1px solid #E1E9E0;
+          border-radius: 9px;
+          background: #FFFFFF;
+          color: #31483A;
+          font-size: 12px;
+          cursor: pointer;
+        }
+        .coupons-page .coupon-placement-grid input,
+        .coupons-page .coupon-checkboxes input {
+          width: 16px;
+          height: 16px;
+          margin: 0;
+          accent-color: #276345;
+          flex: 0 0 16px;
+        }
+        .coupons-page .coupon-checkboxes {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 14px;
+        }
+        .coupons-page .coupon-modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          margin-top: 22px;
+          padding-top: 16px;
+          border-top: 1px solid #EDF3EC;
+        }
+        .coupons-page .coupon-secondary-btn {
+          min-height: 40px;
+          padding: 0 16px;
+          border: 1px solid #D5E4D2;
+          border-radius: 10px;
+          background: #FFFFFF;
+          color: #123D2B;
+          font-size: 13px;
+          font-weight: 600;
+        }
+        .coupons-page .coupon-modal-footer button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
         .coupon-details-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px;
-          padding: 20px 24px;
+          gap: 14px;
+          padding: 24px 28px;
         }
         .coupon-detail-item {
-          padding: 13px 14px;
-          border: 1px solid #e5ebe2;
-          border-radius: 10px;
-          background: #fbfcfa;
+          padding: 15px 16px;
+          border: 1px solid #E2ECE0;
+          border-radius: 12px;
+          background: #F8FAF7;
         }
         .coupon-detail-item span,
         .coupon-detail-locations > span {
           display: block;
-          margin-bottom: 5px;
-          color: #737b73;
+          margin-bottom: 6px;
+          color: #5F6E64;
           font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
         }
         .coupon-detail-item strong {
-          color: #26352d;
-          font-size: 13px;
+          color: #123D2B;
+          font-size: 13.5px;
           line-height: 1.4;
         }
         .coupon-detail-locations {
-          padding: 0 24px 20px;
+          padding: 0 28px 24px;
         }
         .coupon-detail-locations > div {
           display: flex;
           flex-wrap: wrap;
-          gap: 7px;
+          gap: 8px;
         }
         .coupon-detail-locations > div span {
-          padding: 6px 10px;
+          padding: 5px 12px;
           border-radius: 20px;
-          background: #eef5ec;
-          color: #31563f;
+          background: #E8F5E9;
+          color: #1B5E20;
+          border: 1px solid #C8E6C9;
           font-size: 12px;
+          font-weight: 600;
         }
         @media (max-width: 640px) {
+          .coupon-stats {
+            grid-template-columns: 1fr;
+          }
+          .coupons-page .coupon-modal-backdrop {
+            align-items: flex-start;
+            padding: 12px;
+          }
+          .coupons-page .coupon-modal {
+            max-height: calc(100vh - 24px);
+          }
+          .coupons-page .coupon-modal > form {
+            padding: 18px 16px 20px;
+          }
+          .coupons-page .coupon-form-grid,
+          .coupons-page .coupon-placement-grid {
+            grid-template-columns: 1fr;
+          }
+          .coupons-page .coupon-field.full-width {
+            grid-column: auto;
+          }
+          .coupons-page .coupon-placement-section {
+            padding: 14px;
+          }
           .coupon-details-grid {
             grid-template-columns: 1fr;
             padding-left: 16px;

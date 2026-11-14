@@ -33,6 +33,7 @@ import {
   deleteAddress,
   setDefaultAddress,
 } from '../../src/services/addressService';
+import { getCurrentLocation } from '../../src/services/locationService';
 import { useAuth } from '../../src/context/AuthContext';
 
 import { colors } from '../../src/theme/colors';
@@ -101,6 +102,15 @@ export default function AddressRoute() {
   const [postalCode, setPostalCode] =
     useState('');
 
+  const [country, setCountry] =
+    useState('India');
+
+  const [detectingLocation, setDetectingLocation] =
+    useState(false);
+
+  const [detectedLocation, setDetectedLocation] =
+    useState('');
+
   // -----------------------------------------
   // LOAD ADDRESSES
   // -----------------------------------------
@@ -165,6 +175,7 @@ export default function AddressRoute() {
     setPostalCode(
       address?.postal_code || ''
     );
+    setCountry(address?.country || 'India');
   };
 
   // -----------------------------------------
@@ -181,7 +192,9 @@ export default function AddressRoute() {
     setCity('');
     setState('');
     setPostalCode('');
+    setCountry('India');
     setEditingId(null);
+    setDetectedLocation('');
   };
 
   useEffect(() => {
@@ -292,6 +305,45 @@ export default function AddressRoute() {
     return true;
   };
 
+  const handleDetectCurrentLocation = async () => {
+    if (detectingLocation) return;
+
+    try {
+      setDetectingLocation(true);
+      setDetectedLocation('');
+      const location = await getCurrentLocation();
+      const locationPostalCode = String(
+        location.postalCode || ''
+      ).replace(/\D/g, '');
+
+      if (location.addressLine1) {
+        setAddressLine1(location.addressLine1);
+      }
+      if (location.addressLine2) {
+        setAddressLine2(location.addressLine2);
+      }
+      if (location.city) setCity(location.city);
+      if (location.state) setState(location.state);
+      if (location.country) setCountry(location.country);
+      if (locationPostalCode.length === 6) {
+        setPostalCode(locationPostalCode);
+      }
+      setDetectedLocation(location.address);
+    } catch (error) {
+      console.error(
+        'Current location detection failed:',
+        error
+      );
+      Alert.alert(
+        'Unable to Detect Location',
+        error?.message ||
+          'Could not detect your location. Please try again.'
+      );
+    } finally {
+      setDetectingLocation(false);
+    }
+  };
+
   // -----------------------------------------
   // SAVE ADDRESS
   // -----------------------------------------
@@ -329,7 +381,7 @@ const handleSave = async () => {
       city: city.trim(),
       state: state.trim(),
       postal_code: postalCode.replace(/\D/g, ''),
-      country: 'India',
+      country: country.trim() || 'India',
     };
 
     const savedAddress = editingId
@@ -760,6 +812,19 @@ const handleSelectAddress = async (address) => {
             />
 
             <Text style={styles.label}>
+              Country *
+            </Text>
+
+            <TextInput
+              value={country}
+              onChangeText={setCountry}
+              placeholder="Country"
+              placeholderTextColor={colors.textSecondary}
+              autoComplete="country-name"
+              style={styles.input}
+            />
+
+            <Text style={styles.label}>
               Recipient Name *
             </Text>
 
@@ -828,6 +893,43 @@ const handleSelectAddress = async (address) => {
               />
             ) : null}
 
+            <Pressable
+              style={[
+                styles.currentLocationButton,
+                (saving || detectingLocation) &&
+                  styles.disabledButton,
+              ]}
+              onPress={handleDetectCurrentLocation}
+              disabled={saving || detectingLocation}
+            >
+              {detectingLocation ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                />
+              ) : (
+                <Ionicons
+                  name="navigate-outline"
+                  size={17}
+                  color={colors.primary}
+                />
+              )}
+              <Text style={styles.currentLocationButtonText}>
+                {detectingLocation
+                  ? 'Detecting current location...'
+                  : 'Use Current Location'}
+              </Text>
+            </Pressable>
+
+            {detectedLocation ? (
+              <Text
+                style={styles.detectedLocationText}
+                accessibilityRole="text"
+              >
+                Location detected: {detectedLocation}
+              </Text>
+            ) : null}
+
             <View style={styles.privacyNote}>
               <Ionicons
                 name="shield-checkmark-outline"
@@ -846,7 +948,7 @@ const handleSelectAddress = async (address) => {
                   styles.disabledButton,
               ]}
               onPress={handleSave}
-              disabled={saving}
+              disabled={saving || detectingLocation}
             >
               {saving ? (
                 <ActivityIndicator
@@ -1782,6 +1884,34 @@ const styles = StyleSheet.create({
 
   half: {
     flex: 1,
+  },
+
+  currentLocationButton: {
+    minHeight: 42,
+    marginTop: 4,
+    marginBottom: 7,
+    paddingHorizontal: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#DCE7D8',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#F2F7EF',
+  },
+
+  currentLocationButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+
+  detectedLocationText: {
+    marginBottom: 9,
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#53675A',
   },
 
   privacyNote: {

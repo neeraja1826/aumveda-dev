@@ -10,10 +10,8 @@ import {
   Store,
   Users,
   Wallet,
-  Warehouse,
   RotateCcw,
   TicketPercent,
-  Bell,
   Headset,
 } from 'lucide-react';
 
@@ -29,12 +27,10 @@ export const ADMIN_PAGES = {
   CUSTOMERS: 'Customers',
   ORDERS: 'Orders',
   RETURNS: 'Returns',
-  INVENTORY: 'Inventory',
   REVIEWS: 'Reviews',
   FINANCE: 'Finance',
   REPORTS: 'Reports',
   SETTINGS: 'Settings',
-  NOTIFICATIONS: 'Notifications',
   SUPPORT: 'Support',
 };
 
@@ -48,12 +44,10 @@ const links = [
   [ADMIN_PAGES.CUSTOMERS, Users, '/admin/customers'],
   [ADMIN_PAGES.ORDERS, ShoppingBag, '/admin/orders'],
   [ADMIN_PAGES.RETURNS, RotateCcw, '/admin/returns'],
-  [ADMIN_PAGES.INVENTORY, Warehouse, '/admin/inventory'],
   [ADMIN_PAGES.REVIEWS, Star, '/admin/reviews'],
   [ADMIN_PAGES.FINANCE, Wallet, '/admin/finance'],
   [ADMIN_PAGES.REPORTS, BarChart3, '/admin/reports'],
   [ADMIN_PAGES.SETTINGS, Settings, '/admin/settings'],
-  [ADMIN_PAGES.NOTIFICATIONS, Bell, '/admin/notifications'],
   [ADMIN_PAGES.SUPPORT, Headset, '/admin/support'],
 ];
 
@@ -84,6 +78,13 @@ export default function Sidebar({
 
       return currentPath === path;
     });
+
+    if (
+      currentPath === '/admin/notifications' ||
+      currentPath === '/admin/inventory'
+    ) {
+      return null;
+    }
 
     return matchedLink?.[0] ?? ADMIN_PAGES.DASHBOARD;
   };

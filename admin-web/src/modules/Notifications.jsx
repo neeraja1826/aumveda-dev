@@ -520,20 +520,22 @@ export default function Notifications() {
 
 .notification-view-button,
 .notification-modal-secondary {
-  padding: 8px 12px;
-  border: 1px solid #dce5e5;
-  border-radius: 8px;
-  background: #fff;
-  color: #365c58;
-  font-size: 13px;
+  padding: 8px 14px;
+  border: 1px solid #D5E4D2;
+  border-radius: 9px;
+  background: #FFFFFF;
+  color: #123D2B;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.18s ease;
 }
 
 .notification-view-button:hover,
 .notification-modal-secondary:hover {
-  background: #f5f9f8;
-  border-color: #b9d3d0;
+  background: #E8F2E7;
+  border-color: #276345;
+  transform: translateY(-1px);
 }
 
 .notification-modal-overlay {
@@ -544,17 +546,19 @@ export default function Notifications() {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(24, 38, 37, 0.45);
+  background: rgba(14, 40, 28, 0.48);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .notification-modal {
   width: min(620px, 100%);
   max-height: calc(100vh - 48px);
   overflow-y: auto;
-  border: 1px solid #e3ebea;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 24px 70px rgba(31, 50, 48, 0.18);
+  border: 1px solid #E2ECE0;
+  border-radius: 20px;
+  background: #FFFFFF;
+  box-shadow: 0 24px 70px rgba(18, 61, 43, 0.22);
 }
 
 .notification-modal-header {
@@ -562,22 +566,26 @@ export default function Notifications() {
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  padding: 24px 24px 18px;
-  border-bottom: 1px solid #edf1f1;
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid #EDF3EC;
 }
 
 .notification-modal-eyebrow {
   display: block;
   margin-bottom: 6px;
-  color: #6b8582;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  color: #276345;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
   text-transform: uppercase;
 }
 
 .notification-modal-header h2 {
   margin: 0;
+  color: #123D2B;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
   color: #263b39;
   font-size: 22px;
   line-height: 1.25;

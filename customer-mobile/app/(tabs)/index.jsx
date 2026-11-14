@@ -49,7 +49,6 @@ import HomeHeader, {
 import DealsOfTheWeek from '../../src/components/home/DealsOfTheWeek';
 import ExploreAyurveda from '../../src/components/home/ExploreAyurveda';
 import FeaturedProducts from '../../src/components/home/FeaturedProducts';
-import WellnessBundles from '../../src/components/home/WellnessBundles';
 import BestsellersRail from '../../src/components/home/BestsellersRail';
 import CouponsOffers from '../../src/components/home/CouponsOffers';
 import CategoryCampaigns from '../../src/components/home/CategoryCampaigns';
@@ -58,6 +57,57 @@ import { useAuth } from '../../src/context/AuthContext';
 import JustArrived from '../../src/components/home/JustArrived';
 
 const PRODUCTS_PAGE_SIZE = 100;
+
+const APP_HOME_SECTION_COMPONENTS = [
+  {
+    key: 'deals_of_week',
+    aliases: ['deals_of_week', 'deals', 'hero_banner'],
+    defaultOrder: 1,
+  },
+  {
+    key: 'explore_ayurveda',
+    aliases: ['explore_ayurveda', 'explore_categories', 'categories'],
+    defaultOrder: 2,
+  },
+  {
+    key: 'bestsellers',
+    aliases: ['bestsellers', 'best_sellers', 'featured_products'],
+    defaultOrder: 3,
+  },
+  {
+    key: 'recently_viewed',
+    aliases: ['recently_viewed'],
+    defaultOrder: 4,
+  },
+  {
+    key: 'available_coupons',
+    aliases: ['available_coupons', 'coupons', 'offers'],
+    defaultOrder: 5,
+  },
+  {
+    key: 'just_arrived',
+    aliases: ['just_arrived', 'new_arrivals'],
+    defaultOrder: 6,
+  },
+  {
+    key: 'category_campaigns',
+    aliases: ['category_campaigns', 'campaigns'],
+    defaultOrder: 7,
+  },
+  {
+    key: 'all_products',
+    aliases: ['all_products', 'product_catalog'],
+    defaultOrder: 8,
+  },
+];
+
+function normalizeHomeSectionKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, '_')
+    .replace(/^app_/, '');
+}
 
 export default function HomeScreen() {
 
@@ -109,6 +159,7 @@ export default function HomeScreen() {
     coupons: [],
     newArrivals: [],
     categoryCampaigns: [],
+    homeSections: [],
   });
 
 
@@ -425,6 +476,134 @@ export default function HomeScreen() {
     );
   }
 
+  const allProductsSection = (
+    <View style={styles.allProductsSection}>
+      <View style={styles.allProductsDivider}>
+        <Text style={styles.allProductsHeading}>{' '}</Text>
+      </View>
+
+      {loadingAllProducts ? (
+        <ActivityIndicator
+          style={styles.allProductsLoading}
+          color={activeHeaderTheme.accent}
+        />
+      ) : allProductsError ? (
+        <Text style={styles.allProductsError}>
+          {allProductsError}
+        </Text>
+      ) : allProducts.length > 0 ? (
+        <View style={styles.allProductsGrid}>
+          {allProducts.map((product) => (
+            <ProductCard
+              key={product.id || product.slug}
+              product={product}
+              onPress={() => {
+                if (product?.slug) {
+                  router.push(`/products/${product.slug}`);
+                }
+              }}
+            />
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.allProductsEmpty}>
+          No products available.
+        </Text>
+      )}
+    </View>
+  );
+
+  const appHomeSectionElements = [
+    {
+      key: 'deals_of_week',
+      content: <DealsOfTheWeek />,
+    },
+    {
+      key: 'explore_ayurveda',
+      content: <ExploreAyurveda categories={data.categories} />,
+    },
+    {
+      key: 'bestsellers',
+      content: <BestsellersRail products={data.featuredProducts} />,
+    },
+    {
+      key: 'recently_viewed',
+      content:
+        !authLoading && isAuthenticated ? (
+          <RecentlyViewed products={data.featuredProducts || []} />
+        ) : null,
+    },
+    {
+      key: 'available_coupons',
+      content: <CouponsOffers coupons={data.coupons || []} />,
+    },
+    {
+      key: 'just_arrived',
+      content: <JustArrived products={data.newArrivals || []} />,
+    },
+    {
+      key: 'category_campaigns',
+      content: (
+        <CategoryCampaigns
+          campaigns={data.categoryCampaigns || []}
+          onPressCampaign={(campaign) => {
+            const category = Array.isArray(campaign.categories)
+              ? campaign.categories[0]
+              : campaign.categories;
+            const categoryId =
+              category?.id ?? campaign.category_id;
+
+            if (!categoryId) return;
+
+            router.navigate({
+              pathname: '/(tabs)/categories',
+              params: {
+                categoryId: String(categoryId),
+                categoryName:
+                  category?.name || campaign.title || 'Products',
+              },
+            });
+          }}
+        />
+      ),
+    },
+    {
+      key: 'all_products',
+      content: allProductsSection,
+    },
+  ]
+    .filter(({ content }) => content)
+    .map((entry) => {
+      const configuredSection = (data.homeSections || []).find(
+        (section) => {
+          const sectionKey = normalizeHomeSectionKey(
+            section?.key || section?.section_key
+          );
+          const definition = APP_HOME_SECTION_COMPONENTS.find(
+            (item) => item.key === entry.key
+          );
+          return definition?.aliases.includes(sectionKey);
+        }
+      );
+      const definition = APP_HOME_SECTION_COMPONENTS.find(
+        (item) => item.key === entry.key
+      );
+      const configuredOrder = Number(configuredSection?.sort_order);
+
+      return {
+        ...entry,
+        defaultOrder: definition.defaultOrder,
+        sortOrder: Number.isFinite(configuredOrder)
+          ? configuredOrder
+          : definition.defaultOrder,
+      };
+    })
+    .sort(
+      (left, right) =>
+        left.sortOrder - right.sortOrder ||
+        left.defaultOrder - right.defaultOrder
+    );
+
 
   // ============================================================
   // HOME UI
@@ -599,143 +778,9 @@ export default function HomeScreen() {
             /* NORMAL HOME CONTENT */
 
             <>
-
-              {/* DEALS OF THE WEEK */}
-
-              <DealsOfTheWeek />
-
-
-              {/* EXPLORE AYURVEDA */}
-
-              <ExploreAyurveda
-                categories={data.categories}
-              />
-
-
-              {/* BESTSELLERS */}
-
-              <BestsellersRail
-                products={data.featuredProducts}
-              />
-
-              {!authLoading && isAuthenticated && (
-                <RecentlyViewed
-                  products={data.featuredProducts || []}
-                />
+              {appHomeSectionElements.map(({ key, content }) =>
+                React.cloneElement(content, { key })
               )}
-
-
-              {/* AVAILABLE COUPONS */}
-
-              <CouponsOffers
-                coupons={data.coupons || []}
-              />
-
-
-              {/* JUST ARRIVED */}
-
-              <JustArrived
-                products={data.newArrivals || []}
-              />
-
-
-              {/* CATEGORY CAMPAIGNS */}
-
-              <CategoryCampaigns
-                campaigns={data.categoryCampaigns || []}
-                onPressCampaign={(campaign) => {
-
-                  const category =
-                    Array.isArray(campaign.categories)
-                      ? campaign.categories[0]
-                      : campaign.categories;
-
-                  const categoryId =
-                    category?.id ??
-                    campaign.category_id;
-
-                  if (!categoryId) return;
-
-                  router.navigate({
-                    pathname: '/(tabs)/categories',
-                    params: {
-                      categoryId: String(categoryId),
-                      categoryName:
-                        category?.name ||
-                        campaign.title ||
-                        'Products',
-                    },
-                  });
-
-                }}
-              />
-
-
-              {/* ALL PRODUCTS */}
-
-              <View style={styles.allProductsSection}>
-
-                <View style={styles.allProductsDivider}>
-                  <Text style={styles.allProductsHeading}>
-                    {' '}
-                  </Text>
-                </View>
-
-                {loadingAllProducts ? (
-
-                  <ActivityIndicator
-                    style={styles.allProductsLoading}
-                    color={activeHeaderTheme.accent}
-                  />
-
-                ) : allProductsError ? (
-
-                  <Text style={styles.allProductsError}>
-                    {allProductsError}
-                  </Text>
-
-                ) : allProducts.length > 0 ? (
-
-                  <View style={styles.allProductsGrid}>
-
-                    {allProducts.map((product) => (
-
-                      <ProductCard
-                        key={
-                          product.id ||
-                          product.slug
-                        }
-                        product={product}
-                        onPress={() => {
-                          if (product?.slug) {
-                            router.push(
-                              `/products/${product.slug}`
-                            );
-                          }
-                        }}
-                      />
-
-                    ))}
-
-                  </View>
-
-                ) : (
-
-                  <Text style={styles.allProductsEmpty}>
-                    No products available.
-                  </Text>
-
-                )}
-
-              </View>
-
-
-              {/* WELLNESS BUNDLES */}
-
-              <WellnessBundles
-                bundles={data.bundles}
-              />
-
             </>
 
           )}

@@ -1,9 +1,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
-import { getResource, updateResourceStatus } from '../services/adminService.js';
+import { Trash2 } from 'lucide-react';
+import {
+  deleteAdminReview,
+  getResource,
+} from '../services/adminService.js';
 import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
-
-const statuses = ['pending', 'approved', 'rejected'];
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -30,25 +32,51 @@ const getComment = (review) =>
 
 export default function Reviews() {
   const [items, setItems] = useState([]);
-  const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [updatingId, setUpdatingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const [reload, setReload] = useState(0);
   const [selectedReview, setSelectedReview] = useState(null);
 
   useEffect(() => {
     let active = true;
 
-    setLoading(true);
-    setError('');
+    Promise.resolve()
+      .then(() => {
+        if (!active) return undefined;
+        setLoading(true);
+        setError('');
+        return getResource('reviews', { limit: 100 });
+      })
+      .then(async (result) => {
+        if (!active) return;
 
-    getResource('reviews', status ? { status } : {})
-      .then((result) => {
-        if (active) {
-          setItems(Array.isArray(result) ? result : result?.items || []);
+        const firstItems = Array.isArray(result)
+          ? result
+          : result?.items || [];
+        const total = Array.isArray(result)
+          ? firstItems.length
+          : Number(result?.total) || firstItems.length;
+        const offsets = [];
+
+        for (let offset = 100; offset < total; offset += 100) {
+          offsets.push(offset);
         }
+
+        const remainingResults = await Promise.all(
+          offsets.map((offset) =>
+            getResource('reviews', { limit: 100, offset })
+          )
+        );
+        const reviews = [
+          ...firstItems,
+          ...remainingResults.flatMap((page) =>
+            Array.isArray(page) ? page : page?.items || []
+          ),
+        ];
+
+        if (active) setItems(reviews);
       })
       .catch((requestError) => {
         if (active) {
@@ -62,7 +90,7 @@ export default function Reviews() {
     return () => {
       active = false;
     };
-  }, [status, reload]);
+  }, [reload]);
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -76,7 +104,6 @@ export default function Reviews() {
         getCustomerName(item),
         getProductName(item),
         getComment(item),
-        item.status,
         item.rating,
       ]
         .filter((value) => value !== null && value !== undefined)
@@ -86,50 +113,34 @@ export default function Reviews() {
     );
   }, [items, search]);
 
-  const summary = useMemo(
-    () => ({
-      total: items.length,
-      pending: items.filter((item) => item.status === 'pending').length,
-      approved: items.filter((item) => item.status === 'approved').length,
-    }),
-    [items]
-  );
-
   function closeReviewDetails() {
     setSelectedReview(null);
   }
 
-  async function changeStatus(review, value) {
-    if (updatingId !== null) return;
+  async function handleDeleteReview(review) {
+    if (deletingId !== null) return;
 
-    const previousStatus = review.status;
-
-    setUpdatingId(review.id);
-    setError('');
-
-    // Update the visible row immediately.
-    setItems((current) =>
-      current.map((item) =>
-        item.id === review.id ? { ...item, status: value } : item
-      )
+    const confirmed = window.confirm(
+      `Delete this review for ${getProductName(review)}? This cannot be undone.`
     );
 
-    try {
-      await updateResourceStatus('reviews', review.id, value);
-      setReload((current) => current + 1);
-    } catch (requestError) {
-      // Restore the original status if the API request fails.
-      setItems((current) =>
-        current.map((item) =>
-          item.id === review.id
-            ? { ...item, status: previousStatus }
-            : item
-        )
-      );
+    if (!confirmed) return;
 
-      setError(requestError.message || 'Unable to update review status.');
+    setDeletingId(review.id);
+    setError('');
+
+    try {
+      await deleteAdminReview(review.id);
+      setItems((current) =>
+        current.filter((item) => item.id !== review.id)
+      );
+      setSelectedReview((current) =>
+        current?.id === review.id ? null : current
+      );
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to delete review.');
     } finally {
-      setUpdatingId(null);
+      setDeletingId(null);
     }
   }
 
@@ -142,7 +153,7 @@ export default function Reviews() {
 
         .reviews-page .review-summary {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: minmax(180px, 240px);
           gap: 14px;
           margin-bottom: 20px;
         }
@@ -188,9 +199,7 @@ export default function Reviews() {
           gap: 10px;
         }
 
-        .reviews-page .review-controls input,
-        .reviews-page .review-controls select,
-        .reviews-page .review-status-select {
+        .reviews-page .review-controls input {
           min-height: 36px;
           max-width: 100%;
           padding: 7px 10px;
@@ -206,14 +215,7 @@ export default function Reviews() {
           width: 210px;
         }
 
-        .reviews-page .review-status-select {
-          min-width: 112px;
-          text-transform: capitalize;
-        }
-
-        .reviews-page .review-controls input:focus,
-        .reviews-page .review-controls select:focus,
-        .reviews-page .review-status-select:focus {
+        .reviews-page .review-controls input:focus {
           outline: 2px solid #cbd8c7;
           outline-offset: 1px;
         }
@@ -264,36 +266,6 @@ export default function Reviews() {
           white-space: nowrap;
         }
 
-        .reviews-page .review-badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 4px 12px;
-          border-radius: 20px;
-          background: #F8FAF7;
-          color: #123D2B;
-          font-size: 11.5px;
-          font-weight: 600;
-          text-transform: capitalize;
-        }
-
-        .reviews-page .review-badge[data-status="approved"] {
-          background: #E8F2E7;
-          color: #123D2B;
-          border: 1px solid #CDE2CB;
-        }
-
-        .reviews-page .review-badge[data-status="pending"] {
-          background: #FEF7E6;
-          color: #946800;
-          border: 1px solid #F8E2A7;
-        }
-
-        .reviews-page .review-badge[data-status="rejected"] {
-          background: #FDF1F0;
-          color: #A3332A;
-          border: 1px solid #F8CECA;
-        }
-
         .reviews-page .review-empty {
           padding: 40px 18px;
           text-align: center;
@@ -331,6 +303,38 @@ export default function Reviews() {
           white-space: nowrap;
         }
 
+        .reviews-page .review-row-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          white-space: nowrap;
+        }
+
+        .reviews-page .review-delete-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border: 1px solid #F3CCCC;
+          border-radius: 8px;
+          background: #FFF8F8;
+          color: #A3332A;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .reviews-page .review-delete-button:hover:not(:disabled) {
+          border-color: #D98983;
+          background: #FDF1F0;
+          color: #7F1D1D;
+        }
+
+        .reviews-page .review-delete-button:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
+        }
+
         .review-detail-overlay {
           position: fixed;
           inset: 0;
@@ -339,18 +343,20 @@ export default function Reviews() {
           align-items: center;
           justify-content: center;
           padding: 20px;
-          background: rgba(25, 38, 30, 0.42);
+          background: rgba(14, 40, 28, 0.48);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
         }
 
         .review-detail-modal {
           width: min(620px, 100%);
           max-height: 90vh;
           overflow: auto;
-          padding: 22px;
-          border: 1px solid #e0e7dc;
-          border-radius: 16px;
-          background: #fff;
-          box-shadow: 0 22px 60px rgba(27, 43, 33, 0.18);
+          padding: 28px;
+          border: 1px solid #E2ECE0;
+          border-radius: 20px;
+          background: #FFFFFF;
+          box-shadow: 0 24px 70px rgba(18, 61, 43, 0.22);
         }
 
         .review-detail-header {
@@ -358,75 +364,88 @@ export default function Reviews() {
           align-items: flex-start;
           justify-content: space-between;
           gap: 16px;
-          padding-bottom: 16px;
-          border-bottom: 1px solid #edf0eb;
+          padding-bottom: 18px;
+          border-bottom: 1px solid #EDF3EC;
         }
 
         .review-detail-eyebrow {
           display: block;
           margin-bottom: 5px;
-          color: #7b877b;
+          color: #276345;
           font-size: 10px;
+          font-weight: 700;
           letter-spacing: .08em;
           text-transform: uppercase;
         }
 
         .review-detail-header h3 {
           margin: 0;
-          color: #26352D;
-          font-size: 18px;
+          color: #123D2B;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 20px;
+          font-weight: 700;
         }
 
         .review-detail-close {
-          width: 34px;
-          height: 34px;
-          border: 1px solid #dfe5dc;
-          border-radius: 9px;
-          background: #fff;
-          color: #4d5b50;
+          width: 36px;
+          height: 36px;
+          border: 1px solid #D5E4D2;
+          border-radius: 10px;
+          background: #F8FAF7;
+          color: #123D2B;
           font-size: 22px;
+          display: grid;
+          place-items: center;
           cursor: pointer;
+          transition: all 0.18s ease;
+        }
+
+        .review-detail-close:hover {
+          background: #E8F2E7;
+          border-color: #276345;
         }
 
         .review-detail-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px;
-          margin-top: 18px;
+          gap: 14px;
+          margin-top: 20px;
         }
 
         .review-detail-grid > div,
         .review-detail-comment {
-          padding: 12px;
-          border: 1px solid #e7ece4;
-          border-radius: 10px;
-          background: #fafbf9;
+          padding: 14px 16px;
+          border: 1px solid #E2ECE0;
+          border-radius: 12px;
+          background: #F8FAF7;
         }
 
         .review-detail-grid span,
         .review-detail-comment > span {
           display: block;
           margin-bottom: 5px;
-          color: #7a847b;
-          font-size: 10px;
+          color: #5F6E64;
+          font-size: 11px;
+          font-weight: 600;
           text-transform: uppercase;
+          letter-spacing: 0.04em;
         }
 
         .review-detail-grid strong {
           display: block;
-          color: #344438;
-          font-size: 12px;
+          color: #123D2B;
+          font-size: 13.5px;
           overflow-wrap: anywhere;
         }
 
         .review-detail-comment {
-          margin-top: 14px;
+          margin-top: 16px;
         }
 
         .review-detail-comment p {
           margin: 0;
-          color: #59665b;
-          font-size: 13px;
+          color: #5F6E64;
+          font-size: 13.5px;
           line-height: 1.7;
           white-space: pre-wrap;
           overflow-wrap: anywhere;
@@ -462,8 +481,7 @@ export default function Reviews() {
             width: 100%;
           }
 
-          .reviews-page .review-controls input,
-          .reviews-page .review-controls select {
+          .reviews-page .review-controls input {
             flex: 1;
             width: 100%;
             min-width: 0;
@@ -480,25 +498,15 @@ export default function Reviews() {
       <AyurvedicHeroBanner
         eyebrow="AUMVEDA CUSTOMER TESTIMONIALS"
         title="Reviews, Ratings & Herbal Feedback"
-        description="Moderate customer product ratings, efficacy feedback, and verify genuine user experiences."
-        badgeText={`${summary.total} Reviews`}
+        description="Read customer feedback and remove reviews when necessary."
+        badgeText={`${items.length} Reviews`}
         doodle="flower"
       />
 
       <div className="review-summary">
         <div className="review-stat">
-          <div className="review-stat-label">Reviews loaded</div>
-          <div className="review-stat-value">{summary.total}</div>
-        </div>
-
-        <div className="review-stat">
-          <div className="review-stat-label">Pending approval</div>
-          <div className="review-stat-value">{summary.pending}</div>
-        </div>
-
-        <div className="review-stat">
-          <div className="review-stat-label">Approved reviews</div>
-          <div className="review-stat-value">{summary.approved}</div>
+          <div className="review-stat-label">Customer reviews</div>
+          <div className="review-stat-value">{items.length}</div>
         </div>
       </div>
 
@@ -516,19 +524,6 @@ export default function Reviews() {
               placeholder="Search reviews…"
               aria-label="Search reviews"
             />
-
-            <select
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              aria-label="Filter review status"
-            >
-              <option value="">All statuses</option>
-              {statuses.map((value) => (
-                <option key={value} value={value}>
-                  {value.charAt(0).toUpperCase() + value.slice(1)}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
@@ -571,7 +566,7 @@ export default function Reviews() {
             <p>
               {items.length === 0
                 ? 'Customer feedback will appear here when reviews are submitted.'
-                : 'Try another search term or select a different status.'}
+                : 'Try another search term.'}
             </p>
           </div>
         ) : (
@@ -584,8 +579,7 @@ export default function Reviews() {
                   <th>Rating</th>
                   <th>Feedback</th>
                   <th>Date</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
 
@@ -627,31 +621,25 @@ export default function Reviews() {
                     </td>
 
                     <td>
-                      <select
-                        className="review-status-select"
-                        value={item.status || 'pending'}
-                        disabled={updatingId !== null}
-                        onChange={(event) =>
-                          changeStatus(item, event.target.value)
-                        }
-                        aria-label={`Status for review ${item.id}`}
-                      >
-                        {statuses.map((value) => (
-                          <option key={value} value={value}>
-                            {value.charAt(0).toUpperCase() + value.slice(1)}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-
-                    <td>
-                      <button
-                        type="button"
-                        className="secondary-button review-view-button"
-                        onClick={() => setSelectedReview(item)}
-                      >
-                        View Details
-                      </button>
+                      <div className="review-row-actions">
+                        <button
+                          type="button"
+                          className="secondary-button review-view-button"
+                          onClick={() => setSelectedReview(item)}
+                        >
+                          View Details
+                        </button>
+                        <button
+                          type="button"
+                          className="review-delete-button"
+                          onClick={() => handleDeleteReview(item)}
+                          disabled={deletingId !== null}
+                          title="Delete review"
+                          aria-label={`Delete review for ${getProductName(item)}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -686,7 +674,6 @@ export default function Reviews() {
               <div><span>Review ID</span><strong>{selectedReview.id ?? '—'}</strong></div>
               <div><span>Customer</span><strong>{getCustomerName(selectedReview)}</strong></div>
               <div><span>Rating</span><strong>{selectedReview.rating != null ? `${selectedReview.rating} / 5` : '—'}</strong></div>
-              <div><span>Status</span><strong>{selectedReview.status ?? '—'}</strong></div>
               <div><span>Date</span><strong>{formatDate(selectedReview.created_at || selectedReview.updated_at)}</strong></div>
             </div>
 

@@ -1,5 +1,5 @@
-import { LogOut, Menu } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { Bell, Home, LogOut, Menu } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const PAGE_TITLES = {
   '/admin/dashboard': 'Dashboard',
@@ -17,6 +17,7 @@ const PAGE_TITLES = {
   '/admin/settings': 'Settings',
   '/admin/notifications': 'Notifications',
   '/admin/support': 'Support',
+  '/admin/content-management': 'Content Management',
 };
 
 export default function Header({
@@ -25,6 +26,7 @@ export default function Header({
   onLogout,
 }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const getPageTitle = () => {
     const pathname = location.pathname;
@@ -82,7 +84,8 @@ export default function Header({
 
       <div className="topbar-title">
         <div className="topbar-eyebrow-row">
-          <span className="topbar-leaf-icon">✦</span>
+          <Home size={13} className="topbar-home-icon" />
+          <span className="topbar-eyebrow-divider">›</span>
           <span className="topbar-eyebrow">
             AUMVEDA AYURVEDIC ADMIN
           </span>
@@ -98,11 +101,21 @@ export default function Header({
           }`}
         >
           <i />
-
           {tokenConnected
             ? 'API connected'
             : 'API disconnected'}
         </span>
+
+        <button
+          className="topbar-bell-button"
+          type="button"
+          onClick={() => navigate('/admin/notifications')}
+          aria-label="View notifications"
+          title="Notifications"
+        >
+          <Bell size={18} />
+          <span className="topbar-bell-dot" />
+        </button>
 
         <button
           className="token-button"

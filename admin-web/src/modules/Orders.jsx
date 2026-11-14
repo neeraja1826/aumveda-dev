@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Package } from 'lucide-react';
 import {
   getResource,
   updateResourceStatus,
@@ -19,6 +20,7 @@ const statuses = [
 export default function Orders() {
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [search, setSearch] = useState('');
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
@@ -102,6 +104,7 @@ export default function Orders() {
 
     getResource('orders', {
       ...(status ? { status } : {}),
+      ...(paymentMethod ? { payment_method: paymentMethod } : {}),
       ...(search.trim() ? { search: search.trim() } : {}),
       limit: pageSize,
       offset,
@@ -126,7 +129,7 @@ export default function Orders() {
     return () => {
       active = false;
     };
-  }, [status, search, offset, reload]);
+  }, [status, paymentMethod, search, offset, reload]);
 
   async function changeStatus(order, value) {
     if (updatingId) return;
@@ -226,6 +229,19 @@ export default function Orders() {
               </option>
             ))}
           </select>
+
+          <select
+            value={paymentMethod}
+            onChange={(event) => {
+              setPaymentMethod(event.target.value);
+              setOffset(0);
+            }}
+            aria-label="Filter orders by payment method"
+          >
+            <option value="">All payment methods</option>
+            <option value="cod">Cash on delivery</option>
+            <option value="online">Online</option>
+          </select>
         </div>
 
         {error && (
@@ -266,12 +282,14 @@ export default function Orders() {
             <h3>
               {status
                 ? `No ${status} orders`
+                : paymentMethod
+                  ? `No ${paymentMethod.toUpperCase()} orders`
                 : 'No orders yet'}
             </h3>
 
             <p>
-              {status
-                ? 'Try selecting another order status.'
+              {status || paymentMethod
+                ? 'Try adjusting the order status or payment method filters.'
                 : 'Orders will appear here when customers place them through the AUMVEDA store.'}
             </p>
           </div>
@@ -281,6 +299,7 @@ export default function Orders() {
               <thead>
                 <tr>
                   <th>Order</th>
+                  <th>Products</th>
                   <th>Customer</th>
                   <th>Total</th>
                   <th>Payment Status</th>
@@ -295,6 +314,48 @@ export default function Orders() {
                   <tr key={item.id}>
                     <td>
                       {item.order_number || item.id}
+                    </td>
+
+                    <td>
+                      <div className="order-products-cell">
+                        {(item.order_items || [])
+                          .slice(0, 2)
+                          .map((orderItem, index) => (
+                            <div
+                              className="order-product-summary"
+                              key={orderItem.id || `${item.id}-${index}`}
+                            >
+                              {orderItem.image_url ? (
+                                <img
+                                  src={orderItem.image_url}
+                                  alt=""
+                                  className="order-product-thumbnail"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <span className="order-product-thumbnail order-product-placeholder">
+                                  <Package size={16} aria-hidden="true" />
+                                </span>
+                              )}
+                              <span className="order-product-name">
+                                {orderItem.product_name || 'Product'}
+                              </span>
+                              <span className="order-product-quantity">
+                                ×{orderItem.quantity ?? 0}
+                              </span>
+                            </div>
+                          ))}
+                        {(item.order_items || []).length === 0 && (
+                          <span className="order-product-empty">
+                            No item details
+                          </span>
+                        )}
+                        {(item.order_items || []).length > 2 && (
+                          <span className="order-products-more">
+                            +{item.order_items.length - 2} more
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td>
@@ -608,7 +669,20 @@ export default function Orders() {
                             className="order-item"
                             key={item.id}
                           >
-                            <div>
+                            <div className="order-item-product">
+                              {item.image_url ? (
+                                <img
+                                  src={item.image_url}
+                                  alt=""
+                                  className="order-item-image"
+                                />
+                              ) : (
+                                <span className="order-item-image order-product-placeholder">
+                                  <Package size={18} aria-hidden="true" />
+                                </span>
+                              )}
+
+                              <div>
                               <strong>
                                 {item.product_name ||
                                   'Product'}
@@ -625,6 +699,7 @@ export default function Orders() {
                                 Quantity:{' '}
                                 {item.quantity ?? 0}
                               </p>
+                              </div>
                             </div>
 
                             <strong>
@@ -791,6 +866,59 @@ export default function Orders() {
           font-size: 12px;
         }
 
+        .orders-page .order-products-cell {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          min-width: 190px;
+          max-width: 280px;
+        }
+
+        .orders-page .order-product-summary {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .orders-page .order-product-thumbnail {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          height: 34px;
+          flex: 0 0 34px;
+          border: 1px solid #E2ECE0;
+          border-radius: 7px;
+          object-fit: cover;
+          background: #F7FAF6;
+        }
+
+        .orders-page .order-product-placeholder {
+          color: #66806B;
+        }
+
+        .orders-page .order-product-name {
+          overflow: hidden;
+          color: #263B2F;
+          font-size: 12px;
+          font-weight: 600;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .orders-page .order-product-quantity {
+          flex-shrink: 0;
+          color: #68756C;
+          font-size: 11px;
+        }
+
+        .orders-page .order-products-more,
+        .orders-page .order-product-empty {
+          color: #68756C;
+          font-size: 11px;
+        }
+
         .orders-page .orders-pagination {
           display: flex;
           justify-content: space-between;
@@ -917,27 +1045,64 @@ export default function Orders() {
           align-items: flex-start;
           justify-content: space-between;
           gap: 16px;
-          padding: 14px;
-          background: #f7f9f6;
-          border-radius: 10px;
+          padding: 16px 18px;
+          background: #FAF9F4;
+          border: 1px solid #E2ECE0;
+          border-radius: 12px;
+          transition: border-color 0.15s ease;
+        }
+
+        .order-item:hover {
+          border-color: #BED8BD;
+        }
+
+        .order-item-product {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          min-width: 0;
+        }
+
+        .order-item-image {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 52px;
+          height: 52px;
+          flex: 0 0 52px;
+          border: 1px solid #E2ECE0;
+          border-radius: 9px;
+          object-fit: cover;
+          background: #FFFFFF;
+          color: #66806B;
+        }
+
+        .order-item-product > div {
+          min-width: 0;
         }
 
         .order-item > strong {
           white-space: nowrap;
-          color: #244b36;
+          color: #123D2B;
+          font-weight: 700;
         }
 
         .order-price-summary > p {
           display: flex;
           justify-content: space-between;
           gap: 16px;
+          margin: 10px 0;
+          color: #5F6E64;
+          font-size: 13.5px;
         }
 
         .order-price-summary .order-grand-total {
-          padding-top: 12px;
-          border-top: 1px solid #e0e8e0;
-          color: #244b36;
-          font-size: 17px;
+          padding-top: 14px;
+          border-top: 1px solid #EDF3EC;
+          color: #123D2B;
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 20px;
+          font-weight: 700;
         }
 
         .order-modal-error {
@@ -986,6 +1151,10 @@ export default function Orders() {
           .order-item {
             flex-direction: column;
             gap: 6px;
+          }
+
+          .order-item-product {
+            width: 100%;
           }
         }
 

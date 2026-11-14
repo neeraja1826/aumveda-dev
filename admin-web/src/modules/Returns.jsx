@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { Package, X } from 'lucide-react';
 import {
   getReturnRequests,
   updateReturnRequestStatus,
@@ -58,8 +59,203 @@ function getCustomer(item) {
   );
 }
 
+function getCustomerId(item) {
+  return item.customer_id ?? item.customer?.id ?? '—';
+}
+
+function getProductName(item) {
+  return (
+    item.product_name ??
+    item.product?.name ??
+    item.order_item?.product_name ??
+    'Product details unavailable'
+  );
+}
+
+function getProductImage(item) {
+  return (
+    item.product_image_url ??
+    item.product?.image_url ??
+    item.order_item?.image_url ??
+    item.image_url ??
+    ''
+  );
+}
+
+function getOrderId(item) {
+  return item.order_id ?? item.order?.id ?? '—';
+}
+
+function getOrderDisplay(item) {
+  return (
+    item.order_number ??
+    item.order?.order_number ??
+    getOrderId(item)
+  );
+}
+
+function getReturnReason(item) {
+  return (
+    item.reason ??
+    item.return_reason ??
+    item.description ??
+    '—'
+  );
+}
+
+function formatPrice(value) {
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+
+  const amount = Number(value);
+  return Number.isFinite(amount)
+    ? `₹${amount.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`
+    : '—';
+}
+
+function ReturnDetailsModal({ item, onClose }) {
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') onClose();
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const orderItem = item.order_item || {};
+  const product = item.product || {};
+  const imageUrl = getProductImage(item);
+  const unitPrice = orderItem.unit_price ?? item.unit_price;
+  const totalPrice =
+    orderItem.total_price ??
+    item.total_price ??
+    (unitPrice != null && item.requested_quantity != null
+      ? Number(unitPrice) * Number(item.requested_quantity)
+      : null);
+  const quantity =
+    item.requested_quantity ??
+    item.quantity ??
+    orderItem.quantity ??
+    '—';
+
+  return (
+    <div
+      className="return-modal-overlay"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="return-detail-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="return-detail-title"
+      >
+        <header className="return-detail-header">
+          <div>
+            <span>Return request</span>
+            <h2 id="return-detail-title">Request details</h2>
+          </div>
+          <button
+            type="button"
+            className="return-detail-close"
+            onClick={onClose}
+            aria-label="Close return details"
+          >
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="return-detail-body">
+          <div className="return-detail-product">
+            {imageUrl ? (
+              <img src={imageUrl} alt={getProductName(item)} />
+            ) : (
+              <div className="return-detail-product-placeholder">
+                <Package size={28} />
+              </div>
+            )}
+            <div>
+              <span>Product</span>
+              <strong>{getProductName(item)}</strong>
+              {orderItem.variant_name && (
+                <small>{orderItem.variant_name}</small>
+              )}
+            </div>
+          </div>
+
+          <dl className="return-detail-grid">
+            <div>
+              <dt>Order ID</dt>
+              <dd>{getOrderId(item)}</dd>
+            </div>
+            <div>
+              <dt>Order number</dt>
+              <dd>{getOrderDisplay(item)}</dd>
+            </div>
+            <div>
+              <dt>Return ID</dt>
+              <dd>{getReturnId(item) || '—'}</dd>
+            </div>
+            <div>
+              <dt>Customer name</dt>
+              <dd>{getCustomer(item)}</dd>
+            </div>
+            <div>
+              <dt>Customer ID</dt>
+              <dd>{getCustomerId(item)}</dd>
+            </div>
+            <div>
+              <dt>Unit price</dt>
+              <dd>{formatPrice(unitPrice)}</dd>
+            </div>
+            <div>
+              <dt>Total price</dt>
+              <dd>{formatPrice(totalPrice)}</dd>
+            </div>
+            <div>
+              <dt>Quantity</dt>
+              <dd>{quantity}</dd>
+            </div>
+            <div>
+              <dt>Request type</dt>
+              <dd>{formatStatus(item.request_type || 'return')}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>{formatStatus(item.status || 'requested')}</dd>
+            </div>
+            <div className="return-detail-reason">
+              <dt>Reason</dt>
+              <dd>{getReturnReason(item)}</dd>
+            </div>
+            {item.description && item.description !== item.reason && (
+              <div className="return-detail-reason">
+                <dt>Additional details</dt>
+                <dd>{item.description}</dd>
+              </div>
+            )}
+            {product.id && (
+              <div>
+                <dt>Product ID</dt>
+                <dd>{product.id}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function Returns() {
   const [items, setItems] = useState([]);
+  const [selectedReturn, setSelectedReturn] = useState(null);
   const [status, setStatus] = useState('');
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
@@ -68,7 +264,6 @@ export default function Returns() {
   const [success, setSuccess] = useState('');
   const [reload, setReload] = useState(0);
   const [draftStatuses, setDraftStatuses] = useState({});
-  const [draftNotes, setDraftNotes] = useState({});
   const [updatingId, setUpdatingId] = useState('');
   const pageSize = 20;
 
@@ -100,7 +295,6 @@ export default function Returns() {
             rows.length
         );
         setDraftStatuses({});
-        setDraftNotes({});
       } catch (requestError) {
         if (active) {
           setError(
@@ -123,7 +317,6 @@ export default function Returns() {
     const returnId = getReturnId(item);
     const currentStatus = item.status;
     const nextStatus = draftStatuses[returnId] ?? currentStatus;
-    const notes = draftNotes[returnId] ?? '';
 
     if (!returnId) {
       setError('This return request does not contain an ID.');
@@ -142,7 +335,7 @@ export default function Returns() {
     setSuccess('');
 
     try {
-      await updateReturnRequestStatus(returnId, nextStatus, notes);
+      await updateReturnRequestStatus(returnId, nextStatus);
       setSuccess(`Return status updated to ${formatStatus(nextStatus)}.`);
       setReload((current) => current + 1);
     } catch (requestError) {
@@ -255,14 +448,13 @@ export default function Returns() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Return ID</th>
-                  <th>Order</th>
-                  <th>Customer</th>
-                  <th>Reason</th>
-                  <th>Current Status</th>
-                  <th>Update Status</th>
-                  <th>Admin Notes</th>
-                  <th>Action</th>
+                  <th className="return-product-heading">Product</th>
+                  <th className="return-order-heading">Order ID</th>
+                  <th className="return-id-heading">Return ID</th>
+                  <th className="return-customer-heading">Customer</th>
+                  <th className="return-current-status-heading">Current Status</th>
+                  <th className="return-update-status-heading">Update Status</th>
+                  <th className="return-action-heading">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -276,27 +468,51 @@ export default function Returns() {
                   const isUpdating = updatingId === returnId;
 
                   return (
-                    <tr key={returnId ?? index}>
-                      <td>{returnId ?? '—'}</td>
-                      <td>
-                        {item.order_number ??
-                          item.order?.order_number ??
-                          item.order_id ??
-                          '—'}
+                    <tr
+                      key={returnId ?? index}
+                      className="return-row-clickable"
+                      tabIndex={0}
+                      onClick={() => setSelectedReturn(item)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setSelectedReturn(item);
+                        }
+                      }}
+                      aria-label={`View return details for ${getProductName(item)}`}
+                    >
+                      <td className="return-product-cell">
+                        <div className="return-product-summary">
+                          {getProductImage(item) ? (
+                            <img
+                              className="return-product-image"
+                              src={getProductImage(item)}
+                              alt=""
+                              loading="lazy"
+                            />
+                          ) : (
+                            <span className="return-product-image-fallback">
+                              <Package size={18} />
+                            </span>
+                          )}
+                          <strong>{getProductName(item)}</strong>
+                        </div>
                       </td>
-                      <td>{getCustomer(item)}</td>
-                      <td>
-                        {item.reason ??
-                          item.return_reason ??
-                          item.description ??
-                          '—'}
+                      <td className="return-order-cell">
+                        {getOrderDisplay(item)}
+                      </td>
+                      <td className="return-id-cell">
+                        {returnId ?? '—'}
+                      </td>
+                      <td className="return-customer-cell">
+                        <strong>{getCustomer(item)}</strong>
                       </td>
                       <td>
                         <span className={`return-status-pill return-status-${currentStatus}`}>
                           {formatStatus(currentStatus)}
                         </span>
                       </td>
-                      <td>
+                      <td onClick={(event) => event.stopPropagation()}>
                         <select
                           className="return-status-select"
                           aria-label={`New status for return ${returnId}`}
@@ -324,24 +540,10 @@ export default function Returns() {
                           </div>
                         )}
                       </td>
-                      <td>
-                        <input
-                          type="text"
-                          aria-label={`Admin notes for return ${returnId}`}
-                          placeholder="Optional note"
-                          maxLength={1000}
-                          value={draftNotes[returnId] ?? ''}
-                          disabled={isUpdating || nextStatuses.length === 0}
-                          onChange={(event) =>
-                            setDraftNotes((current) => ({
-                              ...current,
-                              [returnId]: event.target.value,
-                            }))
-                          }
-                          className="return-note-input"
-                        />
-                      </td>
-                      <td className="return-action-cell">
+                      <td
+                        className="return-action-cell"
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         <button
                           type="button"
                           className="primary-button return-save-button"
@@ -399,11 +601,16 @@ export default function Returns() {
         )}
       </div>
 
-      <p style={{ margin: 0, color: 'var(--muted)', fontSize: 11, lineHeight: 1.6 }}>
-        Note: marking a return as completed updates its workflow status; it
-        does not by itself confirm that a refund payment was successfully
-        processed.
-      </p>
+      <div style={{ margin: 0, padding: '14px 18px', background: '#FAF9F4', border: '1px solid #E2ECE0', borderRadius: 12, color: '#5F6E64', fontSize: 12, lineHeight: 1.6 }}>
+        <strong style={{ color: '#123D2B' }}>Workflow Note:</strong> Marking a return as completed updates its workflow status; it does not by itself confirm that a refund payment was successfully processed.
+      </div>
+
+      {selectedReturn && (
+        <ReturnDetailsModal
+          item={selectedReturn}
+          onClose={() => setSelectedReturn(null)}
+        />
+      )}
     </section>
   );
 }

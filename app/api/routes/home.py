@@ -1267,9 +1267,8 @@ async def get_featured_products():
 # ============================================================
 # EXISTING: WELLNESS BUNDLES
 # ============================================================
-
-@router.get("/bundles")
-async def get_home_bundles():
+#@router.get("/bundles")
+#async def get_home_bundles():
     try:
         response = (
             supabase

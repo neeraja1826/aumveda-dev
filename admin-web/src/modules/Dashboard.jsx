@@ -110,7 +110,6 @@ export default function Dashboard({ onNavigate }) {
                 <h3>Ayurvedic Operations & Management</h3>
                 <p>Direct shortcuts to high-frequency console workflows</p>
               </div>
-              <span className="dashboard-hub-badge">✦ Classical System</span>
             </div>
 
             <div className="dashboard-hub-grid">
@@ -176,17 +175,6 @@ export default function Dashboard({ onNavigate }) {
             </div>
           </div>
 
-          <div className="dashboard-assurance-card">
-            <div className="dashboard-assurance-content">
-              <span className="dashboard-assurance-eyebrow">✦ AUMVEDA HERBAL PURITY & QUALITY ASSURANCE</span>
-              <h4>Ayurvedic Pharmacopoeia & System Integrity</h4>
-              <p>All catalog formulations, batch movements, customer wellness data, and vendor commissions operate under authenticated classical Ayurvedic standards with real-time API encryption.</p>
-            </div>
-            <div className="dashboard-assurance-status">
-              <span className="aumveda-pulse-dot" />
-              <span>System Pure & Encrypted</span>
-            </div>
-          </div>
         </>
       )}
 
@@ -214,19 +202,20 @@ export default function Dashboard({ onNavigate }) {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 50px 20px;
+          padding: 60px 24px;
           background: #FFFFFF;
           border: 1px solid #E2ECE0;
-          border-radius: 16px;
-          color: #716F68;
+          border-radius: 18px;
+          color: #5F6E64;
           font-size: 13.5px;
-          gap: 12px;
+          gap: 14px;
+          box-shadow: 0 4px 18px rgba(18, 61, 43, 0.03);
         }
         .dashboard-spinner {
-          width: 28px;
-          height: 28px;
+          width: 30px;
+          height: 30px;
           border: 3px solid #E8F2E7;
-          border-top-color: #123D2B;
+          border-top-color: #276345;
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
         }
@@ -245,16 +234,16 @@ export default function Dashboard({ onNavigate }) {
           border: 1px solid #E2ECE0;
           border-radius: 18px;
           box-shadow: 0 4px 16px -2px rgba(18, 61, 43, 0.04);
-          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s, border-color 0.2s;
+          transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s, border-color 0.22s;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
           position: relative;
         }
         .dashboard-metric:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 26px -4px rgba(18, 61, 43, 0.09);
-          border-color: #CDE2CB;
+          transform: translateY(-3px);
+          box-shadow: 0 12px 30px -4px rgba(18, 61, 43, 0.10);
+          border-color: #BED8BD;
         }
         .dashboard-metric.is-pending {
           border-left: 4.5px solid #D9A52E;
@@ -265,33 +254,33 @@ export default function Dashboard({ onNavigate }) {
           justify-content: space-between;
         }
         .dashboard-metric span {
-          color: #716F68;
+          color: #5F6E64;
           font-size: 12.5px;
           font-weight: 600;
           letter-spacing: 0.2px;
         }
         .dashboard-metric-badge {
-          font-size: 10px;
+          font-size: 10.5px;
           font-weight: 700;
-          padding: 3px 9px;
-          border-radius: 12px;
+          padding: 3px 10px;
+          border-radius: 14px;
           letter-spacing: 0.3px;
         }
         .badge-normal {
-          background: #E8F2E7;
-          color: #123D2B;
-          border: 1px solid #CDE2CB;
+          background: #E8F5E9;
+          color: #1B5E20;
+          border: 1px solid #C8E6C9;
         }
         .badge-pending {
-          background: #FEF7E6;
-          color: #946800;
-          border: 1px solid #F8E2A7;
+          background: #FFF8E1;
+          color: #8D6E18;
+          border: 1px solid #FFE082;
         }
         .dashboard-metric-body {
           display: flex;
           align-items: flex-end;
           justify-content: space-between;
-          margin-top: 12px;
+          margin-top: 14px;
         }
         .dashboard-metric strong {
           display: block;
@@ -301,23 +290,28 @@ export default function Dashboard({ onNavigate }) {
           font-size: 34px;
           font-weight: 700;
           letter-spacing: -0.5px;
+          line-height: 1.1;
         }
         .dashboard-metric-icon-wrap {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
-          background: linear-gradient(135deg, #E5F2E4 0%, #D9EAD7 100%);
+          width: 50px;
+          height: 50px;
+          border-radius: 15px;
+          background: linear-gradient(135deg, #F4F8F3 0%, #E8F2E7 100%);
           border: 1.5px solid #CDE2CB;
-          box-shadow: 0 2px 8px rgba(18, 61, 43, 0.06);
+          box-shadow: 0 2px 8px rgba(18, 61, 43, 0.05);
+          transition: transform 0.2s ease;
+        }
+        .dashboard-metric:hover .dashboard-metric-icon-wrap {
+          transform: scale(1.04);
         }
         .dashboard-metric-subtitle {
-          color: #8C9990;
+          color: #8A968E;
           font-size: 11.5px;
           margin-top: 10px;
-          font-weight: 400;
+          font-weight: 500;
         }
 
         /* Quick Operations Hub */
@@ -326,7 +320,7 @@ export default function Dashboard({ onNavigate }) {
           border: 1px solid #E2ECE0;
           border-radius: 20px;
           padding: 24px 28px;
-          box-shadow: 0 4px 18px rgba(18, 61, 43, 0.04);
+          box-shadow: 0 4px 20px rgba(18, 61, 43, 0.04);
         }
         .dashboard-hub-header {
           display: flex;
@@ -345,20 +339,8 @@ export default function Dashboard({ onNavigate }) {
         }
         .dashboard-hub-header p {
           margin: 4px 0 0;
-          color: #716F68;
+          color: #5F6E64;
           font-size: 13px;
-        }
-        .dashboard-hub-badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 6px 14px;
-          border-radius: 20px;
-          background: #FAF9F4;
-          border: 1px solid #E2ECE0;
-          color: #D9A52E;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.5px;
         }
         .dashboard-hub-grid {
           display: grid;
@@ -369,29 +351,34 @@ export default function Dashboard({ onNavigate }) {
           display: flex;
           align-items: flex-start;
           gap: 16px;
-          padding: 18px 20px;
-          background: #FAF9F4;
+          padding: 20px 22px;
+          background: #FFFFFF;
           border: 1px solid #E2ECE0;
-          border-radius: 14px;
+          border-radius: 16px;
           text-align: left;
           cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 2px 8px rgba(18, 61, 43, 0.02);
         }
         .dashboard-hub-card:hover {
-          background: #FFFFFF;
+          background: #FAFDF9;
           border-color: #276345;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 22px rgba(18, 61, 43, 0.08);
+          transform: translateY(-2.5px);
+          box-shadow: 0 10px 26px rgba(18, 61, 43, 0.08);
         }
         .dashboard-hub-icon-wrap {
           display: grid;
           place-items: center;
-          width: 46px;
-          height: 46px;
-          border-radius: 12px;
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
           background: #E8F2E7;
           border: 1px solid #CDE2CB;
           flex-shrink: 0;
+          transition: background-color 0.2s ease;
+        }
+        .dashboard-hub-card:hover .dashboard-hub-icon-wrap {
+          background: #DEEFE0;
         }
         .dashboard-hub-card-content strong {
           display: block;
@@ -401,68 +388,20 @@ export default function Dashboard({ onNavigate }) {
         }
         .dashboard-hub-card-content p {
           margin: 4px 0 8px;
-          color: #716F68;
-          font-size: 12px;
+          color: #5F6E64;
+          font-size: 12.5px;
           line-height: 1.5;
         }
         .dashboard-hub-link {
           color: #276345;
-          font-size: 11.5px;
+          font-size: 12px;
           font-weight: 700;
           display: inline-block;
-          transition: transform 0.15s ease;
+          transition: transform 0.18s ease;
         }
         .dashboard-hub-card:hover .dashboard-hub-link {
           color: #123D2B;
           transform: translateX(3px);
-        }
-
-        /* Holistic Quality Assurance Banner */
-        .dashboard-assurance-card {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 22px 28px;
-          border-radius: 18px;
-          background: linear-gradient(135deg, #F5F4E7 0%, #FAF9F4 50%, #F5F4E7 100%);
-          border: 1px solid rgba(217, 165, 46, 0.35);
-          box-shadow: 0 4px 16px rgba(18, 61, 43, 0.03);
-          gap: 20px;
-        }
-        .dashboard-assurance-eyebrow {
-          color: #D9A52E;
-          font-size: 9.5px;
-          font-weight: 800;
-          letter-spacing: 1.8px;
-          text-transform: uppercase;
-        }
-        .dashboard-assurance-content h4 {
-          margin: 4px 0 0;
-          color: #123D2B;
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 18px;
-          font-weight: 700;
-        }
-        .dashboard-assurance-content p {
-          margin: 4px 0 0;
-          color: #716F68;
-          font-size: 12.5px;
-          line-height: 1.5;
-          max-width: 720px;
-        }
-        .dashboard-assurance-status {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 16px;
-          border-radius: 20px;
-          background: #FFFFFF;
-          border: 1px solid #399E5B;
-          color: #123D2B;
-          font-size: 11.5px;
-          font-weight: 700;
-          white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(18, 61, 43, 0.06);
         }
 
         @media (max-width: 900px) {
@@ -472,10 +411,6 @@ export default function Dashboard({ onNavigate }) {
           }
           .dashboard-hub-grid {
             grid-template-columns: 1fr;
-          }
-          .dashboard-assurance-card {
-            flex-direction: column;
-            align-items: flex-start;
           }
         }
         @media (max-width: 540px) {

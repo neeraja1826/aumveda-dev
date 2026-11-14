@@ -55,23 +55,31 @@ export async function getHomeData({
       bannersResponse,
       categoriesResponse,
       productsResponse,
-      bundlesResponse,
       couponsResponse,
       newArrivalsResponse,
       campaignsResponse,
       categoryBannersResponse,
+      homeConfigurationResponse,
     ] = await Promise.all([
       safeRequest('/home/app-banners', []),
       safeRequest('/home/categories', []),
       safeRequest('/home/featured-products', []),
-      safeRequest('/home/bundles', []),
       safeRequest('/home/coupons', []),
       safeRequest('/home/new-arrivals', []),
       safeRequest('/home/category-campaigns', []),
 
       // Category banners uploaded from Admin Web
       safeRequest('/home/category-banners', []),
+      safeRequest(
+        '/home/configuration?platform=app&page=home',
+        { sections: [] }
+      ),
     ]);
+
+    const homeConfiguration = getPayload(
+      homeConfigurationResponse,
+      {}
+    );
 
     const result = {
       hero: null,
@@ -87,14 +95,16 @@ export async function getHomeData({
 
       decorations: [],
 
-      // Existing sections
-      bundles: getArray(bundlesResponse),
       coupons: getArray(couponsResponse),
       newArrivals: getArray(newArrivalsResponse),
       categoryCampaigns: getArray(campaignsResponse),
 
       // NEW: Category promotional banners
       categoryBanners: getArray(categoryBannersResponse),
+
+      homeSections: Array.isArray(homeConfiguration?.sections)
+        ? homeConfiguration.sections
+        : [],
     };
 
     homeCache = result;

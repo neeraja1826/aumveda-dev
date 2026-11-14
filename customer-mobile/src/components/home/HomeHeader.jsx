@@ -23,6 +23,7 @@ import * as Location from 'expo-location';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { getAddresses } from '../../services/addressService';
+import { formatLocationPlace } from '../../services/locationService';
 import { APP_LOGO_URL } from '../../constants/app';
 
 const LOCATION_STORAGE_KEY = '@aumveda_selected_location';
@@ -524,13 +525,8 @@ export default function HomeHeader({
         return;
       }
 
-      const detectedLocation = [
-        place.district || place.subregion || place.city,
-        place.region,
-      ]
-        .filter(Boolean)
-        .filter((value, index, values) => values.indexOf(value) === index)
-        .join(', ');
+      const detectedLocation =
+        formatLocationPlace(place).address;
 
       if (!detectedLocation) {
         Alert.alert(
