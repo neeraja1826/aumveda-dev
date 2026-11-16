@@ -10,17 +10,14 @@ import {
   Alert,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 
-import { FALLBACK_COUPONS } from '../src/components/home/CouponsOffers';
 import { getHomeData } from '../src/services/homeService';
-
-const APPLIED_COUPON_STORAGE_KEY = '@aumveda_applied_coupon';
+import { saveCouponCode } from '../src/services/couponStorage';
 
 function formatDiscount(coupon) {
   if (coupon.discount_type === 'percentage') {
@@ -43,11 +40,7 @@ export default function CouponsScreen() {
     setError(null);
     try {
       const homeData = await getHomeData({ forceRefresh: true });
-      setCoupons(
-        Array.isArray(homeData?.coupons) && homeData.coupons.length > 0
-          ? homeData.coupons
-          : FALLBACK_COUPONS
-      );
+      setCoupons(Array.isArray(homeData?.coupons) ? homeData.coupons : []);
     } catch (loadError) {
       console.error('Load available coupons error:', loadError);
       setError(loadError?.message || 'Unable to load available coupons.');
@@ -65,18 +58,10 @@ export default function CouponsScreen() {
   const handleCopy = async (coupon) => {
     try {
       await Clipboard.setStringAsync(coupon.code);
-      await AsyncStorage.setItem(
-        APPLIED_COUPON_STORAGE_KEY,
-        JSON.stringify({
-          code: coupon.code,
-          discount_type: coupon.discount_type,
-          discount_value: coupon.discount_value,
-          min_order_value: coupon.min_order_value,
-        })
-      );
+      await saveCouponCode(coupon.code);
       Alert.alert(
         'Coupon Copied',
-        `${coupon.code} copied to clipboard. Use it at checkout to claim your offer.`
+        `${coupon.code} copied. Apply it only where this coupon is enabled.`
       );
     } catch (copyError) {
       console.error('Copy coupon error:', copyError);

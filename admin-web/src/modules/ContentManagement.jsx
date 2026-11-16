@@ -2648,6 +2648,43 @@ export default function ContentManagement() {
     );
   });
 
+  const refreshCurrentContent = async () => {
+    if (bannerPlatform === 'web') {
+      if (bannerType === null) return loadWebContentSections();
+      if (bannerType === 'hero') return loadWebHeroBanners();
+      if (bannerType === 'shop-by-need') return loadShopByNeedImages();
+      if (bannerType === 'promotional') return loadMainPromoBanners();
+      if (bannerType === 'campaign') return loadWebCategoryCampaigns();
+      if (bannerType === 'category') return loadCategoryBanners();
+      return loadWebContentSections();
+    }
+
+    if (bannerPlatform === 'app') {
+      if (bannerType === null) return loadAppHomeSections();
+      if (bannerType === 'category') return loadCategoryBanners();
+      if (bannerType === 'campaign') return loadCategoryCampaigns();
+      return loadBanners();
+    }
+
+    await Promise.all([
+      loadBanners(),
+      loadCategories(),
+      loadCategoryBanners(),
+      loadCategoryCampaigns(),
+    ]);
+  };
+
+  const contentRefreshLoading =
+    contentSectionsLoading ||
+    appHomeSectionsLoading ||
+    loading ||
+    categoryLoading ||
+    campaignLoading ||
+    webCategoryCampaignLoading ||
+    webHeroLoading ||
+    shopByNeedLoading ||
+    mainPromoLoading;
+
   /* ==========================================================
      RENDER
   ========================================================== */
@@ -2670,6 +2707,7 @@ export default function ContentManagement() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-end',
+          flexWrap: 'wrap',
           gap: 24,
           marginBottom: 28,
         }}
@@ -2703,7 +2741,7 @@ export default function ContentManagement() {
               margin: 0,
               fontSize: 30,
               lineHeight: 1.15,
-              color: '#123D2B',
+              color: 'var(--brand-primary)',
               fontWeight: 700,
               letterSpacing: '-0.02em',
             }}
@@ -2741,6 +2779,14 @@ export default function ContentManagement() {
                   ''}
           </p>
         </div>
+        <button
+          type="button"
+          className="primary-button"
+          onClick={refreshCurrentContent}
+          disabled={contentRefreshLoading}
+        >
+          Refresh
+        </button>
       </div>
 
       {/* ======================================================
@@ -3092,7 +3138,7 @@ export default function ContentManagement() {
                 <h3
                   style={{
                     margin: 0,
-                    color: '#123D2B',
+                    color: 'var(--brand-primary)',
                     fontSize: 18,
                   }}
                 >
@@ -3165,7 +3211,7 @@ export default function ContentManagement() {
                       >
                         <strong
                           style={{
-                            color: '#123D2B',
+                            color: 'var(--brand-primary)',
                             overflowWrap: 'anywhere',
                           }}
                         >
@@ -3308,7 +3354,7 @@ export default function ContentManagement() {
                   <h2
                     style={{
                       margin: 0,
-                      color: '#123D2B',
+                      color: 'var(--brand-primary)',
                       fontSize: 20,
                     }}
                   >
@@ -3432,7 +3478,7 @@ export default function ContentManagement() {
                       >
                         <strong
                           style={{
-                            color: '#123D2B',
+                            color: 'var(--brand-primary)',
                             overflowWrap: 'anywhere',
                           }}
                         >
@@ -3582,7 +3628,7 @@ export default function ContentManagement() {
                   <h3
                     style={{
                       margin: 0,
-                      color: '#123D2B',
+                      color: 'var(--brand-primary)',
                       fontSize: 18,
                     }}
                   >
@@ -3684,7 +3730,7 @@ export default function ContentManagement() {
                       >
                         <strong
                           style={{
-                            color: '#123D2B',
+                            color: 'var(--brand-primary)',
                             overflowWrap: 'anywhere',
                           }}
                         >
@@ -3851,7 +3897,7 @@ function WebHeroBannerManagement({
               border: 'none',
               borderRadius: 9,
               padding: '9px 13px',
-              background: '#123D2B',
+              background: 'var(--brand-primary)',
               color: '#FFFFFF',
               fontSize: 12,
               fontWeight: 700,
@@ -3887,7 +3933,7 @@ function WebHeroBannerManagement({
             }}
           >
             <div>
-              <h2 style={{ margin: 0, fontSize: 18, color: '#123D2B' }}>
+              <h2 style={{ margin: 0, fontSize: 18, color: 'var(--brand-primary)' }}>
                 Add Web Hero Banner
               </h2>
               <p style={{ margin: '4px 0 0', color: '#77746C', fontSize: 12 }}>
@@ -4165,7 +4211,7 @@ function WebHeroEditModal({
           <div>
             <h2
               id="web-hero-edit-title"
-              style={{ margin: 0, color: '#123D2B', fontSize: 20 }}
+              style={{ margin: 0, color: 'var(--brand-primary)', fontSize: 20 }}
             >
               Edit Web Hero Banner
             </h2>
@@ -4563,7 +4609,7 @@ function WebMainPromoEditModal({
           <div>
             <h2
               id="main-promo-edit-title"
-              style={{ margin: 0, color: '#123D2B', fontSize: 20 }}
+              style={{ margin: 0, color: 'var(--brand-primary)', fontSize: 20 }}
             >
             Edit {bannerLabel}
             </h2>
@@ -4921,7 +4967,7 @@ function WebMainPromoCreateModal({
           <div>
             <h2
               id="main-promo-create-title"
-              style={{ margin: 0, color: '#123D2B', fontSize: 20 }}
+              style={{ margin: 0, color: 'var(--brand-primary)', fontSize: 20 }}
             >
               Add Promo Banner
             </h2>
@@ -5162,7 +5208,7 @@ function WebShopByNeedCreateModal({
           <div>
             <h2
               id="shop-by-need-create-title"
-              style={{ margin: 0, color: '#123D2B', fontSize: 20 }}
+              style={{ margin: 0, color: 'var(--brand-primary)', fontSize: 20 }}
             >
               Add Shop by Need
             </h2>
@@ -5386,7 +5432,7 @@ function PlatformSelection({
               height: 145,
               borderRadius: 18,
               background: '#FFFFFF',
-              border: '4px solid #123D2B',
+              border: '4px solid var(--brand-primary)',
               boxShadow: '0 8px 18px rgba(18, 61, 43, 0.14)',
               padding: 8,
               display: 'flex',
@@ -5399,7 +5445,7 @@ function PlatformSelection({
                 width: 28,
                 height: 5,
                 borderRadius: 10,
-                background: '#123D2B',
+                background: 'var(--brand-primary)',
                 margin: '0 auto 3px',
               }}
             />
@@ -5583,7 +5629,7 @@ function PlatformSelection({
               height: 105,
               borderRadius: 12,
               background: '#FFFFFF',
-              border: '4px solid #123D2B',
+              border: '4px solid var(--brand-primary)',
               boxShadow: '0 8px 18px rgba(18, 61, 43, 0.14)',
               padding: 9,
             }}
@@ -5732,7 +5778,7 @@ function AppHomeSections({
         }}
       >
         <div>
-          <h2 className="app-home-card-title" style={{ margin: 0, fontSize: 17, color: '#123D2B' }}>
+          <h2 className="app-home-card-title" style={{ margin: 0, fontSize: 17, color: 'var(--brand-primary)' }}>
             Header
           </h2>
           <p className="app-home-card-copy" style={{ margin: '5px 0 0', color: '#77746C', fontSize: 12 }}>
@@ -5770,7 +5816,7 @@ function AppHomeSections({
           }}
         >
           <div>
-            <h2 className="app-home-card-title" style={{ margin: 0, fontSize: 20, color: '#123D2B' }}>
+            <h2 className="app-home-card-title" style={{ margin: 0, fontSize: 20, color: 'var(--brand-primary)' }}>
               Home Sections
             </h2>
             <p className="app-home-card-copy" style={{ margin: '6px 0 0', color: '#77746C', fontSize: 13 }}>
@@ -5835,7 +5881,7 @@ function AppHomeSections({
                   {index + 1}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="app-home-section-title" style={{ color: '#123D2B', fontSize: 14, fontWeight: 700 }}>
+                  <div className="app-home-section-title" style={{ color: 'var(--brand-primary)', fontSize: 14, fontWeight: 700 }}>
                     {section.title || section.section_key || 'Untitled Section'}
                   </div>
                   <div
@@ -5971,7 +6017,7 @@ function AppHeaderCategoriesModal({
           <div>
             <h2
               id="app-header-categories-title"
-              style={{ margin: 0, fontSize: 20, color: '#123D2B' }}
+              style={{ margin: 0, fontSize: 20, color: 'var(--brand-primary)' }}
             >
               App Header Categories
             </h2>
@@ -6026,7 +6072,7 @@ function AppHeaderCategoriesModal({
                       gap: 10,
                       flex: 1,
                       minWidth: 0,
-                      color: '#123D2B',
+                      color: 'var(--brand-primary)',
                       fontSize: 14,
                       fontWeight: 650,
                     }}
@@ -6152,7 +6198,7 @@ function WebHomeSections({
           }}
         >
           <div>
-            <h2 className="app-home-card-title" style={{ margin: 0, fontSize: 20, color: '#123D2B' }}>
+            <h2 className="app-home-card-title" style={{ margin: 0, fontSize: 20, color: 'var(--brand-primary)' }}>
               Home Sections
             </h2>
             <p className="app-home-card-copy" style={{ margin: '6px 0 0', color: '#77746C', fontSize: 13, lineHeight: 1.6 }}>
@@ -6251,7 +6297,7 @@ function WebHomeSections({
                       <span
                         className="web-home-section-title"
                         style={{
-                          color: '#123D2B',
+                          color: 'var(--brand-primary)',
                           fontSize: 14,
                           fontWeight: 700,
                         }}
@@ -6511,7 +6557,7 @@ function ExploreCategoriesEditor({
           }}
         >
           <div>
-            <h2 style={{ margin: 0, color: '#123D2B', fontSize: 20 }}>
+            <h2 style={{ margin: 0, color: 'var(--brand-primary)', fontSize: 20 }}>
               Manage Explore Wellness Categories
             </h2>
             <p style={{ margin: '6px 0 0', color: '#77746C', fontSize: 12 }}>
@@ -6550,7 +6596,7 @@ function ExploreCategoriesEditor({
                 background: '#FFFFFF',
               }}
             >
-              <h3 style={{ margin: '0 0 14px', color: '#123D2B', fontSize: 16 }}>
+              <h3 style={{ margin: '0 0 14px', color: 'var(--brand-primary)', fontSize: 16 }}>
                 Add Category
               </h3>
               <div style={{ display: 'grid', gap: 10 }}>
@@ -6585,7 +6631,7 @@ function ExploreCategoriesEditor({
                 background: '#FFFFFF',
               }}
             >
-              <h3 style={{ margin: '0 0 14px', color: '#123D2B', fontSize: 16 }}>
+              <h3 style={{ margin: '0 0 14px', color: 'var(--brand-primary)', fontSize: 16 }}>
                 Existing Categories
               </h3>
               <div style={{ display: 'grid', gap: 8 }}>
@@ -6620,7 +6666,7 @@ function ExploreCategoriesEditor({
                   >
                     {index + 1}
                   </span>
-                  <span style={{ flex: 1, color: '#123D2B', fontSize: 13 }}>
+                  <span style={{ flex: 1, color: 'var(--brand-primary)', fontSize: 13 }}>
                     {category?.name || 'Unavailable category'}
                   </span>
                   <button
@@ -6978,7 +7024,7 @@ function HomepageCardsEditor({
           }}
         >
           <div>
-            <h2 style={{ margin: 0, color: '#123D2B', fontSize: 20 }}>
+            <h2 style={{ margin: 0, color: 'var(--brand-primary)', fontSize: 20 }}>
               {heading}
             </h2>
             <p style={{ margin: '6px 0 0', color: '#77746C', fontSize: 12 }}>
@@ -7033,7 +7079,7 @@ function HomepageCardsEditor({
                   marginBottom: 12,
                 }}
               >
-                <strong style={{ color: '#123D2B', fontSize: 13 }}>
+                <strong style={{ color: 'var(--brand-primary)', fontSize: 13 }}>
                   Card {index + 1}
                 </strong>
                 <label style={{ color: '#59645C', fontSize: 11 }}>
@@ -7481,7 +7527,7 @@ function ContentSectionEditor({
     <SectionEditorWorkspace>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h2 style={{ margin: 0, color: '#123D2B', fontSize: 20 }}>{mode === 'create' ? 'Add Section' : mode === 'items' ? 'Manage Section Content' : 'Edit Section'}</h2>
+            <h2 style={{ margin: 0, color: 'var(--brand-primary)', fontSize: 20 }}>{mode === 'create' ? 'Add Section' : mode === 'items' ? 'Manage Section Content' : 'Edit Section'}</h2>
             <p style={{ margin: '6px 0 0', color: '#77746C', fontSize: 12 }}>{section?.title || section?.section_key || 'New section'}</p>
           </div>
           <button type="button" onClick={onClose} style={{ width: 36, height: 36, border: '1px solid #D9E0D6', borderRadius: 9, background: '#FFFFFF', cursor: 'pointer' }}><X size={17} /></button>
@@ -7521,17 +7567,17 @@ function ContentSectionEditor({
             <div><label style={labelStyle}>Layout Config (JSON)</label><textarea rows={7} value={form.layout_config} onChange={(e) => updateField('layout_config', e.target.value)} style={{ ...fieldStyle, fontFamily: 'monospace', resize: 'vertical' }} /></div>
             <div><label style={labelStyle}>Content Config (JSON)</label><textarea rows={7} value={form.content_config} onChange={(e) => updateField('content_config', e.target.value)} style={{ ...fieldStyle, fontFamily: 'monospace', resize: 'vertical' }} /></div>
             {jsonError && <Alert type="error" message={jsonError} />}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 6 }}><button type="button" onClick={onClose} style={{ padding: '9px 14px', borderRadius: 9, border: '1px solid #D9E0D6', background: '#FFFFFF', cursor: 'pointer' }}>Cancel</button><button type="submit" disabled={saving} style={{ padding: '9px 16px', borderRadius: 9, border: 'none', background: '#123D2B', color: '#FFFFFF', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? 'Saving...' : 'Save Section'}</button></div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 6 }}><button type="button" onClick={onClose} style={{ padding: '9px 14px', borderRadius: 9, border: '1px solid #D9E0D6', background: '#FFFFFF', cursor: 'pointer' }}>Cancel</button><button type="submit" disabled={saving} style={{ padding: '9px 16px', borderRadius: 9, border: 'none', background: 'var(--brand-primary)', color: '#FFFFFF', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? 'Saving...' : 'Save Section'}</button></div>
           </form>
           <section style={{ padding: 20, border: '1px solid #E2E7DF', borderRadius: 14, background: '#FFFFFF' }}>
-            <h3 style={{ margin: '0 0 14px', color: '#123D2B', fontSize: 16 }}>Existing Section Items</h3>
+            <h3 style={{ margin: '0 0 14px', color: 'var(--brand-primary)', fontSize: 16 }}>Existing Section Items</h3>
             {(section?.items || []).length === 0 ? (
               <p style={{ margin: 0, color: '#77746C', fontSize: 12 }}>Save this section before adding content items.</p>
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 {section.items.map((item) => (
                   <div key={item.id} style={{ padding: 12, border: '1px solid #E2E7DF', borderRadius: 10 }}>
-                    <div style={{ color: '#123D2B', fontSize: 12, fontWeight: 700 }}>{item.title || item.item_key || item.item_type || 'Untitled item'}</div>
+                    <div style={{ color: 'var(--brand-primary)', fontSize: 12, fontWeight: 700 }}>{item.title || item.item_key || item.item_type || 'Untitled item'}</div>
                     <div style={{ marginTop: 4, color: '#858A84', fontSize: 10 }}>{item.item_type || 'item'} · {item.publish_status || 'draft'} · Order {item.sort_order ?? 0}</div>
                   </div>
                 ))}
@@ -7545,14 +7591,14 @@ function ContentSectionEditor({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, alignItems: 'start' }}>
             <section style={{ padding: 18, border: '1px solid #E2E7DF', borderRadius: 14, background: '#FFFFFF' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <div><div style={{ color: '#123D2B', fontSize: 14, fontWeight: 700 }}>Section Items</div><div style={{ color: '#77746C', fontSize: 11 }}>Manage the content records belonging to this section.</div></div>
+              <div><div style={{ color: 'var(--brand-primary)', fontSize: 14, fontWeight: 700 }}>Section Items</div><div style={{ color: '#77746C', fontSize: 11 }}>Manage the content records belonging to this section.</div></div>
               <button type="button" onClick={resetItemForm} style={{ padding: '8px 12px', borderRadius: 9, border: '1px solid #C9D7C5', background: '#F5F9F4', color: '#276345', fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>Add Item</button>
             </div>
 
             <div style={{ display: 'grid', gap: 8, marginBottom: 20 }}>
               {(section?.items || []).map((item) => (
                 <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, border: '1px solid #E2E7DF', borderRadius: 10 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ color: '#123D2B', fontSize: 12, fontWeight: 700 }}>{item.title || item.item_key || item.item_type || 'Untitled item'}</div><div style={{ color: '#858A84', fontSize: 10, marginTop: 4 }}>{item.item_type || 'item'} · {item.publish_status || 'draft'} · Order {item.sort_order ?? 0}</div></div>
+                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ color: 'var(--brand-primary)', fontSize: 12, fontWeight: 700 }}>{item.title || item.item_key || item.item_type || 'Untitled item'}</div><div style={{ color: '#858A84', fontSize: 10, marginTop: 4 }}>{item.item_type || 'item'} · {item.publish_status || 'draft'} · Order {item.sort_order ?? 0}</div></div>
                   <button type="button" onClick={() => editItem(item)} style={{ width: 34, height: 34, border: '1px solid #DCE8D9', borderRadius: 8, background: '#F7FAF6', color: '#276345', cursor: 'pointer' }}><Pencil size={14} /></button>
                   <button type="button" onClick={() => onDeleteItem(item.id)} style={{ width: 34, height: 34, border: '1px solid #F0C7C3', borderRadius: 8, background: '#FFF6F5', color: '#A3332A', cursor: 'pointer' }}><Trash2 size={14} /></button>
                 </div>
@@ -7578,7 +7624,7 @@ function ContentSectionEditor({
               <div><label style={labelStyle}>Style Config (JSON)</label><textarea rows={5} value={itemForm.style_config} onChange={(e) => updateItemField('style_config', e.target.value)} style={{ ...fieldStyle, fontFamily: 'monospace', resize: 'vertical' }} /></div>
               <div><label style={labelStyle}>Metadata (JSON)</label><textarea rows={5} value={itemForm.metadata} onChange={(e) => updateItemField('metadata', e.target.value)} style={{ ...fieldStyle, fontFamily: 'monospace', resize: 'vertical' }} /></div>
               {itemError && <Alert type="error" message={itemError} />}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}><button type="button" onClick={resetItemForm} style={{ padding: '9px 14px', borderRadius: 9, border: '1px solid #D9E0D6', background: '#FFFFFF', cursor: 'pointer' }}>Clear</button><button type="submit" disabled={itemSaving || !section?.id} style={{ padding: '9px 16px', borderRadius: 9, border: 'none', background: '#123D2B', color: '#FFFFFF', fontWeight: 700, cursor: itemSaving ? 'not-allowed' : 'pointer' }}>{itemSaving ? 'Saving...' : editingItemId ? 'Update Item' : 'Create Item'}</button></div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}><button type="button" onClick={resetItemForm} style={{ padding: '9px 14px', borderRadius: 9, border: '1px solid #D9E0D6', background: '#FFFFFF', cursor: 'pointer' }}>Clear</button><button type="submit" disabled={itemSaving || !section?.id} style={{ padding: '9px 16px', borderRadius: 9, border: 'none', background: 'var(--brand-primary)', color: '#FFFFFF', fontWeight: 700, cursor: itemSaving ? 'not-allowed' : 'pointer' }}>{itemSaving ? 'Saving...' : editingItemId ? 'Update Item' : 'Create Item'}</button></div>
             </form>
           </div>
         )}
@@ -7800,7 +7846,7 @@ function ShopByNeedSectionEditor({
           }}
         >
           <div>
-            <h2 style={{ margin: 0, color: '#123D2B', fontSize: 20 }}>
+            <h2 style={{ margin: 0, color: 'var(--brand-primary)', fontSize: 20 }}>
               Edit Wellness for Every Part of You
             </h2>
             <p style={{ margin: '6px 0 0', color: '#77746C', fontSize: 12 }}>
@@ -7842,7 +7888,7 @@ function ShopByNeedSectionEditor({
             }}
           >
             <div style={{ marginBottom: 14 }}>
-              <div style={{ color: '#123D2B', fontSize: 14, fontWeight: 700 }}>
+              <div style={{ color: 'var(--brand-primary)', fontSize: 14, fontWeight: 700 }}>
                 Section Content
               </div>
               <div style={{ color: '#77746C', fontSize: 11, marginTop: 4 }}>
@@ -7893,7 +7939,7 @@ function ShopByNeedSectionEditor({
                   >
                     {index + 1}
                   </div>
-                  <strong style={{ color: '#123D2B', fontSize: 13 }}>
+                  <strong style={{ color: 'var(--brand-primary)', fontSize: 13 }}>
                     Card {index + 1}
                   </strong>
                 </div>
@@ -8046,7 +8092,7 @@ function ShopByNeedSectionEditor({
                 padding: '9px 16px',
                 borderRadius: 9,
                 border: 'none',
-                background: '#123D2B',
+                background: 'var(--brand-primary)',
                 color: '#FFFFFF',
                 fontWeight: 700,
                 cursor: saving || itemSaving ? 'not-allowed' : 'pointer',
@@ -8098,7 +8144,7 @@ function BannerTypeSelection({
             style={{
               margin: 0,
               fontSize: 20,
-              color: '#123D2B',
+              color: 'var(--brand-primary)',
             }}
           >
             {platform === 'app'
@@ -8209,7 +8255,7 @@ function NavigationCard({
       <h3
         style={{
           margin: 0,
-          color: '#123D2B',
+          color: 'var(--brand-primary)',
           fontSize: 15,
           fontWeight: 700,
         }}
@@ -8409,7 +8455,7 @@ function AppBannerManagement({
                 style={{
                   margin: 0,
                   fontSize: 18,
-                  color: '#123D2B',
+                  color: 'var(--brand-primary)',
                 }}
               >
                 Add App Banner
@@ -8688,7 +8734,7 @@ function CategoryBannerManagement({
                 style={{
                   margin: 0,
                   fontSize: 18,
-                  color: '#123D2B',
+                  color: 'var(--brand-primary)',
                 }}
               >
                 {editingCategoryBannerId
@@ -9086,7 +9132,7 @@ function ImageUploadBox({
 
           <div
             style={{
-              color: '#123D2B',
+              color: 'var(--brand-primary)',
               fontSize: 14,
               fontWeight: 700,
             }}
@@ -9420,7 +9466,7 @@ function BannerCard({
             borderRadius: 999,
             background:
               'rgba(255,255,255,0.92)',
-            color: '#123D2B',
+            color: 'var(--brand-primary)',
             fontSize: 10,
             fontWeight: 800,
             boxShadow:
@@ -9450,7 +9496,7 @@ function BannerCard({
             <h3
               style={{
                 margin: 0,
-                color: '#123D2B',
+                color: 'var(--brand-primary)',
                 fontSize: 14,
                 fontWeight: 700,
               }}
@@ -9511,7 +9557,7 @@ function BannerCard({
             Display order:{' '}
             <strong
               style={{
-                color: '#123D2B',
+                color: 'var(--brand-primary)',
               }}
             >
               {banner.sort_order}
@@ -9623,8 +9669,8 @@ function FormActions({
           padding: '10px 18px',
           borderRadius: 9,
           border:
-            '1px solid #123D2B',
-          background: '#123D2B',
+            '1px solid var(--brand-primary)',
+          background: 'var(--brand-primary)',
           color: '#FFFFFF',
           fontSize: 12,
           fontWeight: 700,
@@ -9697,7 +9743,7 @@ function SectionHeader({
           style={{
             margin: 0,
             fontSize: 18,
-            color: '#123D2B',
+            color: 'var(--brand-primary)',
           }}
         >
           {title}
@@ -9874,7 +9920,7 @@ function EmptyState({
 
       <div
         style={{
-          color: '#123D2B',
+          color: 'var(--brand-primary)',
           fontSize: 14,
           fontWeight: 700,
         }}
@@ -9938,7 +9984,7 @@ function ComingSoon({
       <h2
         style={{
           margin: 0,
-          color: '#123D2B',
+          color: 'var(--brand-primary)',
           fontSize: 20,
         }}
       >
@@ -10046,7 +10092,7 @@ function StatCard({
         <div
           style={{
             marginTop: 2,
-            color: '#123D2B',
+            color: 'var(--brand-primary)',
             fontSize: 20,
             fontWeight: 750,
           }}
@@ -10185,7 +10231,7 @@ function CategoryCampaignManagement({
         >
           App Banners
         </p>
-        <h2 style={{ margin: 0, color: '#123D2B', fontSize: 22 }}>
+        <h2 style={{ margin: 0, color: 'var(--brand-primary)', fontSize: 22 }}>
           Category Campaigns
         </h2>
         <p style={{ margin: '6px 0 0', color: '#77746C', fontSize: 13 }}>

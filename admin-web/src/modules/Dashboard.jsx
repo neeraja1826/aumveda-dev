@@ -95,7 +95,7 @@ export default function Dashboard({ onNavigate }) {
                   <div className="dashboard-metric-body">
                     <strong>{Number(summary[key] ?? 0).toLocaleString('en-IN')}</strong>
                     <div className="dashboard-metric-icon-wrap">
-                      <Icon size={26} color="#123D2B" opacity={0.85} />
+                      <Icon size={26} color="var(--brand-primary)" opacity={0.85} />
                     </div>
                   </div>
                   <div className="dashboard-metric-subtitle">{subtitle}</div>
@@ -119,7 +119,7 @@ export default function Dashboard({ onNavigate }) {
                 onClick={() => onNavigate?.('Products')}
               >
                 <div className="dashboard-hub-icon-wrap">
-                  <MortarPestleDoodle size={28} color="#123D2B" opacity={0.85} />
+                  <MortarPestleDoodle size={28} color="var(--brand-primary)" opacity={0.85} />
                 </div>
                 <div className="dashboard-hub-card-content">
                   <strong>Herbal Catalog & Remedies</strong>
@@ -134,7 +134,7 @@ export default function Dashboard({ onNavigate }) {
                 onClick={() => onNavigate?.('Orders')}
               >
                 <div className="dashboard-hub-icon-wrap">
-                  <TeaCupDoodle size={28} color="#123D2B" opacity={0.85} />
+                  <TeaCupDoodle size={28} color="var(--brand-primary)" opacity={0.85} />
                 </div>
                 <div className="dashboard-hub-card-content">
                   <strong>Order Fulfillment & Shipments</strong>
@@ -149,7 +149,7 @@ export default function Dashboard({ onNavigate }) {
                 onClick={() => onNavigate?.('Inventory')}
               >
                 <div className="dashboard-hub-icon-wrap">
-                  <BottleTonicDoodle size={28} color="#123D2B" opacity={0.85} />
+                  <BottleTonicDoodle size={28} color="var(--brand-primary)" opacity={0.85} />
                 </div>
                 <div className="dashboard-hub-card-content">
                   <strong>Stock Movements & Warehouses</strong>
@@ -164,7 +164,7 @@ export default function Dashboard({ onNavigate }) {
                 onClick={() => onNavigate?.('Returns')}
               >
                 <div className="dashboard-hub-icon-wrap">
-                  <AyurvedicLeafDoodle size={28} color="#123D2B" opacity={0.85} />
+                  <AyurvedicLeafDoodle size={28} color="var(--brand-primary)" opacity={0.85} />
                 </div>
                 <div className="dashboard-hub-card-content">
                   <strong>Returns & Reverse Logistics</strong>
@@ -285,7 +285,7 @@ export default function Dashboard({ onNavigate }) {
         .dashboard-metric strong {
           display: block;
           margin-top: 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 34px;
           font-weight: 700;
@@ -332,7 +332,7 @@ export default function Dashboard({ onNavigate }) {
         }
         .dashboard-hub-header h3 {
           margin: 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 20px;
           font-weight: 700;
@@ -382,7 +382,7 @@ export default function Dashboard({ onNavigate }) {
         }
         .dashboard-hub-card-content strong {
           display: block;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 14.5px;
           font-weight: 700;
         }
@@ -400,7 +400,7 @@ export default function Dashboard({ onNavigate }) {
           transition: transform 0.18s ease;
         }
         .dashboard-hub-card:hover .dashboard-hub-link {
-          color: #123D2B;
+          color: var(--brand-primary);
           transform: translateX(3px);
         }
 

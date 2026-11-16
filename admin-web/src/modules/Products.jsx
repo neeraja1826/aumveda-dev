@@ -23,6 +23,9 @@ import {
   updateResourceStatus,
 } from '../services/adminService.js';
 import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
+import Pagination, {
+  ADMIN_LIST_PAGE_SIZE,
+} from '../components/Pagination.jsx';
 
 const statuses = [
   'draft',
@@ -537,7 +540,6 @@ function ProductDetailsView({
 export default function Products() {
   const fetchBatchSize = 100;
   const [items, setItems] = useState([]);
-  const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState({
     all: 0,
     approved: 0,
@@ -551,6 +553,7 @@ export default function Products() {
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [bulkAction, setBulkAction] = useState('');
   const [bulkSaving, setBulkSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -559,6 +562,16 @@ export default function Products() {
   const [reload, setReload] = useState(0);
   const [viewOnly, setViewOnly] = useState(false);
   const [filterOptionsLoading, setFilterOptionsLoading] = useState(true);
+
+  const productPageCount = Math.max(
+    1,
+    Math.ceil(items.length / ADMIN_LIST_PAGE_SIZE)
+  );
+  const productPage = Math.min(currentPage, productPageCount - 1);
+  const pageItems = items.slice(
+    productPage * ADMIN_LIST_PAGE_SIZE,
+    (productPage + 1) * ADMIN_LIST_PAGE_SIZE
+  );
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState('');
@@ -677,7 +690,6 @@ export default function Products() {
 
         if (active) {
           setItems(allProducts);
-          setTotal(productTotal);
           setSelectedIds([]);
         }
       } catch (requestError) {
@@ -1095,7 +1107,7 @@ function toggleProductSelection(productId) {
 }
 
 function toggleCurrentPageSelection() {
-  const pageIds = items.map((item) => item.id);
+  const pageIds = pageItems.map((item) => item.id);
   const allSelected =
     pageIds.length > 0 &&
     pageIds.every((id) => selectedIds.includes(id));
@@ -1345,6 +1357,14 @@ async function saveProduct(event) {
             Manage, update, and organize all products in your Ayurvedic catalog.
           </p>
         </div>
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => setReload((current) => current + 1)}
+          disabled={loading}
+        >
+          Refresh
+        </button>
       </div>
 
       {/* Main Filter & Search Toolbar */}
@@ -1354,7 +1374,10 @@ async function saveProduct(event) {
           <input
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setCurrentPage(0);
+            }}
             placeholder="Search products by name, SKU, or description..."
             aria-label="Search products"
           />
@@ -1364,7 +1387,10 @@ async function saveProduct(event) {
           <select
             value={categoryFilter}
             disabled={filterOptionsLoading}
-            onChange={(event) => setCategoryFilter(event.target.value)}
+            onChange={(event) => {
+              setCategoryFilter(event.target.value);
+              setCurrentPage(0);
+            }}
             aria-label="Filter by category"
             className="products-select-control"
           >
@@ -1378,7 +1404,10 @@ async function saveProduct(event) {
 
           <select
             value={status}
-            onChange={(event) => setStatus(event.target.value)}
+            onChange={(event) => {
+              setStatus(event.target.value);
+              setCurrentPage(0);
+            }}
             aria-label="Filter by type"
             className="products-select-control"
           >
@@ -1392,7 +1421,10 @@ async function saveProduct(event) {
           <select
             value={vendorFilter}
             disabled={filterOptionsLoading}
-            onChange={(event) => setVendorFilter(event.target.value)}
+            onChange={(event) => {
+              setVendorFilter(event.target.value);
+              setCurrentPage(0);
+            }}
             aria-label="Filter by vendor"
             className="products-select-control"
           >
@@ -1410,7 +1442,10 @@ async function saveProduct(event) {
           <button
             type="button"
             className={`products-funnel-btn ${featuredOnly ? 'is-active' : ''}`}
-            onClick={() => setFeaturedOnly((curr) => !curr)}
+            onClick={() => {
+              setFeaturedOnly((curr) => !curr);
+              setCurrentPage(0);
+            }}
             title={featuredOnly ? 'Showing Featured only' : 'Filter by featured'}
             aria-label="Filter featured products"
           >
@@ -1501,8 +1536,8 @@ async function saveProduct(event) {
                     <input
                       type="checkbox"
                       checked={
-                        items.length > 0 &&
-                        items.every((item) =>
+                        pageItems.length > 0 &&
+                        pageItems.every((item) =>
                           selectedIds.includes(item.id)
                         )
                       }
@@ -1523,7 +1558,7 @@ async function saveProduct(event) {
               </thead>
 
               <tbody>
-                {items.map((product) => {
+                {pageItems.map((product) => {
                   const sku = getProductSku(product);
                   const categoryName = product.category_name || 'General';
                   const badgeClass = getCategoryBadgeClass(categoryName);
@@ -1714,11 +1749,14 @@ async function saveProduct(event) {
           </div>
         )}
 
-        {total > 0 && (
-          <div className="product-pagination">
-            <span>Showing all {items.length} of {total} products</span>
-          </div>
-        )}
+        <Pagination
+          totalItems={items.length}
+          currentPage={productPage}
+          pageSize={ADMIN_LIST_PAGE_SIZE}
+          onPageChange={setCurrentPage}
+          loading={loading}
+          itemLabel="products"
+        />
       </div>
 
       {modalOpen && (
@@ -2496,6 +2534,10 @@ async function saveProduct(event) {
         /* Hero Banner */
         .product-hero-card {
           position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
           padding: 22px 28px;
           border-radius: 16px;
           background: linear-gradient(135deg, #E6F1E3 0%, #EDF6EB 60%, #E2EFE0 100%);
@@ -2519,7 +2561,7 @@ async function saveProduct(event) {
 
         .product-hero-content h2 {
           margin: 0 0 6px 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 24px;
           font-weight: 700;
@@ -2535,6 +2577,10 @@ async function saveProduct(event) {
         }
 
         /* Toolbar Row */
+        .product-hero-card {
+          flex-wrap: wrap;
+        }
+
         .products-toolbar {
           display: flex;
           align-items: center;
@@ -2564,7 +2610,7 @@ async function saveProduct(event) {
           border-radius: 12px;
           border: 1px solid #D5E4D2;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13px;
           transition: border-color 0.15s, box-shadow 0.15s;
           box-sizing: border-box;
@@ -2633,7 +2679,7 @@ async function saveProduct(event) {
           padding: 9px 18px;
           border-radius: 11px;
           border: 1px solid #144422;
-          background: #173F1D;
+          background: var(--brand-deep);
           color: #FFFFFF;
           font-size: 13px;
           font-weight: 600;
@@ -2725,7 +2771,7 @@ async function saveProduct(event) {
         .products-data-table input[type="checkbox"] {
           width: 16px;
           height: 16px;
-          accent-color: #173F1D;
+          accent-color: var(--brand-deep);
           cursor: pointer;
           border-radius: 4px;
         }
@@ -2767,7 +2813,7 @@ async function saveProduct(event) {
         }
 
         .product-title {
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13.5px;
           font-weight: 700;
           line-height: 1.3;
@@ -2826,7 +2872,7 @@ async function saveProduct(event) {
         }
 
         .td-price strong {
-          color: #123D2B;
+          color: var(--brand-primary);
           font-weight: 700;
           font-size: 13.5px;
         }
@@ -2976,7 +3022,7 @@ async function saveProduct(event) {
         .action-icon-btn:hover {
           background: #EAF4EA;
           border-color: #276345;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
 
         .action-icon-btn.delete-btn {
@@ -2993,16 +3039,6 @@ async function saveProduct(event) {
         .action-icon-btn:disabled {
           opacity: 0.45;
           cursor: not-allowed;
-        }
-
-        .product-pagination {
-          display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          padding: 14px 20px;
-          border-top: 1px solid #EEF3ED;
-          color: #657365;
-          font-size: 12.5px;
         }
 
         .empty-state, .loading-state {
@@ -3065,7 +3101,7 @@ async function saveProduct(event) {
 
         .product-modal-header h3 {
           margin: 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 22px;
           font-weight: 700;
@@ -3082,8 +3118,8 @@ async function saveProduct(event) {
           height: 36px;
           border: 1px solid #D5E4D2;
           border-radius: 10px;
-          background: #F8FAF7;
-          color: #123D2B;
+          background: var(--page-background);
+          color: var(--brand-primary);
           font-size: 22px;
           line-height: 1;
           cursor: pointer;
@@ -3106,7 +3142,7 @@ async function saveProduct(event) {
           padding: 24px 28px 28px;
           max-height: calc(100vh - 120px);
           overflow-y: auto;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
 
         .product-details-hero {
@@ -3198,7 +3234,7 @@ async function saveProduct(event) {
 
         .product-details-overview h2 {
           margin: 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: clamp(24px, 3vw, 34px);
           line-height: 1.2;
@@ -3213,7 +3249,7 @@ async function saveProduct(event) {
 
         .product-details-price {
           margin-top: 18px;
-          color: #173F1D;
+          color: var(--brand-deep);
           font-size: 25px;
           font-weight: 750;
         }
@@ -3258,7 +3294,7 @@ async function saveProduct(event) {
           margin: 0 0 12px;
           padding-bottom: 9px;
           border-bottom: 1px solid #E7EEE5;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 18px;
         }
@@ -3398,7 +3434,7 @@ async function saveProduct(event) {
           display: flex;
           flex-direction: column;
           gap: 6px;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 12px;
           font-weight: 600;
           min-width: 0;
@@ -3413,7 +3449,7 @@ async function saveProduct(event) {
           border-radius: 10px;
           padding: 11px 13px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font: inherit;
           font-size: 13px;
           font-weight: 400;
@@ -3445,7 +3481,7 @@ async function saveProduct(event) {
         }
 
         .product-form .product-checkbox-label input {
-          accent-color: #123D2B;
+          accent-color: var(--brand-primary);
           width: 17px;
           height: 17px;
         }
@@ -3462,7 +3498,7 @@ async function saveProduct(event) {
 
         .product-form-section-heading h4 {
           margin: 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 16px;
           font-weight: 700;
@@ -3516,7 +3552,7 @@ async function saveProduct(event) {
         .product-stock-adjustment > strong {
           display: block;
           margin-bottom: 12px;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13px;
         }
 
@@ -3548,9 +3584,9 @@ async function saveProduct(event) {
           padding: 12px;
           border: 1.5px dashed #CDE2CB;
           border-radius: 10px;
-          background: #F8FAF7;
+          background: var(--page-background);
           cursor: pointer;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 12.5px;
           transition: border-color 0.18s, background-color 0.18s;
         }
@@ -3581,7 +3617,7 @@ async function saveProduct(event) {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 14px;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13.5px;
           font-weight: 700;
         }

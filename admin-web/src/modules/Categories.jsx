@@ -8,6 +8,9 @@ import {
   updateCategorySettings,
   deleteCategory,
 } from '../services/adminService.js';
+import Pagination, {
+  ADMIN_LIST_PAGE_SIZE,
+} from '../components/Pagination.jsx';
 
 function makeSlug(value) {
   return value
@@ -39,6 +42,7 @@ export default function Categories() {
   const [editingId, setEditingId] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -89,6 +93,16 @@ export default function Categories() {
     );
   }, [items, search]);
 
+  const categoryPageCount = Math.max(
+    1,
+    Math.ceil(visibleItems.length / ADMIN_LIST_PAGE_SIZE)
+  );
+  const categoryPage = Math.min(currentPage, categoryPageCount - 1);
+  const pageItems = visibleItems.slice(
+    categoryPage * ADMIN_LIST_PAGE_SIZE,
+    (categoryPage + 1) * ADMIN_LIST_PAGE_SIZE
+  );
+
   function toggleCategorySelection(categoryId) {
     setSelectedIds((current) =>
       current.includes(categoryId)
@@ -98,7 +112,7 @@ export default function Categories() {
   }
 
   function toggleVisibleCategorySelection() {
-    const visibleIds = visibleItems.map((item) => item.id);
+    const visibleIds = pageItems.map((item) => item.id);
     const allVisibleSelected =
       visibleIds.length > 0 &&
       visibleIds.every((id) => selectedIds.includes(id));
@@ -258,9 +272,19 @@ async function handleDeleteCategory(category) {
           <h2>Categories &amp; Ayurvedic Collections</h2>
         </div>
 
-        <div className="category-hero-badge">
-          <span className="category-pulse-dot" />
-          <span>{items.length} Collections</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="category-hero-badge">
+            <span className="category-pulse-dot" />
+            <span>{items.length} Collections</span>
+          </div>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => setReload((current) => current + 1)}
+            disabled={loading}
+          >
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -271,7 +295,10 @@ async function handleDeleteCategory(category) {
           <input
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setCurrentPage(0);
+            }}
             placeholder="Search categories by name, slug, or description..."
             aria-label="Search categories"
           />
@@ -325,13 +352,13 @@ async function handleDeleteCategory(category) {
                     <input
                       type="checkbox"
                       checked={
-                        visibleItems.length > 0 &&
-                        visibleItems.every((item) =>
+                        pageItems.length > 0 &&
+                        pageItems.every((item) =>
                           selectedIds.includes(item.id)
                         )
                       }
                       onChange={toggleVisibleCategorySelection}
-                      aria-label="Select all visible categories"
+                      aria-label="Select all categories on this page"
                     />
                   </th>
                   <th className="th-category">CATEGORY</th>
@@ -344,7 +371,7 @@ async function handleDeleteCategory(category) {
               </thead>
 
               <tbody>
-                {visibleItems.map((item) => {
+                {pageItems.map((item) => {
                   const parent = items.find(
                     (category) => category.id === item.parent_id
                   );
@@ -492,6 +519,14 @@ async function handleDeleteCategory(category) {
             </table>
           </div>
         )}
+        <Pagination
+          totalItems={visibleItems.length}
+          currentPage={categoryPage}
+          pageSize={ADMIN_LIST_PAGE_SIZE}
+          onPageChange={setCurrentPage}
+          loading={loading}
+          itemLabel="categories"
+        />
       </div>
 
       {formOpen && (
@@ -697,7 +732,7 @@ async function handleDeleteCategory(category) {
 
         .category-hero-content h2 {
           margin: 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 26px;
           font-weight: 700;
@@ -713,7 +748,7 @@ async function handleDeleteCategory(category) {
           border-radius: 9999px;
           background: #FFFFFF;
           border: 1px solid #D8E7D4;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 12.5px;
           font-weight: 700;
           box-shadow: 0 2px 6px rgba(18, 61, 43, 0.04);
@@ -757,7 +792,7 @@ async function handleDeleteCategory(category) {
           border-radius: 12px;
           border: 1px solid #D5E4D2;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13px;
           transition: border-color 0.15s, box-shadow 0.15s;
           box-sizing: border-box;
@@ -776,7 +811,7 @@ async function handleDeleteCategory(category) {
           padding: 9px 18px;
           border-radius: 11px;
           border: 1px solid #144422;
-          background: #173F1D;
+          background: var(--brand-deep);
           color: #FFFFFF;
           font-size: 13px;
           font-weight: 600;
@@ -863,7 +898,7 @@ async function handleDeleteCategory(category) {
         .category-data-table input[type="checkbox"] {
           width: 16px;
           height: 16px;
-          accent-color: #173F1D;
+          accent-color: var(--brand-deep);
           cursor: pointer;
           border-radius: 4px;
         }
@@ -878,37 +913,37 @@ async function handleDeleteCategory(category) {
 
         .category-data-table .th-category,
         .category-data-table .td-category {
-          width: 38%;
+          width: 35%;
           min-width: 220px;
         }
 
         .category-data-table .th-slug,
         .category-data-table .td-slug {
-          width: 20%;
+          width: 18%;
           min-width: 130px;
         }
 
         .category-data-table .th-parent,
         .category-data-table .td-parent {
-          width: 18%;
+          width: 14%;
           min-width: 120px;
         }
 
         .category-data-table .th-sort,
         .category-data-table .td-sort {
-          width: 95px;
+          width: 92px;
           text-align: center;
         }
 
         .category-data-table .th-status,
         .category-data-table .td-status {
-          width: 115px;
+          width: 120px;
           text-align: center;
         }
 
         .category-data-table .th-actions,
         .category-data-table .td-actions {
-          width: 85px;
+          width: 90px;
           text-align: center;
         }
 
@@ -934,7 +969,7 @@ async function handleDeleteCategory(category) {
           display: grid;
           place-items: center;
           background: #DCECD9;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
 
         .category-text-meta {
@@ -945,7 +980,7 @@ async function handleDeleteCategory(category) {
         }
 
         .category-title {
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13px;
           font-weight: 700;
           line-height: 1.3;
@@ -996,7 +1031,7 @@ async function handleDeleteCategory(category) {
           border: 1px solid #D5E4D2;
           border-radius: 8px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-weight: 600;
           font-size: 13px;
           transition: border-color 0.15s;
@@ -1073,7 +1108,7 @@ async function handleDeleteCategory(category) {
         .category-action-btn.edit-btn {
           border: 1px solid #D5E4D2;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
 
         .category-action-btn.edit-btn:hover {
@@ -1138,7 +1173,7 @@ async function handleDeleteCategory(category) {
 
         .category-modal-header h3 {
           margin: 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 22px;
           font-weight: 700;
@@ -1155,8 +1190,8 @@ async function handleDeleteCategory(category) {
           height: 34px;
           border: 1px solid #D5E4D2;
           border-radius: 9px;
-          background: #F8FAF7;
-          color: #123D2B;
+          background: var(--page-background);
+          color: var(--brand-primary);
           font-size: 20px;
           line-height: 1;
           display: grid;
@@ -1182,7 +1217,7 @@ async function handleDeleteCategory(category) {
         .category-form label span {
           display: block;
           margin-bottom: 6px;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 12px;
           font-weight: 600;
         }
@@ -1196,7 +1231,7 @@ async function handleDeleteCategory(category) {
           border: 1px solid #D5E4D2;
           border-radius: 10px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font: inherit;
           font-size: 13px;
           transition: border-color 0.15s, box-shadow 0.15s;
@@ -1231,7 +1266,7 @@ async function handleDeleteCategory(category) {
         .category-form-actions .primary-button {
           padding: 10px 22px;
           border: 1px solid #144422;
-          background: #173F1D;
+          background: var(--brand-deep);
           color: #FFFFFF;
           border-radius: 10px;
           font-size: 13px;
@@ -1250,7 +1285,7 @@ async function handleDeleteCategory(category) {
           padding: 10px 18px;
           border: 1px solid #D5E4D2;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           border-radius: 10px;
           font-size: 13px;
           font-weight: 600;
@@ -1259,7 +1294,7 @@ async function handleDeleteCategory(category) {
         }
 
         .category-form-actions .secondary-button:hover:not(:disabled) {
-          background: #F8FAF7;
+          background: var(--page-background);
           border-color: #276345;
         }
 

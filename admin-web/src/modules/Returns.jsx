@@ -6,6 +6,7 @@ import {
   updateReturnRequestStatus,
 } from '../services/adminService.js';
 import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
+import Pagination from '../components/Pagination.jsx';
 
 const statuses = [
   'requested',
@@ -23,14 +24,10 @@ const statuses = [
 const allowedTransitions = {
   requested: ['under_review', 'approved', 'rejected', 'cancelled'],
   under_review: ['approved', 'rejected', 'cancelled'],
-  approved: ['pickup_scheduled', 'item_received', 'cancelled'],
-  pickup_scheduled: ['item_received', 'cancelled'],
-  item_received: [
-    'replacement_processing',
-    'refund_processing',
-    'completed',
-  ],
-  replacement_processing: ['completed'],
+  approved: ['cancelled'],
+  pickup_scheduled: ['cancelled'],
+  item_received: [],
+  replacement_processing: [],
   refund_processing: ['completed'],
   rejected: [],
   completed: [],
@@ -38,10 +35,18 @@ const allowedTransitions = {
 };
 
 function formatStatus(status = '') {
+  if (status === 'replacement_processing') {
+    return 'Exchange Processing';
+  }
+
   return status
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+function formatRequestType(requestType) {
+  return requestType === 'replacement' ? 'Exchange' : 'Return';
 }
 
 function getReturnId(item) {
@@ -158,7 +163,7 @@ function ReturnDetailsModal({ item, onClose }) {
       >
         <header className="return-detail-header">
           <div>
-            <span>Return request</span>
+            <span>Return / exchange request</span>
             <h2 id="return-detail-title">Request details</h2>
           </div>
           <button
@@ -224,7 +229,7 @@ function ReturnDetailsModal({ item, onClose }) {
             </div>
             <div>
               <dt>Request type</dt>
-              <dd>{formatStatus(item.request_type || 'return')}</dd>
+              <dd>{formatRequestType(item.request_type)}</dd>
             </div>
             <div>
               <dt>Status</dt>
@@ -259,6 +264,8 @@ export default function Returns() {
   const [status, setStatus] = useState('');
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
+  const [summary, setSummary] = useState(null);
+  const [summaryError, setSummaryError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -294,6 +301,20 @@ export default function Returns() {
             result?.data?.total ??
             rows.length
         );
+        const requestSummary =
+          result?.summary ?? result?.data?.summary;
+        if (
+          requestSummary &&
+          ['returns', 'exchanges', 'pending'].every((key) =>
+            Number.isInteger(requestSummary[key])
+          )
+        ) {
+          setSummary(requestSummary);
+          setSummaryError('');
+        } else {
+          setSummary(null);
+          setSummaryError('Request totals are unavailable.');
+        }
         setDraftStatuses({});
       } catch (requestError) {
         if (active) {
@@ -317,13 +338,18 @@ export default function Returns() {
     const returnId = getReturnId(item);
     const currentStatus = item.status;
     const nextStatus = draftStatuses[returnId] ?? currentStatus;
+    const retryVendorNotification =
+      currentStatus === 'approved' && nextStatus === 'approved';
 
     if (!returnId) {
       setError('This return request does not contain an ID.');
       return;
     }
 
-    if (!allowedTransitions[currentStatus]?.includes(nextStatus)) {
+    if (
+      !retryVendorNotification &&
+      !allowedTransitions[currentStatus]?.includes(nextStatus)
+    ) {
       setError('This status change is not allowed.');
       return;
     }
@@ -336,7 +362,11 @@ export default function Returns() {
 
     try {
       await updateReturnRequestStatus(returnId, nextStatus);
-      setSuccess(`Return status updated to ${formatStatus(nextStatus)}.`);
+      setSuccess(
+        retryVendorNotification
+          ? 'Vendor notification is up to date.'
+          : `Request status updated to ${formatStatus(nextStatus)}.`
+      );
       setReload((current) => current + 1);
     } catch (requestError) {
       setError(
@@ -347,15 +377,12 @@ export default function Returns() {
     }
   }
 
-  const currentPage = Math.floor(offset / pageSize) + 1;
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
-
   return (
     <section className="module-page returns-page">
       <AyurvedicHeroBanner
         eyebrow="AUMVEDA REVERSE LOGISTICS"
-        title="Returns, Replacements & Refunds"
-        description="Review customer return requests, inspect returned remedies, and manage resolution transitions."
+        title="Returns, Exchanges & Refunds"
+        description="Review return and exchange requests, inspect returned products, and manage their resolution."
         badgeText={`${total} Requests`}
         doodle="leaf"
       >
@@ -371,26 +398,23 @@ export default function Returns() {
 
       <div className="stat-grid">
         <div className="stat-card">
-          <span>Requests on this page</span>
-          <strong>{items.length}</strong>
+          <span>Returns</span>
+          <strong>{summary?.returns ?? '—'}</strong>
         </div>
         <div className="stat-card">
-          <span>Total matching requests</span>
-          <strong>{total}</strong>
+          <span>Exchanges</span>
+          <strong>{summary?.exchanges ?? '—'}</strong>
         </div>
         <div className="stat-card">
-          <span>Under review on this page</span>
-          <strong>
-            {items.filter((item) => item.status === 'under_review').length}
-          </strong>
-        </div>
-        <div className="stat-card">
-          <span>Awaiting pickup on this page</span>
-          <strong>
-            {items.filter((item) => item.status === 'pickup_scheduled').length}
-          </strong>
+          <span>Pending requests</span>
+          <strong>{summary?.pending ?? '—'}</strong>
         </div>
       </div>
+      {summaryError && (
+        <div className="error-state" role="alert">
+          {summaryError}
+        </div>
+      )}
 
       <div className="module-card">
         <div className="module-toolbar">
@@ -449,6 +473,7 @@ export default function Returns() {
               <thead>
                 <tr>
                   <th className="return-product-heading">Product</th>
+                  <th>Request type</th>
                   <th className="return-order-heading">Order ID</th>
                   <th className="return-id-heading">Return ID</th>
                   <th className="return-customer-heading">Customer</th>
@@ -461,8 +486,19 @@ export default function Returns() {
                 {items.map((item, index) => {
                   const returnId = getReturnId(item);
                   const currentStatus = item.status ?? 'requested';
-                  const nextStatuses =
-                    allowedTransitions[currentStatus] ?? [];
+                  const requestType =
+                    item.request_type === 'replacement'
+                      ? 'exchange'
+                      : 'return';
+                  const nextStatuses = [
+                    ...(allowedTransitions[currentStatus] ?? []),
+                  ];
+                  if (
+                    currentStatus === 'item_received' &&
+                    item.request_type !== 'replacement'
+                  ) {
+                    nextStatuses.push('refund_processing');
+                  }
                   const draftStatus =
                     draftStatuses[returnId] ?? currentStatus;
                   const isUpdating = updatingId === returnId;
@@ -479,7 +515,7 @@ export default function Returns() {
                           setSelectedReturn(item);
                         }
                       }}
-                      aria-label={`View return details for ${getProductName(item)}`}
+                      aria-label={`View ${formatRequestType(item.request_type).toLowerCase()} details for ${getProductName(item)}`}
                     >
                       <td className="return-product-cell">
                         <div className="return-product-summary">
@@ -498,6 +534,13 @@ export default function Returns() {
                           <strong>{getProductName(item)}</strong>
                         </div>
                       </td>
+                      <td>
+                        <span
+                          className={`return-type-pill return-type-${requestType}`}
+                        >
+                          {formatRequestType(item.request_type)}
+                        </span>
+                      </td>
                       <td className="return-order-cell">
                         {getOrderDisplay(item)}
                       </td>
@@ -512,7 +555,10 @@ export default function Returns() {
                           {formatStatus(currentStatus)}
                         </span>
                       </td>
-                      <td onClick={(event) => event.stopPropagation()}>
+                      <td
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
                         <select
                           className="return-status-select"
                           aria-label={`New status for return ${returnId}`}
@@ -543,6 +589,7 @@ export default function Returns() {
                       <td
                         className="return-action-cell"
                         onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
                       >
                         <button
                           type="button"
@@ -550,11 +597,17 @@ export default function Returns() {
                           disabled={
                             isUpdating ||
                             nextStatuses.length === 0 ||
-                            draftStatus === currentStatus
+                            (draftStatus === currentStatus &&
+                              currentStatus !== 'approved')
                           }
                           onClick={() => saveStatus(item)}
                         >
-                          {isUpdating ? 'Saving…' : 'Save'}
+                          {isUpdating
+                            ? 'Saving…'
+                            : currentStatus === 'approved' &&
+                                draftStatus === 'approved'
+                              ? 'Notify Vendor'
+                              : 'Save'}
                         </button>
                       </td>
                     </tr>
@@ -565,44 +618,18 @@ export default function Returns() {
           </div>
         )}
 
-        {!loading && total > pageSize && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: 12,
-              padding: 16,
-              borderTop: '1px solid var(--border)',
-            }}
-          >
-            <span style={{ color: 'var(--muted)', fontSize: 12 }}>
-              Page {currentPage} of {pageCount}
-            </span>
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={offset === 0}
-              onClick={() =>
-                setOffset((current) => Math.max(0, current - pageSize))
-              }
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={offset + pageSize >= total}
-              onClick={() => setOffset((current) => current + pageSize)}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <Pagination
+          totalItems={total}
+          currentPage={Math.floor(offset / pageSize)}
+          pageSize={pageSize}
+          onPageChange={(page) => setOffset(page * pageSize)}
+          loading={loading}
+          itemLabel="requests"
+        />
       </div>
 
       <div style={{ margin: 0, padding: '14px 18px', background: '#FAF9F4', border: '1px solid #E2ECE0', borderRadius: 12, color: '#5F6E64', fontSize: 12, lineHeight: 1.6 }}>
-        <strong style={{ color: '#123D2B' }}>Workflow Note:</strong> Marking a return as completed updates its workflow status; it does not by itself confirm that a refund payment was successfully processed.
+        <strong style={{ color: 'var(--brand-primary)' }}>Workflow Note:</strong> Marking a return as completed updates its workflow status; it does not by itself confirm that a refund payment was successfully processed.
       </div>
 
       {selectedReturn && (

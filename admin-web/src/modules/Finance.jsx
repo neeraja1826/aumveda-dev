@@ -205,15 +205,15 @@ export default function Finance() {
         }
 
         .finance-page .finance-tabs button:hover {
-          background: #F8FAF7;
-          color: #123D2B;
+          background: var(--page-background);
+          color: var(--brand-primary);
           border-color: #276345;
         }
 
         .finance-page .finance-tabs button.selected {
           color: #FFFFFF;
-          background: linear-gradient(135deg, #173F1D 0%, #123D2B 100%);
-          border-color: #123D2B;
+          background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-primary) 100%);
+          border-color: var(--brand-primary);
           font-weight: 600;
           box-shadow: 0 3px 10px rgba(18, 61, 43, 0.22);
         }
@@ -231,7 +231,7 @@ export default function Finance() {
           padding: 0 14px;
           border: 1px solid #D5E4D2;
           border-radius: 10px;
-          color: #123D2B;
+          color: var(--brand-primary);
           background: #FFFFFF;
           font: inherit;
           font-size: 13px;
@@ -249,7 +249,7 @@ export default function Finance() {
           padding: 0 16px;
           border: 1px solid #D5E4D2;
           border-radius: 10px;
-          color: #123D2B;
+          color: var(--brand-primary);
           background: #FFFFFF;
           font: inherit;
           font-size: 12.5px;
@@ -259,7 +259,7 @@ export default function Finance() {
         }
 
         .finance-page .finance-refresh:hover:not(:disabled) {
-          background: #F8FAF7;
+          background: var(--page-background);
           border-color: #276345;
           transform: translateY(-1px);
         }

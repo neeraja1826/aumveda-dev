@@ -6,6 +6,9 @@ import {
   getResource,
 } from '../services/adminService.js';
 import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
+import Pagination, {
+  ADMIN_LIST_PAGE_SIZE,
+} from '../components/Pagination.jsx';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -33,6 +36,7 @@ const getComment = (review) =>
 export default function Reviews() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
@@ -112,6 +116,16 @@ export default function Reviews() {
         .includes(query)
     );
   }, [items, search]);
+
+  const reviewPageCount = Math.max(
+    1,
+    Math.ceil(filteredItems.length / ADMIN_LIST_PAGE_SIZE)
+  );
+  const reviewPage = Math.min(currentPage, reviewPageCount - 1);
+  const pageItems = filteredItems.slice(
+    reviewPage * ADMIN_LIST_PAGE_SIZE,
+    (reviewPage + 1) * ADMIN_LIST_PAGE_SIZE
+  );
 
   function closeReviewDetails() {
     setSelectedReview(null);
@@ -239,7 +253,13 @@ export default function Reviews() {
         }
 
         .reviews-page .review-rating {
-          color: #344d38;
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 10px;
+          border: 1px solid #F3E2A8;
+          border-radius: 999px;
+          background: #FFF8E1;
+          color: #785B13;
           font-weight: 650;
           white-space: nowrap;
         }
@@ -380,7 +400,7 @@ export default function Reviews() {
 
         .review-detail-header h3 {
           margin: 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 20px;
           font-weight: 700;
@@ -391,8 +411,8 @@ export default function Reviews() {
           height: 36px;
           border: 1px solid #D5E4D2;
           border-radius: 10px;
-          background: #F8FAF7;
-          color: #123D2B;
+          background: var(--page-background);
+          color: var(--brand-primary);
           font-size: 22px;
           display: grid;
           place-items: center;
@@ -417,7 +437,7 @@ export default function Reviews() {
           padding: 14px 16px;
           border: 1px solid #E2ECE0;
           border-radius: 12px;
-          background: #F8FAF7;
+          background: var(--page-background);
         }
 
         .review-detail-grid span,
@@ -433,7 +453,7 @@ export default function Reviews() {
 
         .review-detail-grid strong {
           display: block;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13.5px;
           overflow-wrap: anywhere;
         }
@@ -501,7 +521,16 @@ export default function Reviews() {
         description="Read customer feedback and remove reviews when necessary."
         badgeText={`${items.length} Reviews`}
         doodle="flower"
-      />
+      >
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => setReload((current) => current + 1)}
+          disabled={loading}
+        >
+          Refresh
+        </button>
+      </AyurvedicHeroBanner>
 
       <div className="review-summary">
         <div className="review-stat">
@@ -520,7 +549,10 @@ export default function Reviews() {
             <input
               type="search"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setCurrentPage(0);
+              }}
               placeholder="Search reviews…"
               aria-label="Search reviews"
             />
@@ -584,7 +616,7 @@ export default function Reviews() {
               </thead>
 
               <tbody>
-                {filteredItems.map((item) => (
+                {pageItems.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <div className="review-customer">
@@ -653,6 +685,14 @@ export default function Reviews() {
             {error}
           </div>
         )}
+        <Pagination
+          totalItems={filteredItems.length}
+          currentPage={reviewPage}
+          pageSize={ADMIN_LIST_PAGE_SIZE}
+          onPageChange={setCurrentPage}
+          loading={loading}
+          itemLabel="reviews"
+        />
       </div>
       {selectedReview && (
         <div

@@ -13,6 +13,7 @@ import {
   Linking,
   ActivityIndicator,
   Platform,
+  AppState,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -23,6 +24,7 @@ import * as Location from 'expo-location';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { getAddresses } from '../../services/addressService';
+import { getCustomerNotifications } from '../../services/notificationService';
 import { formatLocationPlace } from '../../services/locationService';
 import { APP_LOGO_URL } from '../../constants/app';
 
@@ -331,6 +333,7 @@ export default function HomeHeader({
   const { width } = useWindowDimensions();
   const { cartCount } = useCart();
   const { token, isAuthenticated } = useAuth();
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [locationText, setLocationText] = useState(LOCATION_PLACEHOLDER);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
@@ -364,6 +367,43 @@ export default function HomeHeader({
         isActive = false;
       };
     }, [])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const refreshUnreadCount = async () => {
+        if (!isAuthenticated) {
+          if (isActive) setUnreadNotificationCount(0);
+          return;
+        }
+
+        try {
+          const result = await getCustomerNotifications({ limit: 1 });
+          if (isActive) {
+            setUnreadNotificationCount(result.unreadCount);
+          }
+        } catch (error) {
+          console.error('Failed to load notification count:', error);
+        }
+      };
+
+      void refreshUnreadCount();
+      const intervalId = setInterval(refreshUnreadCount, 30_000);
+      const appStateSubscription = AppState.addEventListener(
+        'change',
+        (state) => {
+          if (state === 'active') void refreshUnreadCount();
+        }
+      );
+
+      return () => {
+        isActive = false;
+        clearInterval(intervalId);
+        appStateSubscription.remove();
+      };
+    }, [isAuthenticated])
   );
 
   const isSmallDevice = width < 370;
@@ -640,7 +680,7 @@ export default function HomeHeader({
     >
       <StatusBar style="dark" />
 
-      {/* TOP BAR: LOGO & LOCATION + WISHLIST & CART */}
+      {/* TOP BAR: LOGO & LOCATION + WISHLIST, CART & NOTIFICATIONS */}
       <View style={styles.topRow}>
         {/* LEFT COLUMN: LOGO AND LOCATION */}
         <View style={styles.leftCol}>
@@ -693,7 +733,7 @@ export default function HomeHeader({
           </Pressable>
         </View>
 
-        {/* RIGHT COLUMN: WISHLIST AND CART */}
+        {/* RIGHT COLUMN: WISHLIST, CART AND NOTIFICATIONS */}
         <View style={styles.actionButtonsRow}>
           <Pressable
             onPress={() => router.push('/wishlist')}
@@ -733,6 +773,37 @@ export default function HomeHeader({
                 {cartCount > 99 ? '99+' : cartCount || 0}
               </Text>
             </View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push('/notifications')}
+            style={({ pressed }) => [
+              styles.circleButton,
+              pressed && styles.circleButtonPressed,
+            ]}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={
+              unreadNotificationCount > 0
+                ? `Notifications, ${unreadNotificationCount} unread`
+                : 'Notifications'
+            }
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={18}
+              color="#123D2B"
+            />
+
+            {unreadNotificationCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadNotificationCount > 99
+                    ? '99+'
+                    : unreadNotificationCount}
+                </Text>
+              </View>
+            )}
           </Pressable>
         </View>
       </View>
@@ -1235,6 +1306,29 @@ const styles = StyleSheet.create({
   },
 
   cartBadgeText: {
+    color: '#FFFFFF',
+    fontFamily: 'InterSemiBold',
+    fontSize: 8.5,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+
+  notificationBadge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 8.5,
+    backgroundColor: '#B85C5C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+
+  notificationBadgeText: {
     color: '#FFFFFF',
     fontFamily: 'InterSemiBold',
     fontSize: 8.5,

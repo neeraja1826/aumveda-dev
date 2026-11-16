@@ -347,7 +347,7 @@ const [stockFilter, setStockFilter] = useState('all');
   padding: 15px 16px;
   border: 1px solid #E2ECE0;
   border-radius: 12px;
-  background: #F8FAF7;
+  background: var(--page-background);
 }
 
 .inventory-page .transaction-detail-item.full {
@@ -365,7 +365,7 @@ const [stockFilter, setStockFilter] = useState('all');
 }
 
 .inventory-page .transaction-detail-value {
-  color: #123D2B;
+  color: var(--brand-primary);
   font-size: 13.5px;
   line-height: 1.5;
   overflow-wrap: anywhere;
@@ -426,7 +426,7 @@ const [stockFilter, setStockFilter] = useState('all');
 }
 .inventory-page .transaction-incoming {
   background: #E8F2E7;
-  color: #123D2B;
+  color: var(--brand-primary);
   border: 1px solid #CDE2CB;
   border-radius: 14px;
   padding: 4px 10px;
@@ -447,7 +447,7 @@ const [stockFilter, setStockFilter] = useState('all');
 }
 .inventory-page .stock-modal-product strong {
   display: block;
-  color: #123D2B;
+  color: var(--brand-primary);
   font-size: 14px;
   font-weight: 700;
 }

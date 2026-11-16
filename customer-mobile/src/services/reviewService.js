@@ -39,6 +39,54 @@ console.log('Review API response:', responseText);
   }
 }
 
+export async function getCustomerOrderReviews(token, orderId, signal) {
+  if (!token) {
+    throw new Error('Please log in to view your order reviews.');
+  }
+
+  if (!orderId) {
+    throw new Error('Order ID is required.');
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/reviews/order/${encodeURIComponent(orderId)}`,
+    {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      signal,
+    }
+  );
+  const responseText = await response.text();
+  let result;
+
+  try {
+    result = responseText ? JSON.parse(responseText) : {};
+  } catch {
+    if (response.ok) {
+      throw new Error('The server returned an invalid order reviews response.');
+    }
+    result = {};
+  }
+
+  if (!response.ok) {
+    const detail = result.detail;
+    const message =
+      typeof detail === 'string'
+        ? detail
+        : result.message || `Unable to load order reviews (${response.status}).`;
+
+    throw new Error(message);
+  }
+
+  if (!Array.isArray(result.data)) {
+    throw new Error('The order reviews response was not in the expected format.');
+  }
+
+  return result.data;
+}
+
 /**
  * Submit a product review.
  * The backend must verify authentication and purchase eligibility.

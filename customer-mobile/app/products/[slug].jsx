@@ -112,6 +112,10 @@ const [reviewError, setReviewError] = useState('');
   // ==========================================================
 
   const [product, setProduct] = useState(null);
+  const [gallerySelection, setGallerySelection] = useState({
+    productId: null,
+    index: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -277,6 +281,42 @@ useEffect(() => {
     product?.image_url ||
     product?.thumbnail ||
     null;
+
+  const productImages = (
+    Array.isArray(product?.product_images)
+      ? product.product_images.filter((item) => item?.image_url)
+      : []
+  ).sort((first, second) => {
+    if (first.is_primary && !second.is_primary) return -1;
+    if (!first.is_primary && second.is_primary) return 1;
+
+    const firstOrder = Number(first.sort_order);
+    const secondOrder = Number(second.sort_order);
+    return (
+      (Number.isFinite(firstOrder) ? firstOrder : 9999) -
+      (Number.isFinite(secondOrder) ? secondOrder : 9999)
+    );
+  });
+
+  const selectedImageIndex =
+    gallerySelection.productId === product?.id &&
+    gallerySelection.index < productImages.length
+      ? gallerySelection.index
+      : 0;
+  const displayImage =
+    productImages[selectedImageIndex]?.image_url || image;
+
+  function moveProductImage(offset) {
+    if (productImages.length < 2) return;
+
+    const nextIndex =
+      (selectedImageIndex + offset + productImages.length) %
+      productImages.length;
+    setGallerySelection({
+      productId: product.id,
+      index: nextIndex,
+    });
+  }
 
   const price =
     Number(
@@ -607,14 +647,18 @@ const rating = reviewCount > 0
             <View style={styles.imageHaloInner} />
           </View>
 
-          {image ? (
+          {displayImage ? (
             <Image
-  source={{ uri: image }}
-  style={styles.productImage}
-  contentFit="contain"
-  cachePolicy="memory-disk"
-  transition={0}
-/>
+              source={{ uri: displayImage }}
+              style={styles.productImage}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              transition={150}
+              accessibilityLabel={
+                `${product.name}, image ${selectedImageIndex + 1} of ` +
+                `${Math.max(productImages.length, 1)}`
+              }
+            />
           ) : (
             <View style={styles.imagePlaceholder}>
               <Ionicons
@@ -627,6 +671,79 @@ const rating = reviewCount > 0
               </Text>
             </View>
           )}
+
+          {productImages.length > 1 ? (
+            <>
+              <Pressable
+                style={[
+                  styles.imageNavButton,
+                  styles.imageNavButtonPrevious,
+                ]}
+                onPress={() => moveProductImage(-1)}
+                accessibilityRole="button"
+                accessibilityLabel="Previous product image"
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={22}
+                  color="#123D2B"
+                />
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.imageNavButton,
+                  styles.imageNavButtonNext,
+                ]}
+                onPress={() => moveProductImage(1)}
+                accessibilityRole="button"
+                accessibilityLabel="Next product image"
+              >
+                <Ionicons
+                  name="chevron-forward"
+                  size={22}
+                  color="#123D2B"
+                />
+              </Pressable>
+              <View
+                style={styles.imagePager}
+                accessibilityLabel={`Product image ${selectedImageIndex + 1} of ${productImages.length}`}
+              >
+                {productImages.map((item, index) => (
+                  <Pressable
+                    key={item.id || item.image_url}
+                    style={[
+                      styles.imagePagerDotButton,
+                    ]}
+                    onPress={() =>
+                      setGallerySelection({
+                        productId: product.id,
+                        index,
+                      })
+                    }
+                    accessibilityRole="button"
+                    accessibilityLabel={`Show product image ${index + 1} of ${productImages.length}`}
+                    accessibilityState={{
+                      selected: index === selectedImageIndex,
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.imagePagerDot,
+                        index === selectedImageIndex &&
+                          styles.imagePagerDotActive,
+                      ]}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+              <Text
+                style={styles.imageCounter}
+                accessibilityLiveRegion="polite"
+              >
+                {selectedImageIndex + 1} / {productImages.length}
+              </Text>
+            </>
+          ) : null}
 
           {/* DISCOUNT BADGE */}
           {discount > 0 && (
@@ -1371,6 +1488,75 @@ const styles = StyleSheet.create({
   productImage: {
     width: '84%',
     height: '84%',
+  },
+
+  imageNavButton: {
+    position: 'absolute',
+    top: '50%',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    borderWidth: 1,
+    borderColor: '#E8E2D5',
+    zIndex: 4,
+    elevation: 3,
+    transform: [{ translateY: -20 }],
+  },
+
+  imageNavButtonPrevious: {
+    left: 12,
+  },
+
+  imageNavButtonNext: {
+    right: 12,
+  },
+
+  imagePager: {
+    position: 'absolute',
+    bottom: 45,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 4,
+  },
+
+  imagePagerDotButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  imagePagerDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#B9B2A5',
+  },
+
+  imagePagerDotActive: {
+    width: 17,
+    backgroundColor: '#123D2B',
+  },
+
+  imageCounter: {
+    position: 'absolute',
+    right: 14,
+    bottom: 51,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    color: '#123D2B',
+    fontFamily: 'InterSemiBold',
+    fontSize: 9,
+    zIndex: 4,
   },
 
   imagePlaceholder: {

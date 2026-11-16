@@ -7,13 +7,23 @@ const STEPS = [
   { key: 'placed', label: 'Placed', icon: 'receipt-outline' },
   { key: 'processing', label: 'Processing', icon: 'cube-outline' },
   { key: 'shipped', label: 'Shipped', icon: 'truck-outline' },
+  { key: 'out_for_delivery', label: 'Out for Delivery', icon: 'truck-outline' },
   { key: 'delivered', label: 'Delivered', icon: 'home-outline' },
 ];
 
 const STEP_ORDER = STEPS.map((step) => step.key);
 
 export default function OrderTracking({ status }) {
-  const currentStatus = String(status || 'placed').toLowerCase();
+  const rawStatus = String(status || 'placed')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  const currentStatus =
+    rawStatus === 'partially_shipped'
+      ? 'shipped'
+      : ['confirmed', 'packed'].includes(rawStatus)
+        ? 'processing'
+        : rawStatus;
 
   if (currentStatus === 'cancelled' || currentStatus === 'returned') {
     const isCancelled = currentStatus === 'cancelled';
@@ -62,10 +72,12 @@ export default function OrderTracking({ status }) {
     activeIndex === 0
       ? '0%'
       : activeIndex === 1
-        ? '33.3%'
+        ? '25%'
         : activeIndex === 2
-          ? '66.6%'
-          : '100%';
+          ? '50%'
+          : activeIndex === 3
+            ? '75%'
+            : '100%';
 
   return (
     <View style={styles.card}>

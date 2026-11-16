@@ -11,15 +11,15 @@ const SECTION_CONTENT = {
     title: 'Settings',
     description: 'Manage your Aumveda account preferences.',
     options: [
-      { label: 'Notifications', route: '/account/notifications' },
+      { label: 'Notifications', route: '/notifications' },
       { label: 'Language', route: '/account/language' },
     ],
   },
   notifications: {
     title: 'Notifications',
     description:
-      'Push notification preferences are not available yet. Important order updates will still be shown in your account.',
-    options: [],
+      'View your order and account updates in the notification center.',
+    options: [{ label: 'Open notifications', route: '/notifications' }],
   },
   language: {
     title: 'Language',

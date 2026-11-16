@@ -125,7 +125,7 @@ export default function Sidebar({
             height="22"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#123D2B"
+            stroke="var(--brand-primary)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"

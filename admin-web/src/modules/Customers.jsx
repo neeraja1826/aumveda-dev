@@ -16,6 +16,9 @@ import {
   updateCustomer,
   updateResourceStatus,
 } from '../services/adminService.js';
+import Pagination, {
+  ADMIN_LIST_PAGE_SIZE,
+} from '../components/Pagination.jsx';
 
 const emptySummary = {
   total_customers: 0,
@@ -95,6 +98,7 @@ export default function Customers() {
   const [registrationFilter, setRegistrationFilter] = useState('');
   const [orderCountFilter, setOrderCountFilter] = useState('');
   const [customerTypeFilter, setCustomerTypeFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +117,8 @@ export default function Customers() {
   useEffect(() => {
     let active = true;
 
-    const params = { limit: 100 };
+    const fetchBatchSize = 100;
+    const params = { limit: fetchBatchSize, offset: 0 };
     if (search.trim()) params.search = search.trim();
     if (activeFilter !== '') params.active = activeFilter;
 
@@ -124,14 +129,48 @@ export default function Customers() {
         setError('');
         return getResource('customers', params);
       })
-      .then((result) => {
+      .then(async (result) => {
         if (!active) return;
         if (!result) return;
-        setItems(result.items || []);
-        setSummary({
-          ...emptySummary,
-          ...(result.summary || {}),
-        });
+
+        const firstItems = Array.isArray(result)
+          ? result
+          : result.items || [];
+        const total = Array.isArray(result)
+          ? firstItems.length
+          : Number(result.total) || firstItems.length;
+        const offsets = [];
+
+        for (
+          let offset = fetchBatchSize;
+          offset < total;
+          offset += fetchBatchSize
+        ) {
+          offsets.push(offset);
+        }
+
+        const remainingResults = await Promise.all(
+          offsets.map((offset) =>
+            getResource('customers', {
+              ...params,
+              offset,
+            })
+          )
+        );
+        const customers = [
+          ...firstItems,
+          ...remainingResults.flatMap((page) =>
+            Array.isArray(page) ? page : page?.items || []
+          ),
+        ];
+
+        if (active) {
+          setItems(customers);
+          setSummary({
+            ...emptySummary,
+            ...(result.summary || {}),
+          });
+        }
       })
       .catch((requestError) => {
         if (active) {
@@ -214,6 +253,16 @@ export default function Customers() {
     customerTypeFilter,
   ]);
 
+  const customerPageCount = Math.max(
+    1,
+    Math.ceil(visibleItems.length / ADMIN_LIST_PAGE_SIZE)
+  );
+  const customerPage = Math.min(currentPage, customerPageCount - 1);
+  const pageItems = visibleItems.slice(
+    customerPage * ADMIN_LIST_PAGE_SIZE,
+    (customerPage + 1) * ADMIN_LIST_PAGE_SIZE
+  );
+
   function toggleCustomerSelection(customerId) {
     setSelectedIds((current) =>
       current.includes(customerId)
@@ -223,10 +272,10 @@ export default function Customers() {
   }
 
   function toggleVisibleSelection() {
-    const visibleIds = new Set(visibleItems.map((customer) => customer.id));
+    const visibleIds = new Set(pageItems.map((customer) => customer.id));
     const allSelected =
-      visibleItems.length > 0 &&
-      visibleItems.every((customer) => selectedIds.includes(customer.id));
+      pageItems.length > 0 &&
+      pageItems.every((customer) => selectedIds.includes(customer.id));
 
     setSelectedIds((current) =>
       allSelected
@@ -331,8 +380,24 @@ export default function Customers() {
 
   return (
     <section className="module-page customers-page">
-      <header className="customers-page-heading">
+      <header
+        className="customers-page-heading"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}
+      >
         <h1>Customers</h1>
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => setReload((current) => current + 1)}
+          disabled={loading}
+        >
+          Refresh
+        </button>
       </header>
 
       <div className="customer-summary-grid">
@@ -362,7 +427,10 @@ export default function Customers() {
           <input
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setCurrentPage(0);
+            }}
             placeholder="Search by name, email, or phone..."
             aria-label="Search by name, email, or phone"
           />
@@ -370,7 +438,10 @@ export default function Customers() {
 
         <select
           value={registrationFilter}
-          onChange={(event) => setRegistrationFilter(event.target.value)}
+          onChange={(event) => {
+            setRegistrationFilter(event.target.value);
+            setCurrentPage(0);
+          }}
           aria-label="Filter by registration date"
         >
           <option value="">Registration Date</option>
@@ -381,7 +452,10 @@ export default function Customers() {
 
         <select
           value={orderCountFilter}
-          onChange={(event) => setOrderCountFilter(event.target.value)}
+          onChange={(event) => {
+            setOrderCountFilter(event.target.value);
+            setCurrentPage(0);
+          }}
           aria-label="Filter by order count"
         >
           <option value="">Order Count</option>
@@ -392,7 +466,10 @@ export default function Customers() {
 
         <select
           value={customerTypeFilter}
-          onChange={(event) => setCustomerTypeFilter(event.target.value)}
+          onChange={(event) => {
+            setCustomerTypeFilter(event.target.value);
+            setCurrentPage(0);
+          }}
           aria-label="Filter by customer type"
         >
           <option value="">Customer Type</option>
@@ -427,7 +504,10 @@ export default function Customers() {
           <select
             className="customer-active-filter"
             value={activeFilter}
-            onChange={(event) => setActiveFilter(event.target.value)}
+            onChange={(event) => {
+              setActiveFilter(event.target.value);
+              setCurrentPage(0);
+            }}
             aria-label="Filter by account status"
           >
             <option value="">All account statuses</option>
@@ -463,13 +543,13 @@ export default function Customers() {
                     <input
                       type="checkbox"
                       checked={
-                        visibleItems.length > 0 &&
-                        visibleItems.every((customer) =>
+                        pageItems.length > 0 &&
+                        pageItems.every((customer) =>
                           selectedIds.includes(customer.id)
                         )
                       }
                       onChange={toggleVisibleSelection}
-                      aria-label="Select all visible customers"
+                      aria-label="Select all customers on this page"
                     />
                   </th>
                   <th>Customer</th>
@@ -482,7 +562,7 @@ export default function Customers() {
               </thead>
 
               <tbody>
-                {visibleItems.map((customer) => (
+                {pageItems.map((customer) => (
                   <tr key={customer.id}>
                     <td className="customer-checkbox-cell">
                       <input
@@ -519,6 +599,11 @@ export default function Customers() {
                           <div className="customer-joined">
                             Joined: {formatDate(customer.created_at)}
                           </div>
+                          <span
+                            className={`customer-status ${customer.is_active ? 'active' : 'inactive'}`}
+                          >
+                            {customer.is_active ? 'Active' : 'Inactive'}
+                          </span>
                         </div>
                       </div>
                     </td>
@@ -579,6 +664,14 @@ export default function Customers() {
             </table>
           </div>
         )}
+        <Pagination
+          totalItems={visibleItems.length}
+          currentPage={customerPage}
+          pageSize={ADMIN_LIST_PAGE_SIZE}
+          onPageChange={setCurrentPage}
+          loading={loading}
+          itemLabel="customers"
+        />
       </div>
 
       {selectedCustomer && (
@@ -802,7 +895,7 @@ export default function Customers() {
 
         .customers-page .customer-detail-item {
           padding: 16px 18px;
-          background: #F8FAF7;
+          background: var(--page-background);
           border: 1px solid #E2ECE0;
           border-radius: 14px;
         }
@@ -820,7 +913,7 @@ export default function Customers() {
         .customers-page .customer-detail-item strong {
           display: block;
           overflow-wrap: anywhere;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13.5px;
         }
 
@@ -834,7 +927,7 @@ export default function Customers() {
 
         .customers-page .customer-detail-section h3 {
           margin: 0 0 8px;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 15px;
           font-weight: 700;
@@ -889,7 +982,7 @@ export default function Customers() {
           align-items: center;
           justify-content: center;
           background: #E8F2E7;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-weight: 700;
           border: 1px solid #CDE2CB;
         }
@@ -912,7 +1005,7 @@ export default function Customers() {
 
         .customers-page .customer-status.active {
           background: #E8F2E7;
-          color: #123D2B;
+          color: var(--brand-primary);
           border: 1px solid #CDE2CB;
         }
 
@@ -983,7 +1076,7 @@ export default function Customers() {
 
         .customers-page .customer-detail-item {
           padding: 16px 18px;
-          background: #F8FAF7;
+          background: var(--page-background);
           border: 1px solid #E2ECE0;
           border-radius: 14px;
         }
@@ -1001,7 +1094,7 @@ export default function Customers() {
         .customers-page .customer-detail-item strong {
           display: block;
           overflow-wrap: anywhere;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13.5px;
         }
 
@@ -1015,7 +1108,7 @@ export default function Customers() {
 
         .customers-page .customer-detail-section h3 {
           margin: 0 0 8px;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 15px;
           font-weight: 700;
@@ -1047,7 +1140,7 @@ export default function Customers() {
 
         .customers-page-heading h1 {
           margin: 0 0 4px;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 24px;
         }
@@ -1139,7 +1232,7 @@ export default function Customers() {
           border: 0;
           outline: 0;
           background: transparent;
-          color: #123D2B;
+          color: var(--brand-primary);
           font: inherit;
           font-size: 12px;
         }
@@ -1167,7 +1260,7 @@ export default function Customers() {
           border: 1px solid #DCE7DB;
           border-radius: 10px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           cursor: pointer;
           font-size: 12px;
           font-weight: 600;
@@ -1185,8 +1278,8 @@ export default function Customers() {
         }
 
         .customer-export-button {
-          border-color: #123D2B;
-          background: #123D2B;
+          border-color: var(--brand-primary);
+          background: var(--brand-primary);
           color: #FFFFFF;
         }
 
@@ -1207,7 +1300,7 @@ export default function Customers() {
           border: 1px solid #CDE2CB;
           border-radius: 10px;
           background: #E8F2E7;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13px;
         }
 
@@ -1332,7 +1425,7 @@ export default function Customers() {
           border: 1px solid #D5E4D2;
           border-radius: 9px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 22px;
           cursor: pointer;
         }
@@ -1358,7 +1451,7 @@ export default function Customers() {
           border: 1px solid #D5E4D2;
           border-radius: 9px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font: inherit;
         }
 
@@ -1391,15 +1484,15 @@ export default function Customers() {
           border: 1px solid #D5E4D2;
           border-radius: 9px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           cursor: pointer;
           font-size: 12px;
           font-weight: 600;
         }
 
         .customer-save-button {
-          border-color: #123D2B;
-          background: #123D2B;
+          border-color: var(--brand-primary);
+          background: var(--brand-primary);
           color: #FFFFFF;
         }
 

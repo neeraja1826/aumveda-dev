@@ -29,6 +29,12 @@ import {
   createOrder,
 } from '../../src/services/orderService';
 
+import CouponApplication from '../../src/components/CouponApplication';
+import {
+  clearStoredCoupon,
+  getStoredCoupon,
+} from '../../src/services/couponStorage';
+
 import { colors } from '../../src/theme/colors';
 
 import {
@@ -54,6 +60,30 @@ const {
   } = useCart();
 
   const isBuyNow = buyNow === 'true';
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    if (isBuyNow) {
+      return () => {
+        active = false;
+      };
+    }
+
+    getStoredCoupon()
+      .then((coupon) => {
+        if (active) setAppliedCoupon(coupon);
+      })
+      .catch((error) => {
+        console.error('Unable to load the applied coupon:', error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isBuyNow]);
+
   const initialBuyNowQuantity = Math.max(1, Number(quantity || 1));
   const [buyNowCheckoutQuantity, setBuyNowCheckoutQuantity] = useState(initialBuyNowQuantity);
   const buyNowQuantity = Math.max(1, Number(buyNowCheckoutQuantity || 1));
@@ -250,12 +280,18 @@ const {
     return 50;
   }, [subtotal]);
 
+  const effectiveCoupon = isBuyNow ? null : appliedCoupon;
+  const couponDiscount = effectiveCoupon?.applied
+    ? Math.min(Number(subtotal || 0), Number(effectiveCoupon.discount_amount || 0))
+    : 0;
+
   const total = useMemo(() => {
     return (
       Number(subtotal || 0) +
-      Number(deliveryCharge || 0)
+      Number(deliveryCharge || 0) -
+      couponDiscount
     );
-  }, [subtotal, deliveryCharge]);
+  }, [subtotal, deliveryCharge, couponDiscount]);
 
   // -----------------------------------------
   // FORMAT PRICE
@@ -500,6 +536,12 @@ setSelectedAddressId(addressToSelect?.id ?? null);
             country: 'India',
           },
           paymentMethod,
+          couponCode: effectiveCoupon?.applied
+            ? effectiveCoupon.code
+            : null,
+          couponPlacement: effectiveCoupon?.applied
+            ? effectiveCoupon.placement
+            : null,
           items: checkoutItems.map((item) => ({
             product_id: item.productId ?? item.id,
             variant_id: item.variantId ?? item.variant?.id ?? null,
@@ -531,6 +573,12 @@ setSelectedAddressId(addressToSelect?.id ?? null);
       // unrelated products from the user's cart.
       if (!isBuyNow) {
         await clearCart();
+        try {
+          await clearStoredCoupon();
+        } catch (storageError) {
+          console.error('Unable to clear the applied coupon:', storageError);
+        }
+        setAppliedCoupon(null);
       }
 
       // -----------------------------------------
@@ -1235,6 +1283,15 @@ setSelectedAddressId(addressToSelect?.id ?? null);
             </Text>
           </View>
 
+          {!isBuyNow ? (
+            <CouponApplication
+              placement="checkout"
+              subtotal={subtotal}
+              coupon={appliedCoupon}
+              onChange={setAppliedCoupon}
+            />
+          ) : null}
+
           <View style={styles.priceRow}>
             <Text
               style={
@@ -1267,6 +1324,17 @@ setSelectedAddressId(addressToSelect?.id ?? null);
             >
               Free delivery on orders above ₹999
             </Text>
+          ) : null}
+
+          {couponDiscount > 0 ? (
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>
+                Coupon discount
+              </Text>
+              <Text style={styles.couponDiscount}>
+                -{formatPrice(couponDiscount)}
+              </Text>
+            </View>
           ) : null}
 
           <View
@@ -2065,6 +2133,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: colors.text,
+  },
+
+  couponDiscount: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#26734D',
   },
 
   freeText: {

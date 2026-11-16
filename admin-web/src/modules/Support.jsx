@@ -511,7 +511,7 @@ export default function Support() {
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 28px;
           font-weight: 700;
-          color: #123D2B;
+          color: var(--brand-primary);
           letter-spacing: -0.02em;
         }
 
@@ -522,10 +522,10 @@ export default function Support() {
         }
 
         .support-refresh {
-          border: 1px solid #123D2B;
+          border: 1px solid var(--brand-primary);
           border-radius: 10px;
           padding: 10px 20px;
-          background: linear-gradient(135deg, #173F1D 0%, #123D2B 100%);
+          background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-primary) 100%);
           color: white;
           font-weight: 600;
           cursor: pointer;
@@ -578,7 +578,7 @@ export default function Support() {
         .support-card strong {
           font-size: 26px;
           font-weight: 700;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
 
         .support-filters {
@@ -653,7 +653,7 @@ export default function Support() {
 
         .support-ticket-number {
           font-weight: 700;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: monospace;
           font-size: 13px;
         }
@@ -720,7 +720,7 @@ export default function Support() {
         .support-view-btn {
           border: 1px solid #D5E4D2;
           background: #FAFDF9;
-          color: #173F1D;
+          color: var(--brand-deep);
           font-weight: 600;
           font-size: 13px;
           padding: 6px 14px;
@@ -730,9 +730,9 @@ export default function Support() {
         }
 
         .support-view-btn:hover {
-          background: #123D2B;
+          background: var(--brand-primary);
           color: white;
-          border-color: #123D2B;
+          border-color: var(--brand-primary);
           transform: translateY(-1px);
         }
 
@@ -776,7 +776,7 @@ export default function Support() {
           margin: 8px 0 0;
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 24px;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-weight: 700;
         }
 
@@ -786,7 +786,7 @@ export default function Support() {
           border: 1px solid #E2ECE0;
           border-radius: 50%;
           background: #FAFDF9;
-          color: #173F1D;
+          color: var(--brand-deep);
           font-size: 22px;
           cursor: pointer;
           display: flex;
@@ -797,7 +797,7 @@ export default function Support() {
 
         .support-close:hover {
           background: #F0F5EE;
-          color: #123D2B;
+          color: var(--brand-primary);
           transform: scale(1.05);
         }
 
@@ -823,7 +823,7 @@ export default function Support() {
         }
 
         .support-ticket-meta strong {
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 15px;
         }
 
@@ -849,7 +849,7 @@ export default function Support() {
           margin-bottom: 12px;
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 18px;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
 
         .support-customer {
@@ -860,7 +860,7 @@ export default function Support() {
         .support-customer p {
           margin: 0 0 4px;
           font-weight: 600;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
 
         .support-customer span {
@@ -891,7 +891,7 @@ export default function Support() {
           margin-bottom: 8px;
           font-size: 13px;
           font-weight: 600;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
 
         .support-message-header span {
@@ -933,10 +933,10 @@ export default function Support() {
 
         .support-reply button {
           margin-top: 12px;
-          border: 1px solid #123D2B;
+          border: 1px solid var(--brand-primary);
           border-radius: 10px;
           padding: 11px 24px;
-          background: linear-gradient(135deg, #173F1D 0%, #123D2B 100%);
+          background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-primary) 100%);
           color: white;
           font-weight: 600;
           cursor: pointer;

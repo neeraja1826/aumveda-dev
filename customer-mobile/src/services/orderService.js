@@ -6,6 +6,26 @@ import {
   getCart,
 } from './cartService';
 
+function getOrderError(error) {
+  const message = String(error?.message || '');
+  const responseBody = message.match(/^API \d+: ([\s\S]+)$/);
+
+  if (!responseBody) {
+    return error;
+  }
+
+  try {
+    const body = JSON.parse(responseBody[1]);
+    if (typeof body?.detail === 'string') {
+      return new Error(body.detail, { cause: error });
+    }
+  } catch {
+    return error;
+  }
+
+  return error;
+}
+
 function getCartLines(items, { allowEmpty = false } = {}) {
   if (!Array.isArray(items)) {
     throw new Error('The cart items were not in the expected format.');
@@ -157,6 +177,8 @@ export async function createOrder({
   shippingAddress,
   paymentMethod = 'cod',
   items,
+  couponCode = null,
+  couponPlacement = null,
 }) {
   const previousItems = await syncRemoteCart(token, items);
   let response;
@@ -169,23 +191,51 @@ export async function createOrder({
         address_id: addressId,
         shipping_address: shippingAddress,
         payment_method: paymentMethod,
+        coupon_code: couponCode,
+        coupon_placement: couponPlacement,
       },
     });
   } catch (orderError) {
+    const readableOrderError = getOrderError(orderError);
+
     try {
       await restoreRemoteCart(token, previousItems);
     } catch (restoreError) {
       throw new Error(
-        `${orderError.message} The previous server cart could not be restored: ${restoreError.message}`,
+        `${readableOrderError.message} The previous server cart could not be restored: ${restoreError.message}`,
         { cause: orderError }
       );
     }
 
-    throw orderError;
+    throw readableOrderError;
   }
 
   if (!response?.data || typeof response.data !== 'object') {
     throw new Error('The order was not returned by the server.');
+  }
+
+  return response.data;
+}
+
+export async function validateCustomerCoupon({
+  code,
+  placement,
+}) {
+  let response;
+  try {
+    response = await apiRequest('/orders/coupons/validate', {
+      method: 'POST',
+      body: {
+        code,
+        placement,
+      },
+    });
+  } catch (error) {
+    throw getOrderError(error);
+  }
+
+  if (!response?.data || typeof response.data !== 'object') {
+    throw new Error('Coupon validation returned an unexpected response.');
   }
 
   return response.data;

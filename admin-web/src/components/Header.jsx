@@ -56,19 +56,19 @@ export default function Header({
         >
           <path
             d="M20 70C40 40 80 30 110 50C140 70 170 30 200 40"
-            stroke="#123D2B"
+            stroke="var(--brand-primary)"
             strokeWidth="2"
             strokeDasharray="4 4"
           />
 
           <path
             d="M160 20C175 10 190 15 200 30C195 40 180 40 170 30Z"
-            fill="#123D2B"
+            fill="var(--brand-primary)"
           />
 
           <path
             d="M90 20C100 12 112 16 118 28C112 36 100 35 94 28Z"
-            fill="#123D2B"
+            fill="var(--brand-primary)"
           />
         </svg>
       </div>

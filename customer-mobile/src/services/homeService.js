@@ -124,4 +124,12 @@ export async function getHomeData({
       homeRequest = null;
     }
   }
+
+}
+
+export async function getCouponsForPlacement(placement) {
+  const response = await apiRequest(
+    `/home/coupons?placement=${encodeURIComponent(placement)}`
+  );
+  return getArray(response);
 }

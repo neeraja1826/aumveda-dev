@@ -269,6 +269,19 @@ export default function ProfileScreen() {
                   })
                 }
               />
+
+              <ProfileMenuItem
+                icon="notifications-outline"
+                title="Notifications"
+                subtitle="View order and account updates"
+                badgeText="Login"
+                onPress={() =>
+                  router.push({
+                    pathname: '/(auth)/login',
+                    params: { returnTo: '/notifications' },
+                  })
+                }
+              />
             </View>
 
             <Text style={styles.sectionTitle}>Support & About</Text>
@@ -506,8 +519,8 @@ export default function ProfileScreen() {
             <ProfileMenuItem
               icon="notifications-outline"
               title="Notifications"
-              subtitle="Manage order updates and wellness news"
-              onPress={() => router.push('/account/notifications')}
+              subtitle="View order and account updates"
+              onPress={() => router.push('/notifications')}
             />
 
             <ProfileMenuItem

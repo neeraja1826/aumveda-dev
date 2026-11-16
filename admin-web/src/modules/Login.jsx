@@ -49,8 +49,8 @@ export default function Login({ onLogin }) {
           min-height: 100vh;
           display: grid;
           grid-template-columns: 1fr 1fr;
-          background: #F8FAF7;
-          color: #123D2B;
+          background: var(--page-background);
+          color: var(--brand-primary);
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         .aum-login-brand {
@@ -59,7 +59,7 @@ export default function Login({ onLogin }) {
           justify-content: space-between;
           padding: 60px 54px;
           color: #FFFFFF;
-          background: linear-gradient(155deg, #123D2B 0%, #173F1D 45%, #092116 100%);
+          background: linear-gradient(155deg, var(--brand-primary) 0%, var(--brand-deep) 45%, #092116 100%);
           position: relative;
           overflow: hidden;
         }
@@ -99,7 +99,7 @@ export default function Login({ onLogin }) {
           border-radius: 13px;
           background: #F5F4E7;
           border: 1.5px solid #D9A52E;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', serif;
           font-size: 24px;
           font-weight: 700;
@@ -126,7 +126,7 @@ export default function Login({ onLogin }) {
           display: grid;
           place-items: center;
           padding: 40px 28px;
-          background: #F8FAF7;
+          background: var(--page-background);
         }
         .aum-login-card {
           width: 100%;
@@ -142,7 +142,7 @@ export default function Login({ onLogin }) {
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 28px;
           font-weight: 700;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
         .aum-login-muted {
           margin: 0 0 28px;
@@ -155,7 +155,7 @@ export default function Login({ onLogin }) {
           margin-bottom: 20px;
           font-size: 13px;
           font-weight: 600;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
         .aum-login-field input {
           box-sizing: border-box;
@@ -165,7 +165,7 @@ export default function Login({ onLogin }) {
           border: 1px solid #D5E4D2;
           border-radius: 11px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font: inherit;
           font-size: 13.5px;
           outline: none;
@@ -188,8 +188,8 @@ export default function Login({ onLogin }) {
           padding: 0 14px;
           border: 1px solid #D5E4D2;
           border-radius: 11px;
-          background: #F8FAF7;
-          color: #123D2B;
+          background: var(--page-background);
+          color: var(--brand-primary);
           font-size: 12.5px;
           font-weight: 600;
           cursor: pointer;
@@ -204,7 +204,7 @@ export default function Login({ onLogin }) {
           margin-top: 8px;
           border: 0;
           border-radius: 11px;
-          background: linear-gradient(135deg, #173F1D 0%, #123D2B 100%);
+          background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-primary) 100%);
           color: #FFFFFF;
           font-size: 14.5px;
           font-weight: 600;

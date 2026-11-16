@@ -31,6 +31,12 @@ Team endpoints:
     PATCH  /team/{user_id}/status
     PUT    /team/{user_id}/custom-roles
 
+Returns:
+    GET    /returns
+    GET    /returns/notifications
+    PATCH  /returns/notifications/{notification_id}/read
+    PATCH  /returns/{return_id}/status
+
 Custom roles:
     GET    /team/roles
     POST   /team/roles
@@ -68,6 +74,7 @@ from app.api.vendor import (
     products,
     profile,
     profile_change_requests,
+    returns as return_requests,
     shipping,
     staff_creation,
     team,
@@ -183,6 +190,10 @@ vendor_router.include_router(
 
 vendor_router.include_router(
     orders.router
+)
+
+vendor_router.include_router(
+    return_requests.router
 )
 
 

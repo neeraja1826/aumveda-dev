@@ -16,6 +16,9 @@ import {
   updateCoupon,
   updateCouponActiveStatus,
 } from '../services/adminService.js';
+import Pagination, {
+  ADMIN_LIST_PAGE_SIZE,
+} from '../components/Pagination.jsx';
 
 const COUPON_PLACEMENTS = [
   { value: 'home', label: 'Home Page' },
@@ -87,6 +90,7 @@ export default function Coupons() {
   const [coupons, setCoupons] = useState([]);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
+  const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -96,6 +100,16 @@ export default function Coupons() {
   const [form, setForm] = useState(emptyForm);
   const [reload, setReload] = useState(0);
   const [selectedCoupon, setSelectedCoupon] = useState(null);
+
+  const couponPageCount = Math.max(
+    1,
+    Math.ceil(coupons.length / ADMIN_LIST_PAGE_SIZE)
+  );
+  const couponPage = Math.min(currentPage, couponPageCount - 1);
+  const pageCoupons = coupons.slice(
+    couponPage * ADMIN_LIST_PAGE_SIZE,
+    (couponPage + 1) * ADMIN_LIST_PAGE_SIZE
+  );
 
   useEffect(() => {
     let active = true;
@@ -308,14 +322,24 @@ export default function Coupons() {
           <h2>Coupons</h2>
         </div>
 
-        <button
-          type="button"
-          className="coupon-primary-btn"
-          onClick={openCreateForm}
-        >
-          <Plus size={18} />
-          Create Coupon
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => setReload((current) => current + 1)}
+            disabled={loading}
+          >
+            Refresh
+          </button>
+          <button
+            type="button"
+            className="coupon-primary-btn"
+            onClick={openCreateForm}
+          >
+            <Plus size={18} />
+            Create Coupon
+          </button>
+        </div>
       </div>
 
       {error && <div className="error-state">{error}</div>}
@@ -352,14 +376,20 @@ export default function Coupons() {
           <Search size={18} />
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setCurrentPage(0);
+            }}
             placeholder="Search coupon code..."
           />
         </div>
 
         <select
           value={status}
-          onChange={(event) => setStatus(event.target.value)}
+          onChange={(event) => {
+            setStatus(event.target.value);
+            setCurrentPage(0);
+          }}
           aria-label="Filter coupons by status"
         >
           <option value="all">All coupons</option>
@@ -398,7 +428,7 @@ export default function Coupons() {
               </thead>
 
               <tbody>
-                {coupons.map((coupon) => (
+                {pageCoupons.map((coupon) => (
                   <tr key={coupon.id}>
                     <td>
                       <strong className="coupon-code">
@@ -481,6 +511,14 @@ export default function Coupons() {
             </table>
           </div>
         )}
+        <Pagination
+          totalItems={coupons.length}
+          currentPage={couponPage}
+          pageSize={ADMIN_LIST_PAGE_SIZE}
+          onPageChange={setCurrentPage}
+          loading={loading}
+          itemLabel="coupons"
+        />
       </div>
 
       {selectedCoupon && (
@@ -840,7 +878,7 @@ export default function Coupons() {
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 26px;
           font-weight: 700;
-          color: #123D2B;
+          color: var(--brand-primary);
         }
         .coupon-primary-btn {
           display: inline-flex;
@@ -848,9 +886,9 @@ export default function Coupons() {
           gap: 8px;
           min-height: 40px;
           padding: 0 18px;
-          border: 1px solid #123D2B;
+          border: 1px solid var(--brand-primary);
           border-radius: 11px;
-          background: linear-gradient(135deg, #173F1D 0%, #123D2B 100%);
+          background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-primary) 100%);
           color: #FFFFFF;
           font-size: 13px;
           font-weight: 600;
@@ -891,7 +929,7 @@ export default function Coupons() {
           height: 46px;
           border-radius: 12px;
           background: #E8F2E7;
-          color: #123D2B;
+          color: var(--brand-primary);
           border: 1px solid #CDE2CB;
           flex-shrink: 0;
         }
@@ -906,7 +944,7 @@ export default function Coupons() {
         }
         .coupon-stat-info strong {
           display: block;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 26px;
           font-weight: 700;
@@ -939,7 +977,7 @@ export default function Coupons() {
           border: 0;
           outline: none;
           font-size: 13px;
-          color: #123D2B;
+          color: var(--brand-primary);
           width: 100%;
         }
         .coupon-toolbar select {
@@ -948,7 +986,7 @@ export default function Coupons() {
           border: 1px solid #D5E4D2;
           border-radius: 10px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13px;
           font-weight: 500;
           appearance: none;
@@ -984,7 +1022,7 @@ export default function Coupons() {
           margin: 0;
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 18px;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-weight: 700;
         }
         .count-badge {
@@ -993,7 +1031,7 @@ export default function Coupons() {
           padding: 4px 12px;
           border-radius: 20px;
           background: #E8F2E7;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 12px;
           font-weight: 600;
           border: 1px solid #CDE2CB;
@@ -1035,7 +1073,7 @@ export default function Coupons() {
           font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
           font-size: 13px;
           font-weight: 700;
-          color: #123D2B;
+          color: var(--brand-primary);
           background: #F4F8F3;
           padding: 3px 8px;
           border-radius: 6px;
@@ -1064,7 +1102,7 @@ export default function Coupons() {
           border: 1px solid #D5E4D2;
           border-radius: 8px;
           background: #FAFDF9;
-          color: #123D2B;
+          color: var(--brand-primary);
           cursor: pointer;
           transition: all 0.18s ease;
         }
@@ -1086,9 +1124,9 @@ export default function Coupons() {
         }
         .coupon-actions button:hover,
         .coupon-view-btn:hover {
-          background: #123D2B;
+          background: var(--brand-primary);
           color: #FFFFFF;
-          border-color: #123D2B;
+          border-color: var(--brand-primary);
           transform: translateY(-1px);
         }
         .coupon-location-list {
@@ -1152,7 +1190,7 @@ export default function Coupons() {
         }
         .coupons-page .coupon-modal-header h3 {
           margin: 4px 0 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 21px;
         }
@@ -1196,7 +1234,7 @@ export default function Coupons() {
           border-radius: 9px;
           outline: none;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font: inherit;
           font-size: 13px;
           font-weight: 400;
@@ -1212,11 +1250,11 @@ export default function Coupons() {
           padding: 18px;
           border: 1px solid #E2ECE0;
           border-radius: 12px;
-          background: #F8FAF7;
+          background: var(--page-background);
         }
         .coupons-page .coupon-placement-section h4 {
           margin: 0;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13px;
         }
         .coupons-page .coupon-placement-section > p {
@@ -1271,7 +1309,7 @@ export default function Coupons() {
           border: 1px solid #D5E4D2;
           border-radius: 10px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13px;
           font-weight: 600;
         }
@@ -1289,7 +1327,7 @@ export default function Coupons() {
           padding: 15px 16px;
           border: 1px solid #E2ECE0;
           border-radius: 12px;
-          background: #F8FAF7;
+          background: var(--page-background);
         }
         .coupon-detail-item span,
         .coupon-detail-locations > span {
@@ -1302,7 +1340,7 @@ export default function Coupons() {
           letter-spacing: 0.04em;
         }
         .coupon-detail-item strong {
-          color: #123D2B;
+          color: var(--brand-primary);
           font-size: 13.5px;
           line-height: 1.4;
         }

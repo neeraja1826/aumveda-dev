@@ -23,9 +23,15 @@ import { useCart } from '../../src/context/CartContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { getProductById } from '../../src/services/productService';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import CouponApplication from '../../src/components/CouponApplication';
+import {
+  clearStoredCoupon,
+  getStoredCoupon,
+} from '../../src/services/couponStorage';
 
 export default function CartScreen() {
   const router = useRouter();
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [productDescriptions, setProductDescriptions] = useState({});
   const requestedDescriptions = useRef(new Set());
   const isMounted = useRef(true);
@@ -40,10 +46,44 @@ export default function CartScreen() {
     subtotal,
     isEmpty,
     isCartLoaded,
+    cartError,
+    reloadCart,
     increaseQuantity,
     decreaseQuantity,
     removeFromCart,
   } = useCart();
+
+  useEffect(() => {
+    let active = true;
+    getStoredCoupon()
+      .then((coupon) => {
+        if (active) setAppliedCoupon(coupon);
+      })
+      .catch((error) => {
+        console.error('Unable to load the applied coupon:', error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isCartLoaded || !isEmpty) return;
+    clearStoredCoupon()
+      .then(() => setAppliedCoupon(null))
+      .catch((error) => {
+        console.error('Unable to clear the applied coupon:', error);
+      });
+  }, [isCartLoaded, isEmpty]);
+
+  const cartCoupon = appliedCoupon?.placement === 'cart'
+    ? appliedCoupon
+    : null;
+  const couponDiscount = cartCoupon?.applied
+    ? Math.min(Number(subtotal || 0), Number(cartCoupon.discount_amount || 0))
+    : 0;
+  const cartTotal = Math.max(0, Number(subtotal || 0) - couponDiscount);
 
   // -----------------------------------------
   // WISHLIST
@@ -221,6 +261,27 @@ export default function CartScreen() {
     );
   }
 
+  if (cartError && isEmpty) {
+    return (
+      <SafeAreaView style={styles.emptyContainer} edges={['top', 'bottom']}>
+        <Text
+          style={styles.emptyDescription}
+          accessibilityLiveRegion="polite"
+        >
+          {cartError}
+        </Text>
+        <Pressable
+          style={styles.shopButtonWrapper}
+          onPress={reloadCart}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading your cart"
+        >
+          <Text style={styles.shopButtonText}>Try Again</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
   if (isEmpty) {
     return (
       <SafeAreaView style={styles.emptyContainer} edges={['top', 'bottom']}>
@@ -308,6 +369,30 @@ export default function CartScreen() {
           ✨ Complimentary Express Delivery included with your order!
         </Text>
       </View>
+
+      {cartError ? (
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginTop: 10,
+            padding: 12,
+            borderRadius: 12,
+            backgroundColor: '#FDECEC',
+          }}
+        >
+          <Text
+            style={{ color: '#842029' }}
+            accessibilityLiveRegion="polite"
+          >
+            {cartError}
+          </Text>
+          <Pressable onPress={reloadCart} accessibilityRole="button">
+            <Text style={{ color: '#0F442C', marginTop: 6, fontWeight: '700' }}>
+              Retry
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* ---------------------------------- */}
       {/* CART ITEMS */}
@@ -424,6 +509,13 @@ export default function CartScreen() {
             <Text style={styles.summaryEyebrow}>ORDER SUMMARY</Text>
           </View>
 
+          <CouponApplication
+            placement="cart"
+            subtotal={subtotal}
+            coupon={cartCoupon}
+            onChange={setAppliedCoupon}
+          />
+
           <View style={styles.summaryDetails}>
             <View style={styles.summaryDetailRow}>
               <Text style={styles.summaryLabel}>Total Items</Text>
@@ -436,6 +528,15 @@ export default function CartScreen() {
                 ₹{Number(subtotal || 0).toLocaleString('en-IN')}
               </Text>
             </View>
+
+            {couponDiscount > 0 ? (
+              <View style={styles.summaryDetailRow}>
+                <Text style={styles.summaryLabel}>Coupon discount</Text>
+                <Text style={styles.couponDiscount}>
+                  -₹{couponDiscount.toLocaleString('en-IN')}
+                </Text>
+              </View>
+            ) : null}
 
             <View style={styles.summaryDetailRow}>
               <Text style={styles.summaryLabel}>Standard Delivery</Text>
@@ -450,7 +551,7 @@ export default function CartScreen() {
           <View style={styles.summaryTotalRow}>
             <Text style={styles.totalLabel}>Estimated Total</Text>
             <Text style={styles.summaryPrice}>
-              ₹{Number(subtotal || 0).toLocaleString('en-IN')}
+              ₹{cartTotal.toLocaleString('en-IN')}
             </Text>
           </View>
 
@@ -790,6 +891,13 @@ const styles = StyleSheet.create({
     fontFamily: 'InterSemiBold',
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+
+  couponDiscount: {
+    fontSize: 13,
+    fontFamily: 'InterSemiBold',
+    fontWeight: '700',
+    color: '#9BE3B3',
   },
 
   freeBadge: {

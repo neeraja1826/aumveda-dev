@@ -10,6 +10,7 @@ import {
 } from '../services/adminService.js';
 
 const statuses = ['pending', 'approved', 'rejected', 'suspended'];
+const VENDOR_DETAILS_PAGE_SIZE = 10;
 
 const emptyVendorForm = {
   business_name: '',
@@ -167,7 +168,7 @@ export default function Vendors() {
     return () => {
       active = false;
     };
-  }, [vendorId]);
+  }, [vendorId, reload]);
 
   /*
    * Back to vendor list
@@ -362,6 +363,7 @@ export default function Vendors() {
   if (vendorId) {
     return (
       <VendorDetailsPage
+        key={vendorId}
         selectedVendor={
           selectedVendor?.id === vendorId
             ? selectedVendor
@@ -371,6 +373,7 @@ export default function Vendors() {
         loading={detailsLoading}
         error={detailsError}
         onBack={closeVendorDetails}
+        onRefresh={() => setReload((current) => current + 1)}
       />
     );
   }
@@ -407,6 +410,15 @@ export default function Vendors() {
         </div>
 
         <div className="vendor-actions-group">
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => setReload((current) => current + 1)}
+            disabled={loading}
+          >
+            Refresh
+          </button>
+
           <button
             type="button"
             className="vendor-create-button"
@@ -586,7 +598,11 @@ function VendorDetailsPage({
   loading,
   error,
   onBack,
+  onRefresh,
 }) {
+  const [productPage, setProductPage] = useState(0);
+  const [orderPage, setOrderPage] = useState(0);
+  const [notificationPage, setNotificationPage] = useState(0);
   const details = vendorDetails || {};
   const vendor =
     details.vendor ||
@@ -616,6 +632,14 @@ function VendorDetailsPage({
   const orderItems = Array.isArray(details.order_items)
     ? details.order_items
     : [];
+  const visibleProducts = products.slice(
+    productPage * VENDOR_DETAILS_PAGE_SIZE,
+    (productPage + 1) * VENDOR_DETAILS_PAGE_SIZE
+  );
+  const visibleOrderItems = orderItems.slice(
+    orderPage * VENDOR_DETAILS_PAGE_SIZE,
+    (orderPage + 1) * VENDOR_DETAILS_PAGE_SIZE
+  );
   const ordersById = new Map(
     orders.map((order) => [String(order.id), order])
   );
@@ -638,6 +662,15 @@ function VendorDetailsPage({
           onClick={onBack}
         >
           ← Back to Vendors
+        </button>
+
+        <button
+          type="button"
+          className="primary-button"
+          onClick={onRefresh}
+          disabled={loading}
+        >
+          Refresh
         </button>
 
       </div>
@@ -918,6 +951,15 @@ function VendorDetailsPage({
             description="Products currently associated with this vendor business."
             count={products.length}
             empty="No products found for this vendor."
+            footer={
+              <VendorDetailPagination
+                page={productPage}
+                pageSize={VENDOR_DETAILS_PAGE_SIZE}
+                total={products.length}
+                label="products"
+                onPageChange={setProductPage}
+              />
+            }
           >
 
             {products.length > 0 && (
@@ -939,7 +981,7 @@ function VendorDetailsPage({
 
                 <tbody>
 
-                  {products.map((product) => {
+                  {visibleProducts.map((product) => {
                     const images = Array.isArray(product.images)
                       ? product.images
                       : [];
@@ -1137,6 +1179,15 @@ function VendorDetailsPage({
             description="Products in orders containing items from this vendor."
             count={orders.length}
             empty="No orders found for this vendor."
+            footer={
+              <VendorDetailPagination
+                page={orderPage}
+                pageSize={VENDOR_DETAILS_PAGE_SIZE}
+                total={orderItems.length}
+                label="order items"
+                onPageChange={setOrderPage}
+              />
+            }
           >
 
             {orderItems.length > 0 && (
@@ -1159,7 +1210,7 @@ function VendorDetailsPage({
 
                 <tbody>
 
-                  {orderItems.map((item, index) => {
+                  {visibleOrderItems.map((item, index) => {
                     const order =
                       ordersById.get(String(item.order_id)) || {};
                     const product =
@@ -1177,7 +1228,9 @@ function VendorDetailsPage({
                       <tr
                         key={
                           item.id ||
-                          `${item.order_id}-${item.product_id}-${index}`
+                          `${item.order_id}-${item.product_id}-${
+                            orderPage * VENDOR_DETAILS_PAGE_SIZE + index
+                          }`
                         }
                       >
                         <td>
@@ -1236,7 +1289,13 @@ function VendorDetailsPage({
 
           <VendorActivitySection
             id="vendor-notifications"
-            activities={vendor.requests_activity}
+            activities={
+              details.requests_activity ??
+              vendor.requests_activity
+            }
+            page={notificationPage}
+            pageSize={VENDOR_DETAILS_PAGE_SIZE}
+            onPageChange={setNotificationPage}
           />
 
         </>
@@ -1250,10 +1309,20 @@ function VendorDetailsPage({
 }
 
 
-function VendorActivitySection({ id, activities }) {
+function VendorActivitySection({
+  id,
+  activities,
+  page,
+  pageSize,
+  onPageChange,
+}) {
   const entries = Array.isArray(activities)
     ? activities
     : [];
+  const visibleEntries = entries.slice(
+    page * pageSize,
+    (page + 1) * pageSize
+  );
 
   return (
     <section
@@ -1272,7 +1341,7 @@ function VendorActivitySection({ id, activities }) {
         </div>
       ) : (
         <div className="vendor-activity-list">
-          {entries.map((activity, index) => {
+          {visibleEntries.map((activity, index) => {
             const statusValue = String(
               activity.status || ''
             ).toLowerCase();
@@ -1298,7 +1367,9 @@ function VendorActivitySection({ id, activities }) {
 
             return (
               <div
-                key={`${activity.source || 'activity'}-${activity.id || index}`}
+                key={`${activity.source || 'activity'}-${
+                  activity.id || page * pageSize + index
+                }`}
                 className="vendor-activity-item"
               >
                 <div className="vendor-activity-main">
@@ -1364,6 +1435,14 @@ function VendorActivitySection({ id, activities }) {
           })}
         </div>
       )}
+
+      <VendorDetailPagination
+        page={page}
+        pageSize={pageSize}
+        total={entries.length}
+        label="notifications"
+        onPageChange={onPageChange}
+      />
     </section>
   );
 }
@@ -1462,6 +1541,56 @@ function SummaryRow({
   );
 }
 
+function VendorDetailPagination({
+  page,
+  pageSize,
+  total,
+  label,
+  onPageChange,
+}) {
+  const pageCount = Math.ceil(total / pageSize);
+
+  if (pageCount <= 1) return null;
+
+  const firstItem = page * pageSize + 1;
+  const lastItem = Math.min((page + 1) * pageSize, total);
+
+  return (
+    <nav
+      className="vendor-detail-pagination"
+      aria-label={`${label} pagination`}
+    >
+      <span>
+        Showing {firstItem}–{lastItem} of {total} {label}
+      </span>
+
+      <div>
+        <button
+          type="button"
+          onClick={() => onPageChange((current) => current - 1)}
+          disabled={page === 0}
+          aria-label={`Previous ${label} page`}
+        >
+          Previous
+        </button>
+
+        <span className="vendor-detail-pagination-page">
+          Page {page + 1} of {pageCount}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => onPageChange((current) => current + 1)}
+          disabled={page >= pageCount - 1}
+          aria-label={`Next ${label} page`}
+        >
+          Next
+        </button>
+      </div>
+    </nav>
+  );
+}
+
 function DetailTableCard({
   id,
   title,
@@ -1469,6 +1598,7 @@ function DetailTableCard({
   count,
   empty,
   children,
+  footer,
 }) {
   return (
     <section
@@ -1510,6 +1640,8 @@ function DetailTableCard({
         </div>
 
       )}
+
+      {footer}
 
     </section>
   );
@@ -1999,7 +2131,7 @@ function VendorStyles() {
 
       .vendor-hero-content h2 {
         margin: 0;
-        color: #123D2B;
+        color: var(--brand-primary);
         font-family: 'Playfair Display', Georgia, serif;
         font-size: 26px;
         font-weight: 700;
@@ -2015,7 +2147,7 @@ function VendorStyles() {
         border-radius: 9999px;
         background: #FFFFFF;
         border: 1px solid #D8E7D4;
-        color: #123D2B;
+        color: var(--brand-primary);
         font-size: 12.5px;
         font-weight: 700;
         box-shadow: 0 2px 6px rgba(18, 61, 43, 0.04);
@@ -2059,7 +2191,7 @@ function VendorStyles() {
         border-radius: 12px;
         border: 1px solid #D5E4D2;
         background: #FFFFFF;
-        color: #123D2B;
+        color: var(--brand-primary);
         font-size: 13px;
         transition: border-color 0.15s, box-shadow 0.15s;
         box-sizing: border-box;
@@ -2085,7 +2217,7 @@ function VendorStyles() {
         padding: 9px 18px;
         border-radius: 11px;
         border: 1px solid #144422;
-        background: #173F1D;
+        background: var(--brand-deep);
         color: #FFFFFF;
         font-size: 13px;
         font-weight: 600;
@@ -2194,7 +2326,7 @@ function VendorStyles() {
         display: grid;
         place-items: center;
         background: #DCECD9;
-        color: #123D2B;
+        color: var(--brand-primary);
         font-weight: 700;
         font-size: 14px;
       }
@@ -2206,7 +2338,7 @@ function VendorStyles() {
       }
 
       .vendor-name {
-        color: #123D2B;
+        color: var(--brand-primary);
         font-size: 13.5px;
         font-weight: 700;
         line-height: 1.3;
@@ -2219,13 +2351,13 @@ function VendorStyles() {
       }
 
       .vendor-contact-email {
-        color: #123D2B;
+        color: var(--brand-primary);
         font-size: 13px;
         font-weight: 500;
       }
 
       .td-commission strong {
-        color: #123D2B;
+        color: var(--brand-primary);
         font-weight: 600;
         font-size: 13px;
       }
@@ -2246,7 +2378,7 @@ function VendorStyles() {
         border: 1px solid #D1E0D1 !important;
         border-radius: 10px !important;
         background-color: #F7FAF6 !important;
-        color: #123D2B !important;
+        color: var(--brand-primary) !important;
         font-size: 12px !important;
         font-weight: 600 !important;
         cursor: pointer !important;
@@ -2314,6 +2446,10 @@ function VendorStyles() {
 
       .vendor-details-topbar {
         display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
       }
 
       .vendor-back-button {
@@ -2321,7 +2457,7 @@ function VendorStyles() {
         border: 1px solid #d5e0d5;
         border-radius: 8px;
         background: #fff;
-        color: #123d2b;
+        color: var(--brand-primary);
         font-size: 12px;
         font-weight: 600;
         cursor: pointer;
@@ -2365,7 +2501,7 @@ function VendorStyles() {
         display: grid;
         place-items: center;
         background: #DCECD9;
-        color: #123D2B;
+        color: var(--brand-primary);
         font-size: 24px;
         font-weight: 700;
       }
@@ -2380,7 +2516,7 @@ function VendorStyles() {
 
       .vendor-details-hero h1 {
         margin: 0;
-        color: #123D2B;
+        color: var(--brand-primary);
         font-family: 'Playfair Display', Georgia, serif;
         font-size: 26px;
         font-weight: 700;
@@ -2485,7 +2621,7 @@ function VendorStyles() {
       .vendor-stat-card strong {
         display: block;
         margin: 6px 0 4px;
-        color: #123D2B;
+        color: var(--brand-primary);
         font-size: 26px;
         font-weight: 700;
       }
@@ -2520,7 +2656,7 @@ function VendorStyles() {
 
       .vendor-section-heading h2 {
         margin: 0;
-        color: #123D2B;
+        color: var(--brand-primary);
         font-family: 'Playfair Display', Georgia, serif;
         font-size: 18px;
         font-weight: 700;
@@ -2543,7 +2679,7 @@ function VendorStyles() {
         padding: 0 8px;
         border-radius: 8px;
         background: #edf5ec;
-        color: #123d2b;
+        color: var(--brand-primary);
         font-size: 12px;
         font-weight: 700;
       }
@@ -2581,7 +2717,7 @@ function VendorStyles() {
         margin-top: 18px;
         padding: 14px;
         border-radius: 10px;
-        background: #f8faf7;
+        background: var(--page-background);
       }
 
       .vendor-description-block p {
@@ -2611,7 +2747,7 @@ function VendorStyles() {
       }
 
       .vendor-earnings-list strong {
-        color: #123d2b;
+        color: var(--brand-primary);
         font-size: 13px;
       }
 
@@ -2621,6 +2757,50 @@ function VendorStyles() {
         text-align: center;
       }
 
+      .vendor-detail-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid #edf0ed;
+        color: #77747a;
+        font-size: 12px;
+      }
+
+      .vendor-detail-pagination > div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .vendor-detail-pagination button {
+        min-height: 34px;
+        padding: 0 11px;
+        border: 1px solid #d5e0d5;
+        border-radius: 7px;
+        background: #fff;
+        color: var(--brand-primary);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .vendor-detail-pagination button:hover:not(:disabled) {
+        border-color: #276345;
+        background: #f5f9f5;
+      }
+
+      .vendor-detail-pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .vendor-detail-pagination-page {
+        color: #555b56;
+        white-space: nowrap;
+      }
 
       .vendor-activity-list {
         display: flex;
@@ -2652,7 +2832,7 @@ function VendorStyles() {
       }
 
       .vendor-activity-title-row strong {
-        color: #123d2b;
+        color: var(--brand-primary);
         font-size: 13px;
       }
 
@@ -2738,7 +2918,7 @@ function VendorStyles() {
       .vendor-activity-status-pill.status-active,
       .vendor-activity-status-pill.status-published {
         background: #e8f2e7;
-        color: #123d2b;
+        color: var(--brand-primary);
       }
 
       .vendor-activity-status-pill.status-rejected,
@@ -2795,7 +2975,7 @@ function VendorStyles() {
 
       .vendor-modal-header h3 {
         margin: 0;
-        color: #123d2b;
+        color: var(--brand-primary);
         font-size: 20px;
       }
 
@@ -2828,7 +3008,7 @@ function VendorStyles() {
 
       .vendor-form-section h4 {
         margin: 0 0 16px;
-        color: #123d2b;
+        color: var(--brand-primary);
         font-size: 14px;
       }
 
@@ -2884,7 +3064,7 @@ function VendorStyles() {
         padding: 10px 18px;
         border: 0;
         border-radius: 7px;
-        background: #123d2b;
+        background: var(--brand-primary);
         color: #fff;
         font-weight: 600;
         cursor: pointer;
@@ -2919,14 +3099,14 @@ function VendorStyles() {
         justify-content: center;
         border-radius: 50%;
         background: #e8f2e7;
-        color: #123d2b;
+        color: var(--brand-primary);
         font-size: 24px;
         font-weight: 700;
       }
 
       .vendor-credentials-success h4 {
         margin: 0 0 18px;
-        color: #123d2b;
+        color: var(--brand-primary);
         font-size: 18px;
       }
 
@@ -2948,7 +3128,7 @@ function VendorStyles() {
       }
 
       .vendor-credential-row strong {
-        color: #123d2b;
+        color: var(--brand-primary);
         font-size: 13px;
         word-break: break-all;
       }
@@ -3012,6 +3192,16 @@ function VendorStyles() {
         .vendor-credential-row {
           flex-direction: column;
           gap: 5px;
+        }
+
+        .vendor-detail-pagination {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .vendor-detail-pagination > div {
+          width: 100%;
+          justify-content: space-between;
         }
 
       }

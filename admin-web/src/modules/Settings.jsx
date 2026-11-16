@@ -147,7 +147,7 @@ export default function Settings() {
           border: 1px solid #D5E4D2;
           border-radius: 10px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font: inherit;
           font-size: 13px;
           transition: border-color 0.15s, box-shadow 0.15s;
@@ -170,7 +170,7 @@ export default function Settings() {
           border: 1px solid #D5E4D2;
           border-radius: 10px;
           background: #FFFFFF;
-          color: #123D2B;
+          color: var(--brand-primary);
           font: inherit;
           font-size: 12.5px;
           font-weight: 600;
@@ -180,7 +180,7 @@ export default function Settings() {
 
         .settings-page .settings-refresh:hover,
         .settings-page .settings-retry:hover {
-          background: #F8FAF7;
+          background: var(--page-background);
           border-color: #276345;
           transform: translateY(-1px);
         }

@@ -524,7 +524,7 @@ export default function Notifications() {
   border: 1px solid #D5E4D2;
   border-radius: 9px;
   background: #FFFFFF;
-  color: #123D2B;
+  color: var(--brand-primary);
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
@@ -582,7 +582,7 @@ export default function Notifications() {
 
 .notification-modal-header h2 {
   margin: 0;
-  color: #123D2B;
+  color: var(--brand-primary);
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 22px;
   font-weight: 700;

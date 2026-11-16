@@ -172,38 +172,48 @@ export default function Orders() {
         description="Monitor prescription and wellness deliveries, process order shipments, and oversee customer fulfillment."
         badgeText={`${total} Total Orders`}
         doodle="tonic"
-      />
+      >
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => setReload((current) => current + 1)}
+          disabled={loading}
+        >
+          Refresh
+        </button>
+      </AyurvedicHeroBanner>
 
       <div className="module-card">
         <div className="order-summary-grid">
-          <div className="order-summary-card">
+          <div className="order-summary-card" data-order-status="pending">
             <span>Pending</span>
             <strong>{orderStatusSummary.pending}</strong>
           </div>
 
-          <div className="order-summary-card">
+          <div className="order-summary-card" data-order-status="processing">
             <span>Processing</span>
             <strong>{orderStatusSummary.processing}</strong>
           </div>
 
-          <div className="order-summary-card">
+          <div className="order-summary-card" data-order-status="shipped">
             <span>Shipped</span>
             <strong>{orderStatusSummary.shipped}</strong>
           </div>
 
-          <div className="order-summary-card">
+          <div className="order-summary-card" data-order-status="delivered">
             <span>Delivered</span>
             <strong>{orderStatusSummary.delivered}</strong>
           </div>
         </div>
 
         <div className="module-toolbar">
-          <span>
+          <span className="orders-count">
             {loading ? 'Loading orders…' : `${total} orders`}
           </span>
 
           <input
             type="search"
+            className="orders-search"
             value={search}
             placeholder="Search order number..."
             aria-label="Search orders"
@@ -214,6 +224,7 @@ export default function Orders() {
           />
 
           <select
+            className="orders-status-filter"
             value={status}
             onChange={(event) => {
               setStatus(event.target.value);
@@ -231,6 +242,7 @@ export default function Orders() {
           </select>
 
           <select
+            className="orders-payment-filter"
             value={paymentMethod}
             onChange={(event) => {
               setPaymentMethod(event.target.value);
@@ -298,24 +310,19 @@ export default function Orders() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Order</th>
                   <th>Products</th>
+                  <th>Order</th>
                   <th>Customer</th>
                   <th>Total</th>
                   <th>Payment Status</th>
                   <th>Date</th>
                   <th>Status</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
 
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id}>
-                    <td>
-                      {item.order_number || item.id}
-                    </td>
-
                     <td>
                       <div className="order-products-cell">
                         {(item.order_items || [])
@@ -359,9 +366,21 @@ export default function Orders() {
                     </td>
 
                     <td>
+                      <button
+                        type="button"
+                        className="order-number-button"
+                        onClick={() => openOrderDetails(item)}
+                        aria-label={`View details for order ${
+                          item.order_number || item.id
+                        }`}
+                      >
+                        {item.order_number || item.id}
+                      </button>
+                    </td>
+
+                    <td>
                       {item.recipient_name ||
                         item.customer_name ||
-                        item.customer_id ||
                         '—'}
                     </td>
 
@@ -419,17 +438,6 @@ export default function Orders() {
                       </select>
                     </td>
 
-                    <td>
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() =>
-                          openOrderDetails(item)
-                        }
-                      >
-                        View details
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -835,35 +843,117 @@ export default function Orders() {
         }
 
         .orders-page .order-summary-card {
+          position: relative;
+          display: flex;
+          min-height: 88px;
+          flex-direction: column;
+          justify-content: space-between;
           padding: 18px;
-          background: #fff;
-          border: 1px solid #e4ebe4;
-          border-radius: 12px;
+          overflow: hidden;
+          background: linear-gradient(145deg, #fff 0%, #f8fbf7 100%);
+          border: 1px solid #e2ece0;
+          border-radius: 16px;
+          box-shadow: 0 5px 16px -10px rgba(18, 61, 43, 0.3);
         }
 
         .orders-page .order-summary-card span {
           display: block;
-          margin-bottom: 10px;
-          color: #68756c;
+          color: #627268;
           font-size: 13px;
+          font-weight: 600;
         }
 
         .orders-page .order-summary-card strong {
-          color: #244b36;
+          color: var(--brand-primary);
           font-size: 26px;
+          line-height: 1;
+        }
+
+        .orders-page .order-summary-card::after {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 4px;
+          height: 100%;
+          background: #8bad81;
+          content: '';
+        }
+
+        .orders-page .order-summary-card[data-order-status="pending"]::after {
+          background: #d7a24a;
+        }
+
+        .orders-page .order-summary-card[data-order-status="processing"]::after {
+          background: #8199c4;
+        }
+
+        .orders-page .order-summary-card[data-order-status="shipped"]::after {
+          background: #65a69a;
+        }
+
+        .orders-page .order-summary-card[data-order-status="delivered"]::after {
+          background: #6ea778;
         }
 
         .orders-page .module-toolbar {
-          display: flex;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: minmax(100px, 0.55fr) minmax(220px, 1.4fr) minmax(160px, 0.8fr) minmax(190px, 0.95fr);
+          justify-content: stretch;
           align-items: center;
-          flex-wrap: wrap;
           gap: 12px;
+          padding: 14px 18px;
+          background: linear-gradient(180deg, #fff 0%, #fbfcfa 100%);
         }
 
         .orders-page .module-toolbar > span {
-          color: #77747a;
+          color: #496052;
           font-size: 12px;
+          font-weight: 600;
+        }
+
+        .orders-page .orders-count {
+          display: inline-flex;
+          align-items: center;
+          min-height: 40px;
+          white-space: nowrap;
+        }
+
+        .orders-page .module-toolbar input,
+        .orders-page .module-toolbar select {
+          width: 100%;
+          min-width: 0;
+          min-height: 42px;
+          background-color: #fff;
+          border-color: #d5e4d2;
+          border-radius: 11px;
+          box-shadow: 0 2px 6px rgba(18, 61, 43, 0.03);
+        }
+
+        .orders-page .module-toolbar input:hover,
+        .orders-page .module-toolbar select:hover {
+          border-color: #a9c7a6;
+        }
+
+        .orders-page .table-scroll {
+          border-top: 1px solid #edf3ec;
+        }
+
+        .orders-page .data-table {
+          min-width: 980px;
+        }
+
+        .orders-page .data-table th:first-child,
+        .orders-page .data-table td:first-child {
+          min-width: 240px;
+        }
+
+        .orders-page .order-number-button {
+          white-space: nowrap;
+          font-weight: 600;
+        }
+
+        .orders-page .data-table tbody tr:hover {
+          background: linear-gradient(90deg, #f5faf4 0%, #fff 100%);
         }
 
         .orders-page .order-products-cell {
@@ -1083,7 +1173,7 @@ export default function Orders() {
 
         .order-item > strong {
           white-space: nowrap;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-weight: 700;
         }
 
@@ -1099,7 +1189,7 @@ export default function Orders() {
         .order-price-summary .order-grand-total {
           padding-top: 14px;
           border-top: 1px solid #EDF3EC;
-          color: #123D2B;
+          color: var(--brand-primary);
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 20px;
           font-weight: 700;
@@ -1112,6 +1202,7 @@ export default function Orders() {
 
         @media (max-width: 620px) {
           .orders-page .module-toolbar {
+            grid-template-columns: minmax(0, 1fr);
             align-items: stretch;
           }
 
@@ -1125,10 +1216,26 @@ export default function Orders() {
           .orders-page .order-summary-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
+            margin: 12px 12px 18px;
           }
 
           .orders-page .order-summary-card {
-            padding: 14px;
+            min-height: 80px;
+            padding: 14px 16px;
+          }
+
+          .orders-page .module-toolbar {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 620px) {
+          .orders-page .module-toolbar {
+            grid-template-columns: minmax(0, 1fr);
+          }
+
+          .orders-page .orders-count {
+            min-height: auto;
           }
         }
 

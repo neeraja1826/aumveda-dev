@@ -5,7 +5,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.api.routes.orders import get_current_customer_id
+from app.api.routes.orders import (
+    execute_supabase_read,
+    get_current_customer_id,
+)
 from app.core.supabase import supabase
 
 router = APIRouter(
@@ -184,4 +187,65 @@ def get_product_reviews(product_id: UUID):
         raise HTTPException(
             status_code=500,
             detail="Unable to retrieve product reviews.",
+        ) from exc
+
+
+@router.get("/order/{order_id}")
+def get_customer_order_reviews(
+    order_id: UUID,
+    customer_id: str = Depends(get_current_customer_id),
+):
+    try:
+        order_result = execute_supabase_read(
+            supabase.table("orders")
+            .select("id")
+            .eq("id", str(order_id))
+            .eq("customer_id", str(customer_id))
+            .limit(1)
+        )
+
+        if not order_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Order not found.",
+            )
+
+        order_items_result = execute_supabase_read(
+            supabase.table("order_items")
+            .select("id")
+            .eq("order_id", str(order_id))
+        )
+        order_item_ids = [
+            str(item["id"])
+            for item in order_items_result.data or []
+            if item.get("id")
+        ]
+
+        reviews = []
+        if order_item_ids:
+            reviews_result = execute_supabase_read(
+                supabase.table("product_reviews")
+                .select(
+                    "id, order_item_id, product_id, rating, title, "
+                    "review_text, created_at"
+                )
+                .eq("customer_id", str(customer_id))
+                .in_("order_item_id", order_item_ids)
+                .order("created_at", desc=True)
+            )
+            reviews = reviews_result.data or []
+
+        return {
+            "status": "success",
+            "count": len(reviews),
+            "data": reviews,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Failed to retrieve customer order reviews")
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to retrieve order reviews.",
         ) from exc

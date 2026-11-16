@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function AyurvedicLeafDoodle({ size = 32, color = '#123D2B', opacity = 1, className = '' }) {
+export function AyurvedicLeafDoodle({ size = 32, color = 'var(--brand-primary)', opacity = 1, className = '' }) {
   return (
     <svg
       width={size}
@@ -21,7 +21,7 @@ export function AyurvedicLeafDoodle({ size = 32, color = '#123D2B', opacity = 1,
   );
 }
 
-export function MortarPestleDoodle({ size = 32, color = '#123D2B', opacity = 1, className = '' }) {
+export function MortarPestleDoodle({ size = 32, color = 'var(--brand-primary)', opacity = 1, className = '' }) {
   return (
     <svg
       width={size}
@@ -44,7 +44,7 @@ export function MortarPestleDoodle({ size = 32, color = '#123D2B', opacity = 1, 
   );
 }
 
-export function LotusFlowerDoodle({ size = 32, color = '#123D2B', opacity = 1, className = '' }) {
+export function LotusFlowerDoodle({ size = 32, color = 'var(--brand-primary)', opacity = 1, className = '' }) {
   return (
     <svg
       width={size}
@@ -66,7 +66,7 @@ export function LotusFlowerDoodle({ size = 32, color = '#123D2B', opacity = 1, c
   );
 }
 
-export function TeaCupDoodle({ size = 32, color = '#123D2B', opacity = 1, className = '' }) {
+export function TeaCupDoodle({ size = 32, color = 'var(--brand-primary)', opacity = 1, className = '' }) {
   return (
     <svg
       width={size}
@@ -90,7 +90,7 @@ export function TeaCupDoodle({ size = 32, color = '#123D2B', opacity = 1, classN
   );
 }
 
-export function BottleTonicDoodle({ size = 32, color = '#123D2B', opacity = 1, className = '' }) {
+export function BottleTonicDoodle({ size = 32, color = 'var(--brand-primary)', opacity = 1, className = '' }) {
   return (
     <svg
       width={size}
@@ -124,11 +124,11 @@ export function AyurvedicHeroBanner({
   children,
 }) {
   const doodleIcons = {
-    leaf: <AyurvedicLeafDoodle size={108} color="#123D2B" opacity={0.14} />,
-    mortar: <MortarPestleDoodle size={108} color="#123D2B" opacity={0.14} />,
-    flower: <LotusFlowerDoodle size={108} color="#123D2B" opacity={0.14} />,
-    tea: <TeaCupDoodle size={108} color="#123D2B" opacity={0.14} />,
-    tonic: <BottleTonicDoodle size={108} color="#123D2B" opacity={0.14} />,
+    leaf: <AyurvedicLeafDoodle size={108} color="var(--brand-primary)" opacity={0.14} />,
+    mortar: <MortarPestleDoodle size={108} color="var(--brand-primary)" opacity={0.14} />,
+    flower: <LotusFlowerDoodle size={108} color="var(--brand-primary)" opacity={0.14} />,
+    tea: <TeaCupDoodle size={108} color="var(--brand-primary)" opacity={0.14} />,
+    tonic: <BottleTonicDoodle size={108} color="var(--brand-primary)" opacity={0.14} />,
   };
 
   return (

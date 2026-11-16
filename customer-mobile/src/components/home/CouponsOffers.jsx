@@ -9,38 +9,8 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-
-const APPLIED_COUPON_STORAGE_KEY = '@aumveda_applied_coupon';
-
-// Matches the exact offers shown in the reference image
-export const FALLBACK_COUPONS = [
-  {
-    id: 'shop40',
-    code: 'SHOP40',
-    discount_type: 'percentage',
-    discount_value: 40,
-    description: 'Get flat 40% off on orders above 5999',
-    min_order_value: 5999,
-  },
-  {
-    id: 'diwali26',
-    code: 'DIWALI26',
-    discount_type: 'percentage',
-    discount_value: 26,
-    description: 'Get flat 26% off on your diwali purchase on orders above 799',
-    min_order_value: 799,
-  },
-  {
-    id: 'welcome10',
-    code: 'WELCOME10',
-    discount_type: 'percentage',
-    discount_value: 10,
-    description: 'Welcome discount',
-    min_order_value: 499,
-  },
-];
+import { saveCouponCode } from '../../services/couponStorage';
 
 // Color themes per card matching reference screenshot: Mint Green, Lavender, Buttery Gold
 const COUPON_THEMES = [
@@ -75,10 +45,7 @@ export default function CouponsOffers({ coupons = [] }) {
     };
   }, []);
 
-  const activeCoupons =
-    Array.isArray(coupons) && coupons.length > 0
-      ? coupons
-      : FALLBACK_COUPONS;
+  const activeCoupons = Array.isArray(coupons) ? coupons : [];
 
   const handleCopy = useCallback(async (code, coupon) => {
     try {
@@ -92,27 +59,14 @@ export default function CouponsOffers({ coupons = [] }) {
         setCopiedCode(null);
       }, 2500);
 
-      // Save to storage so checkout can consume it
-      try {
-        await AsyncStorage.setItem(
-          APPLIED_COUPON_STORAGE_KEY,
-          JSON.stringify({
-            code,
-            discount_type: coupon?.discount_type,
-            discount_value: coupon?.discount_value,
-            min_order_value: coupon?.min_order_value,
-          })
-        );
-      } catch {
-        // storage fallback
-      }
+      await saveCouponCode(code);
 
       setFeedbackToast(`Coupon ${code} copied!`);
       setTimeout(() => setFeedbackToast(''), 2500);
 
       Alert.alert(
         'Coupon Copied',
-        `${code} copied to clipboard! Use it at checkout to claim your offer.`
+        `${code} copied. Apply it only where this coupon is enabled.`
       );
     } catch {
       Alert.alert('Error', 'Unable to copy coupon code.');

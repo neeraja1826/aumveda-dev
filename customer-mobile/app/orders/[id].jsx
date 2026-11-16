@@ -22,6 +22,10 @@ import {
   getOrder,
   getOrderReturnRequests,
 } from '../../src/services/orderService';
+import {
+  getCustomerOrderReviews,
+  submitProductReview,
+} from '../../src/services/reviewService';
 import { colors } from '../../src/theme/colors';
 
 function formatAmount(value, currency = 'INR') {
@@ -79,18 +83,19 @@ function getStatusTheme(statusRaw) {
   };
 }
 
-function getReturnStatusTheme(statusRaw) {
+function getReturnStatusTheme(statusRaw, requestType) {
   const status = String(statusRaw || '').trim().toLowerCase();
   const labels = {
-    requested: 'Request received',
-    under_review: 'Under review',
-    approved: 'Approved',
-    rejected: 'Rejected',
+    requested: 'Request submitted',
+    under_review: 'Request processing',
+    approved: 'Request processing',
+    rejected: 'Request declined',
     pickup_scheduled: 'Pickup scheduled',
     item_received: 'Item received',
-    replacement_processing: 'Replacement processing',
+    replacement_processing: 'Exchange processing',
     refund_processing: 'Refund processing',
-    completed: 'Completed',
+    completed:
+      requestType === 'replacement' ? 'Exchange complete' : 'Refund complete',
     cancelled: 'Cancelled',
   };
 
@@ -134,6 +139,89 @@ function getReturnStatusTheme(statusRaw) {
     color: '#A87E34',
     icon: 'time-outline',
   };
+}
+
+function ReturnRequestTracking({ request }) {
+  const isExchange = request.request_type === 'replacement';
+  const status = String(request.status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  const steps = [
+    'Request submitted',
+    'Pickup scheduled',
+    'Item received',
+    isExchange ? 'Exchange processing' : 'Refund processing',
+    isExchange ? 'Exchange complete' : 'Refund complete',
+  ];
+  const activeStepByStatus = {
+    requested: 0,
+    under_review: 0,
+    approved: 0,
+    pickup_scheduled: 1,
+    item_received: 2,
+    replacement_processing: 3,
+    refund_processing: 3,
+    completed: 4,
+  };
+  const isTerminal = status === 'rejected' || status === 'cancelled';
+  const activeStep = activeStepByStatus[status] ?? 0;
+
+  return (
+    <View style={styles.returnTracking}>
+      <Text style={styles.returnTrackingTitle}>
+        {isExchange ? 'Exchange tracking' : 'Refund tracking'}
+      </Text>
+      {isTerminal ? (
+        <Text style={styles.returnTrackingTerminal}>
+          {status === 'rejected'
+            ? 'This request could not be completed.'
+            : 'The request was cancelled.'}
+        </Text>
+      ) : (
+        <>
+          {steps.map((step, index) => {
+            const isComplete = index <= activeStep;
+
+            return (
+              <View key={step} style={styles.returnTrackingStep}>
+                <View style={styles.returnTrackingRail}>
+                  <View
+                    style={[
+                      styles.returnTrackingDot,
+                      isComplete && styles.returnTrackingDotComplete,
+                    ]}
+                  />
+                  {index < steps.length - 1 ? (
+                    <View
+                      style={[
+                        styles.returnTrackingLine,
+                        index < activeStep &&
+                          styles.returnTrackingLineComplete,
+                      ]}
+                    />
+                  ) : null}
+                </View>
+                <Text
+                  style={[
+                    styles.returnTrackingLabel,
+                    isComplete && styles.returnTrackingLabelComplete,
+                  ]}
+                >
+                  {step}
+                </Text>
+              </View>
+            );
+          })}
+          <Text style={styles.returnTrackingNote}>
+            {isExchange
+              ? 'Track the pickup of your original item and delivery of the exchange here.'
+              : 'Track your item pickup and refund progress here.'}
+          </Text>
+        </>
+      )}
+    </View>
+  );
 }
 
 function DetailRow({ label, value, emphasized = false, valueColor }) {
@@ -199,6 +287,20 @@ export default function OrderDetailsScreen() {
   const [returnSubmitting, setReturnSubmitting] = useState(false);
   const [returnSubmitError, setReturnSubmitError] = useState('');
   const [returnSubmitSuccess, setReturnSubmitSuccess] = useState('');
+  const [reviewFormItemId, setReviewFormItemId] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [reviewSubmittingItemId, setReviewSubmittingItemId] = useState(null);
+  const [reviewSubmitError, setReviewSubmitError] = useState('');
+  const [reviewRetryKey, setReviewRetryKey] = useState(0);
+  const [reviewResultState, setReviewResultState] = useState({
+    key: '',
+    reviews: null,
+    error: '',
+  });
+  const reviewRequestKey =
+    `${token || ''}:${orderId || ''}:${reviewRetryKey}`;
   const [invoiceDownloading, setInvoiceDownloading] = useState(false);
   const [invoiceError, setInvoiceError] = useState('');
 
@@ -224,6 +326,38 @@ export default function OrderDetailsScreen() {
       active = false;
     };
   }, [orderId, retryKey, token]);
+
+  useEffect(() => {
+    if (!token || !orderId) return undefined;
+
+    const controller = new AbortController();
+    let active = true;
+
+    getCustomerOrderReviews(token, orderId, controller.signal)
+      .then((reviews) => {
+        if (active) {
+          setReviewResultState({
+            key: reviewRequestKey,
+            reviews,
+            error: '',
+          });
+        }
+      })
+      .catch((loadError) => {
+        if (!active || loadError?.name === 'AbortError') return;
+        console.error('Load order reviews error:', loadError);
+        setReviewResultState({
+          key: reviewRequestKey,
+          reviews: null,
+          error: loadError?.message || 'Unable to load your order reviews.',
+        });
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [orderId, reviewRequestKey, token]);
 
   useEffect(() => {
     let active = true;
@@ -366,8 +500,77 @@ export default function OrderDetailsScreen() {
     }
   }
 
+  async function submitReview(item, productId) {
+    if (!token) {
+      router.push('/(auth)/login');
+      return;
+    }
+
+    if (!item?.id || !productId) {
+      setReviewSubmitError('This purchased item is missing review details.');
+      return;
+    }
+
+    if (!reviewTitle.trim() && !reviewText.trim()) {
+      setReviewSubmitError('Please enter a title or written feedback.');
+      return;
+    }
+
+    setReviewSubmittingItemId(String(item.id));
+    setReviewSubmitError('');
+
+    try {
+      const result = await submitProductReview({
+        productId,
+        orderItemId: item.id,
+        rating: reviewRating,
+        title: reviewTitle,
+        reviewText,
+        token,
+      });
+
+      if (!result?.data?.order_item_id) {
+        throw new Error('The server did not return the saved review.');
+      }
+
+      setReviewResultState((current) => {
+        const currentReviews =
+          current.key === reviewRequestKey && Array.isArray(current.reviews)
+            ? current.reviews
+            : [];
+        return {
+          key: reviewRequestKey,
+          reviews: [
+            result.data,
+            ...currentReviews.filter(
+              (review) => String(review.order_item_id) !== String(item.id)
+            ),
+          ],
+          error: '',
+        };
+      });
+      setReviewFormItemId(null);
+      setReviewTitle('');
+      setReviewText('');
+      setReviewRating(5);
+    } catch (submitError) {
+      console.error('Submit order review error:', submitError);
+      setReviewSubmitError(
+        submitError?.message || 'Unable to submit your review.'
+      );
+    } finally {
+      setReviewSubmittingItemId(null);
+    }
+  }
+
   const currency = order?.currency || 'INR';
   const items = Array.isArray(order?.items) ? order.items : [];
+  const currentReviewResult =
+    reviewResultState.key === reviewRequestKey
+      ? reviewResultState
+      : null;
+  const orderReviews = currentReviewResult?.reviews ?? null;
+  const reviewLookupError = currentReviewResult?.error || '';
   const addressData = order ? addressLines(order) : null;
   const statusTheme = getStatusTheme(order?.status);
 
@@ -487,6 +690,27 @@ export default function OrderDetailsScreen() {
               CARD 1: PURCHASED BOTANICALS & ORDER ID / STATUS CARD
           ============================================================ */}
           <View style={styles.mainCard}>
+            {reviewLookupError ? (
+              <View style={styles.reviewLookupNotice}>
+                <Text style={styles.reviewLookupNoticeText}>
+                  {reviewLookupError}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setReviewRetryKey((key) => key + 1)}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.reviewLookupRetryText}>Try again</Text>
+                </TouchableOpacity>
+              </View>
+            ) : orderReviews === null ? (
+              <View style={styles.reviewLookupNotice}>
+                <ActivityIndicator size="small" color="#A87E34" />
+                <Text style={styles.reviewLookupNoticeText}>
+                  Checking for your reviews...
+                </Text>
+              </View>
+            ) : null}
+
             {items.map((item, index) => {
               const quantity = Number(item.quantity) || 1;
               const unitPrice = Number(item.unit_price) || 0;
@@ -503,12 +727,19 @@ export default function OrderDetailsScreen() {
                 '';
               const productSlug =
                 item.product?.slug || item.product_slug || item.slug;
+              const reviewProductId = item.product_id || item.product?.id;
+              const itemReview = orderReviews?.find(
+                (review) => String(review.order_item_id) === String(item.id)
+              );
 
               const existingRequest = returnRequests.find(
                 (request) => String(request.order_item_id) === String(item.id)
               );
               const returnStatus = existingRequest
-                ? getReturnStatusTheme(existingRequest.status)
+                ? getReturnStatusTheme(
+                    existingRequest.status,
+                    existingRequest.request_type,
+                  )
                 : null;
               const isDelivered =
                 String(order.status || '').toLowerCase() === 'delivered';
@@ -519,6 +750,12 @@ export default function OrderDetailsScreen() {
                 !existingRequest &&
                 Boolean(item.id);
               const isFormOpen = String(returnFormItemId) === String(item.id);
+              const isReviewFormOpen =
+                String(reviewFormItemId) === String(item.id);
+              const isReviewSubmitting =
+                reviewSubmittingItemId === String(item.id);
+              const isAnyReviewSubmitting =
+                reviewSubmittingItemId !== null;
 
               return (
                 <View key={item.id || `${item.product_id || 'item'}-${index}`}>
@@ -602,7 +839,7 @@ export default function OrderDetailsScreen() {
                           color="#123D2B"
                         />
                         <Text style={styles.returnActionText}>
-                          {isFormOpen ? 'Cancel Request' : 'Request Return / Replacement'}
+                          {isFormOpen ? 'Cancel Request' : 'Request Return or Exchange'}
                         </Text>
                       </TouchableOpacity>
 
@@ -612,7 +849,7 @@ export default function OrderDetailsScreen() {
                           <View style={styles.choiceRow}>
                             {[
                               { label: 'Return & Refund', value: 'return' },
-                              { label: 'Replacement', value: 'replacement' },
+                              { label: 'Exchange', value: 'replacement' },
                             ].map((choice) => (
                               <TouchableOpacity
                                 key={choice.value}
@@ -739,7 +976,7 @@ export default function OrderDetailsScreen() {
                       <View style={styles.existingRequestInfo}>
                         <Text style={styles.existingRequestText}>
                           {existingRequest.request_type === 'replacement'
-                            ? 'Replacement request'
+                            ? 'Exchange request'
                             : 'Return request'}
                         </Text>
                         <Text
@@ -755,6 +992,7 @@ export default function OrderDetailsScreen() {
                             {returnSubmitSuccess}
                           </Text>
                         ) : null}
+                        <ReturnRequestTracking request={existingRequest} />
                       </View>
                     </View>
                   ) : returnLoading ? (
@@ -766,6 +1004,164 @@ export default function OrderDetailsScreen() {
                     </View>
                   ) : returnError ? (
                     <Text style={styles.returnStatusError}>{returnError}</Text>
+                  ) : null}
+
+                  {itemReview ? (
+                    <View style={styles.orderReviewCard}>
+                      <Text style={styles.orderReviewHeading}>Your review</Text>
+                      <View
+                        style={styles.reviewStars}
+                        accessibilityLabel={`${itemReview.rating} out of 5 stars`}
+                      >
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Ionicons
+                            key={star}
+                            name={
+                              star <= Number(itemReview.rating)
+                                ? 'star'
+                                : 'star-outline'
+                            }
+                            size={16}
+                            color="#D9A52E"
+                          />
+                        ))}
+                      </View>
+                      {itemReview.title ? (
+                        <Text style={styles.orderReviewTitle}>
+                          {itemReview.title}
+                        </Text>
+                      ) : null}
+                      {itemReview.review_text ? (
+                        <Text style={styles.orderReviewText}>
+                          {itemReview.review_text}
+                        </Text>
+                      ) : null}
+                      {itemReview.created_at ? (
+                        <Text style={styles.orderReviewDate}>
+                          {new Date(itemReview.created_at).toLocaleDateString('en-IN')}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ) : isDelivered &&
+                    item.id &&
+                    reviewProductId &&
+                    Array.isArray(orderReviews) ? (
+                    <View style={styles.returnActionWrap}>
+                      <TouchableOpacity
+                        style={styles.returnActionButton}
+                        onPress={() => {
+                          if (isAnyReviewSubmitting) return;
+                          setReviewFormItemId(
+                            isReviewFormOpen ? null : String(item.id)
+                          );
+                          setReviewRating(5);
+                          setReviewTitle('');
+                          setReviewText('');
+                          setReviewSubmitError('');
+                        }}
+                        activeOpacity={0.8}
+                        disabled={isAnyReviewSubmitting}
+                        accessibilityRole="button"
+                        accessibilityState={{
+                          expanded: isReviewFormOpen,
+                        }}
+                      >
+                        <Ionicons
+                          name={isReviewFormOpen ? 'close' : 'star-outline'}
+                          size={14}
+                          color="#123D2B"
+                        />
+                        <Text style={styles.returnActionText}>
+                          {isReviewFormOpen ? 'Cancel Review' : 'Write a Review'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {isReviewFormOpen ? (
+                        <View style={styles.returnForm}>
+                          <Text style={styles.formLabel}>YOUR RATING</Text>
+                          <View style={styles.reviewStars}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <TouchableOpacity
+                                key={star}
+                                onPress={() => setReviewRating(star)}
+                                disabled={isAnyReviewSubmitting}
+                                accessibilityRole="button"
+                                accessibilityLabel={`${star} star${star > 1 ? 's' : ''}`}
+                                accessibilityState={{
+                                  selected: reviewRating === star,
+                                }}
+                              >
+                                <Ionicons
+                                  name={
+                                    star <= reviewRating
+                                      ? 'star'
+                                      : 'star-outline'
+                                  }
+                                  size={25}
+                                  color="#D9A52E"
+                                />
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+
+                          <Text style={styles.formLabel}>
+                            TITLE (OPTIONAL)
+                          </Text>
+                          <TextInput
+                            value={reviewTitle}
+                            onChangeText={setReviewTitle}
+                            maxLength={150}
+                            editable={!isAnyReviewSubmitting}
+                            style={styles.formInput}
+                            placeholder="Summarize your experience"
+                            placeholderTextColor="#8F8D85"
+                          />
+
+                          <Text style={styles.formLabel}>YOUR REVIEW</Text>
+                          <TextInput
+                            value={reviewText}
+                            onChangeText={setReviewText}
+                            multiline
+                            maxLength={3000}
+                            editable={!isAnyReviewSubmitting}
+                            style={[
+                              styles.formInput,
+                              styles.descriptionInput,
+                            ]}
+                            placeholder="Share your experience with this product"
+                            placeholderTextColor="#8F8D85"
+                            textAlignVertical="top"
+                          />
+
+                          {reviewSubmitError ? (
+                            <Text style={styles.formError}>
+                              {reviewSubmitError}
+                            </Text>
+                          ) : null}
+
+                          <TouchableOpacity
+                            style={[
+                              styles.submitButton,
+                              isReviewSubmitting && styles.buttonDisabled,
+                            ]}
+                            disabled={isReviewSubmitting}
+                            onPress={() => submitReview(item, reviewProductId)}
+                            accessibilityRole="button"
+                          >
+                            {isReviewSubmitting ? (
+                              <ActivityIndicator
+                                color="#FFFFFF"
+                                size="small"
+                              />
+                            ) : (
+                              <Text style={styles.submitButtonText}>
+                                Submit Review
+                              </Text>
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      ) : null}
+                    </View>
                   ) : null}
                 </View>
               );
@@ -1525,6 +1921,74 @@ const styles = StyleSheet.create({
     fontFamily: 'InterSemiBold',
   },
 
+  reviewLookupNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 10,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#EFE7DA',
+    backgroundColor: '#FAF7F2',
+  },
+
+  reviewLookupNoticeText: {
+    flex: 1,
+    color: '#706047',
+    fontSize: 11,
+    fontFamily: 'InterRegular',
+  },
+
+  reviewLookupRetryText: {
+    color: '#123D2B',
+    fontSize: 11,
+    fontFamily: 'InterSemiBold',
+  },
+
+  orderReviewCard: {
+    gap: 6,
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EFE7DA',
+    backgroundColor: '#FAF7F2',
+  },
+
+  orderReviewHeading: {
+    color: '#123D2B',
+    fontSize: 11,
+    fontFamily: 'InterSemiBold',
+  },
+
+  orderReviewTitle: {
+    color: '#1A2E22',
+    fontSize: 13,
+    fontFamily: 'InterSemiBold',
+  },
+
+  orderReviewText: {
+    color: '#56574F',
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: 'InterRegular',
+  },
+
+  orderReviewDate: {
+    color: '#716F68',
+    fontSize: 10,
+    fontFamily: 'InterRegular',
+  },
+
+  reviewStars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+
   returnForm: {
     marginTop: 12,
     padding: 12,
@@ -1661,6 +2125,83 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#123D2B',
     fontFamily: 'InterSemiBold',
+  },
+
+  returnTracking: {
+    marginTop: 10,
+    paddingTop: 9,
+    borderTopWidth: 1,
+    borderTopColor: '#E6DCC8',
+  },
+
+  returnTrackingTitle: {
+    marginBottom: 8,
+    color: '#123D2B',
+    fontSize: 11,
+    fontFamily: 'InterSemiBold',
+  },
+
+  returnTrackingStep: {
+    flexDirection: 'row',
+    minHeight: 23,
+    gap: 7,
+  },
+
+  returnTrackingRail: {
+    width: 12,
+    alignItems: 'center',
+  },
+
+  returnTrackingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#D5C9B6',
+    backgroundColor: '#FFFFFF',
+    zIndex: 1,
+  },
+
+  returnTrackingDotComplete: {
+    borderColor: '#123D2B',
+    backgroundColor: '#123D2B',
+  },
+
+  returnTrackingLine: {
+    position: 'absolute',
+    top: 9,
+    bottom: -3,
+    width: 1,
+    backgroundColor: '#E6DCC8',
+  },
+
+  returnTrackingLineComplete: {
+    backgroundColor: '#123D2B',
+  },
+
+  returnTrackingLabel: {
+    flex: 1,
+    color: '#81796D',
+    fontSize: 10.5,
+    paddingBottom: 6,
+  },
+
+  returnTrackingLabelComplete: {
+    color: '#123D2B',
+    fontFamily: 'InterSemiBold',
+  },
+
+  returnTrackingNote: {
+    marginTop: 3,
+    color: '#706047',
+    fontSize: 10.5,
+    lineHeight: 15,
+  },
+
+  returnTrackingTerminal: {
+    color: '#B85C5C',
+    fontSize: 10.5,
+    lineHeight: 15,
   },
 
   existingRequestStatus: {

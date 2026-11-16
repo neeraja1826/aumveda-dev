@@ -10,6 +10,7 @@ from reportlab.pdfgen import canvas
 
 from app.core.security import get_current_admin
 from app.core.supabase import supabase
+from app.services.customer_notifications import create_customer_notification
 import logging
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,24 @@ def add_order_item_products(orders: list[dict]) -> list[dict]:
         .execute()
     )
     order_items = order_items_result.data or []
+
+    customer_ids = list({
+        str(order["customer_id"])
+        for order in orders
+        if order.get("customer_id")
+    })
+    customers_by_id = {}
+    if customer_ids:
+        customers_result = (
+            supabase.table("profiles")
+            .select("id, full_name")
+            .in_("id", customer_ids)
+            .execute()
+        )
+        customers_by_id = {
+            str(customer["id"]): customer
+            for customer in customers_result.data or []
+        }
 
     product_ids = list({
         str(item["product_id"])
@@ -139,6 +158,10 @@ def add_order_item_products(orders: list[dict]) -> list[dict]:
         ).append(item)
 
     for order in orders:
+        customer = customers_by_id.get(
+            str(order.get("customer_id") or "")
+        ) or {}
+        order["customer_name"] = customer.get("full_name")
         order["order_items"] = items_by_order_id.get(
             str(order.get("id")),
             [],
@@ -436,7 +459,7 @@ def update_order_status(
     try:
         existing = (
             supabase.table("orders")
-            .select("id, status")
+            .select("id, status, customer_id, order_number")
             .eq("id", order_id)
             .maybe_single()
             .execute()
@@ -525,6 +548,17 @@ def update_order_status(
                     "Please verify the order and its history."
                 ),
             ) from update_error
+
+        order_number = existing.data.get("order_number") or order_id
+        display_status = new_status.replace("_", " ").title()
+        create_customer_notification(
+            customer_id=existing.data.get("customer_id"),
+            title="Order status update",
+            message=f"Order {order_number} is now {display_status}.",
+            notification_type=f"order_status_{new_status}",
+            reference_type="order",
+            reference_id=order_id,
+        )
 
         return {
             "message": "Order status updated and history recorded",
