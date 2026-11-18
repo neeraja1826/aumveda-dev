@@ -15,6 +15,35 @@ export function getAdminToken() {
   }
 }
 
+export function isAdminTokenExpired(token) {
+  if (!token) {
+    return true;
+  }
+
+  try {
+    const segments = token.split('.');
+    if (segments.length !== 3) {
+      return true;
+    }
+
+    const encodedPayload = segments[1]
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    const paddedPayload = encodedPayload.padEnd(
+      Math.ceil(encodedPayload.length / 4) * 4,
+      '='
+    );
+    const payload = JSON.parse(window.atob(paddedPayload));
+
+    return (
+      typeof payload.exp !== 'number' ||
+      payload.exp <= Date.now() / 1000 + 30
+    );
+  } catch {
+    return true;
+  }
+}
+
 export function setAdminToken(token) {
   try {
     if (token) {
@@ -80,6 +109,11 @@ export async function apiRequest(path, options = {}) {
       result && typeof result === 'object'
         ? result.detail || result.message
         : result;
+
+    if (response.status === 401 && token) {
+      setAdminToken('');
+      window.location.replace('/');
+    }
 
     throw new Error(
       detail || `API request failed (HTTP ${response.status}).`

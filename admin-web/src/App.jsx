@@ -28,7 +28,11 @@ import NotificationDetails from './modules/NotificationDetails.jsx';
 import Support from './modules/Support.jsx';
 import ContentManagement from './modules/ContentManagement.jsx';
 
-import { getAdminToken, setAdminToken } from './services/api.js';
+import {
+  getAdminToken,
+  isAdminTokenExpired,
+  setAdminToken,
+} from './services/api.js';
 
 import './index.css';
 
@@ -184,7 +188,16 @@ function AdminLayout({ onLogout }) {
 }
 
 export default function App() {
-  const token = getAdminToken();
+  const [token] = useState(() => {
+    const storedToken = getAdminToken();
+
+    if (storedToken && isAdminTokenExpired(storedToken)) {
+      setAdminToken('');
+      return '';
+    }
+
+    return storedToken;
+  });
 
   const handleLogin = () => {
     window.location.href = '/admin/dashboard';
