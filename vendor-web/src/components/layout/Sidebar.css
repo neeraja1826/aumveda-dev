@@ -1,0 +1,619 @@
+
+/* ============================================================
+   AUMVEDA VENDOR WEB
+   TEMPLATE 1 - CLEAN PROFESSIONAL SIDEBAR
+============================================================ */
+
+.sidebar {
+  --sidebar-green: #173e32;
+  --sidebar-green-deep: #103126;
+  --sidebar-text: #f8f7f1;
+  --sidebar-muted: #afc5b7;
+  --sidebar-accent: #dceadc;
+  --sidebar-border: rgba(255, 255, 255, 0.11);
+
+  position: sticky;
+  top: 0;
+  z-index: 70;
+
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 260px;
+
+  width: 260px;
+  min-width: 260px;
+  height: 100vh;
+  height: 100dvh;
+
+  padding: 24px 16px 18px;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  color: var(--sidebar-text);
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--sidebar-green) 0%,
+      var(--sidebar-green-deep) 100%
+    );
+
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+
+  font-family: inherit;
+}
+
+
+/* ============================================================
+   BRAND
+============================================================ */
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  min-height: 64px;
+
+  padding: 0 4px 20px;
+
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.sidebar-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  flex-shrink: 0;
+
+  width: 46px;
+  height: 46px;
+
+  padding: 5px;
+
+  background: #f9f7ef;
+
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 12px;
+}
+
+.sidebar-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+}
+
+.sidebar-brand-content {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.sidebar-brand-name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.025em;
+
+  color: #ffffff;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-brand-subtitle {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+
+  color: #b9cbbc;
+}
+
+
+/* ============================================================
+   BUSINESS SUMMARY
+============================================================ */
+
+.vendor-summary {
+  display: flex;
+  flex-direction: column;
+
+  gap: 13px;
+
+  margin: 23px 0 25px;
+
+  padding: 15px;
+
+  border: 1px solid rgba(224,241,221,0.12);
+  border-radius: 15px;
+
+  background: rgba(255,255,255,0.055);
+}
+
+.vendor-summary-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+}
+
+.vendor-summary-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+
+  color: #b9cbbc;
+}
+
+.vendor-verified-icon {
+  color: #b7d9ad;
+  flex-shrink: 0;
+}
+
+.vendor-summary-content {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  min-width: 0;
+}
+
+.vendor-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 38px;
+
+  width: 38px;
+  height: 38px;
+
+  border-radius: 11px;
+
+  background: #e6ede1;
+  color: #174737;
+
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.vendor-summary-details {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+
+  min-width: 0;
+}
+
+.vendor-summary-details strong {
+  display: block;
+
+  max-width: 160px;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+
+  color: #ffffff;
+}
+
+.vendor-summary-details > span {
+  font-size: 11px;
+  font-weight: 500;
+
+  text-transform: capitalize;
+
+  color: #c0d0c3;
+}
+
+.vendor-status-label {
+  display: inline-flex;
+  align-items: center;
+
+  align-self: flex-start;
+
+  gap: 7px;
+
+  padding: 6px 9px;
+
+  border-radius: 6px;
+
+  background: rgba(172,211,160,0.12);
+
+  font-size: 10px;
+  font-weight: 600;
+
+  color: #d1ecc7;
+}
+
+.vendor-status-dot {
+  width: 6px;
+  height: 6px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+  background: #a4d69a;
+}
+
+
+/* ============================================================
+   NAVIGATION
+============================================================ */
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+
+  gap: 24px;
+}
+
+.sidebar-navigation-group {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+}
+
+.sidebar-section-title {
+  margin: 0;
+
+  padding: 0 12px;
+
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+
+  color: #9eb6a8;
+}
+
+.sidebar-navigation-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.sidebar-link {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  min-height: 46px;
+
+  padding: 0 12px;
+
+  border: 1px solid transparent;
+  border-radius: 10px;
+
+  color: #ccdbd0;
+  background: transparent;
+
+  text-decoration: none;
+
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sidebar-link-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 20px;
+
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-link-icon svg {
+  display: block;
+}
+
+.sidebar-link-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-link-arrow {
+  opacity: 0;
+  flex-shrink: 0;
+
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-link:hover {
+  color: #ffffff;
+  background: rgba(255,255,255,0.085);
+}
+
+.sidebar-link:hover .sidebar-link-arrow {
+  opacity: 0.8;
+}
+
+.sidebar-link.active {
+  color: #173e32;
+  background: #e4ede0;
+  border-color: #e4ede0;
+
+  font-weight: 700;
+}
+
+.sidebar-link.active .sidebar-link-arrow {
+  opacity: 1;
+  color: #335e49;
+}
+
+.sidebar-link.active:hover {
+  background: #f0f4ea;
+  border-color: #f0f4ea;
+}
+
+.sidebar-link:focus-visible,
+.sidebar-logout:focus-visible {
+  outline: 2px solid #dceadc;
+  outline-offset: 3px;
+}
+
+
+/* ============================================================
+   BOTTOM SECTION
+============================================================ */
+
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+
+  gap: 14px;
+
+  margin-top: auto;
+  padding-top: 30px;
+}
+
+.sidebar-partner-note {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 11px;
+
+  padding: 14px 11px;
+
+  background: rgba(255,255,255,0.05);
+
+  border: 1px solid var(--sidebar-border);
+  border-radius: 12px;
+}
+
+.sidebar-partner-note-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 30px;
+
+  width: 30px;
+  height: 30px;
+
+  color: #cfddc3;
+
+  background: rgba(255,255,255,0.09);
+
+  border-radius: 9px;
+}
+
+.sidebar-partner-note > div:last-child {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+}
+
+.sidebar-partner-note strong {
+  font-size: 11px;
+  font-weight: 700;
+
+  color: #ffffff;
+}
+
+.sidebar-partner-note span {
+  font-size: 10px;
+  line-height: 1.6;
+
+  color: #aebfb3;
+}
+
+
+/* ============================================================
+   SIGN OUT
+============================================================ */
+
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  width: 100%;
+  min-height: 46px;
+
+  padding: 0 12px;
+
+  border: 1px solid transparent;
+  border-radius: 10px;
+
+  color: #d0dfd3;
+  background: transparent;
+
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebar-logout:hover {
+  color: #ffffff;
+  background: rgba(255,255,255,0.09);
+}
+
+.sidebar-logout-arrow {
+  margin-left: auto;
+  opacity: 0.55;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1100px) {
+  .sidebar {
+    flex-basis: 235px;
+    width: 235px;
+    min-width: 235px;
+
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .sidebar-brand-name {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    flex-basis: 78px;
+    width: 78px;
+    min-width: 78px;
+
+    align-items: center;
+
+    padding: 18px 9px;
+  }
+
+  .sidebar-brand {
+    width: 100%;
+    justify-content: center;
+
+    padding: 0 0 17px;
+  }
+
+  .sidebar-logo-container {
+    width: 45px;
+    height: 45px;
+  }
+
+  .sidebar-brand-content,
+  .vendor-summary,
+  .sidebar-section-title,
+  .sidebar-link-label,
+  .sidebar-link-arrow,
+  .sidebar-partner-note,
+  .sidebar-logout span,
+  .sidebar-logout-arrow {
+    display: none;
+  }
+
+  .sidebar-nav,
+  .sidebar-navigation-group,
+  .sidebar-navigation-list {
+    width: 100%;
+  }
+
+  .sidebar-nav {
+    gap: 20px;
+    margin-top: 23px;
+  }
+
+  .sidebar-link {
+    justify-content: center;
+
+    width: 100%;
+    min-height: 47px;
+
+    padding: 0;
+  }
+
+  .sidebar-link-icon {
+    flex-basis: auto;
+  }
+
+  .sidebar-bottom {
+    width: 100%;
+    padding-top: 20px;
+  }
+
+  .sidebar-logout {
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    flex-basis: 65px;
+    width: 65px;
+    min-width: 65px;
+
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .sidebar-logo-container {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sidebar-link {
+    min-height: 44px;
+  }
+}
+
+
+/* ============================================================
+   REDUCED MOTION
+============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-link,
+  .sidebar-link-arrow,
+  .sidebar-logout {
+    transition: none;
+  }
+}

@@ -792,6 +792,74 @@ button:disabled {
   background-size: 10px !important;
 }
 
+.data-table select.order-status-select,
+.data-table select.return-status-select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  border-radius: 9999px !important;
+  padding: 4px 24px 4px 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  min-height: 26px !important;
+  height: 26px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.data-table select.order-status-select.order-status-delivered,
+.data-table select.order-status-select.order-status-paid,
+.data-table select.return-status-select.return-status-approved,
+.data-table select.return-status-select.return-status-completed {
+  background-color: #DCFCE7 !important;
+  color: #15803D !important;
+  border: 1px solid #BBF7D0 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2315803D' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  background-size: 10px !important;
+}
+
+.data-table select.order-status-select.order-status-shipped,
+.data-table select.return-status-select.return-status-item_received {
+  background-color: #E0F2FE !important;
+  color: #0369A1 !important;
+  border: 1px solid #BAE6FD !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230369A1' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  background-size: 10px !important;
+}
+
+.data-table select.order-status-select.order-status-processing,
+.data-table select.order-status-select.order-status-placed,
+.data-table select.order-status-select.order-status-pending,
+.data-table select.return-status-select.return-status-requested,
+.data-table select.return-status-select.return-status-under_review {
+  background-color: #FEF3C7 !important;
+  color: #B45309 !important;
+  border: 1px solid #FDE68A !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23B45309' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  background-size: 10px !important;
+}
+
+.data-table select.order-status-select.order-status-cancelled,
+.data-table select.order-status-select.order-status-returned,
+.data-table select.return-status-select.return-status-rejected,
+.data-table select.return-status-select.return-status-cancelled {
+  background-color: #FEE2E2 !important;
+  color: #B91C1C !important;
+  border: 1px solid #FECACA !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23B91C1C' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  background-size: 10px !important;
+}
+
 /* Universal Ayurvedic Modern Checkbox */
 input[type="checkbox"] {
   appearance: none;
@@ -1132,7 +1200,7 @@ input[type="checkbox"]:focus {
   box-shadow: 0 3px 10px rgba(18, 61, 43, 0.22) !important;
 }
 
-/* Pill Badges Across All Modules */
+/* Pill Badges Across All Modules - Luxury Single-Layer Capsule Tokens */
 .payment-status-badge,
 .category-status,
 .vendor-account-status,
@@ -1144,106 +1212,102 @@ input[type="checkbox"]:focus {
 .support-status,
 .support-priority,
 .stock-low,
-.stock-available {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  white-space: nowrap;
+.stock-available,
+.transaction-incoming,
+.transaction-outgoing,
+.review-rating {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 4px 12px !important;
+  border-radius: 9999px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
-/* Success / Active statuses */
+/* Success / Active / Approved / Delivered / Resolved / Paid statuses */
 .payment-status-paid,
 .category-status-active,
 .category-status-select.category-status-active,
 .vendor-account-status.is-active,
 .customer-status.is-active,
 .customer-status.active,
-.featured-badge.is-featured,
 .coupon-status.is-active,
 .stock-available,
 .support-status-resolved,
+.return-status-approved,
+.return-status-item_received,
+.return-status-completed,
+.return-type-return,
+.transaction-incoming,
 .reviews-page .review-badge[data-status="approved"] {
-  background: #E8F5E2 !important;
-  color: #21662D !important;
-  border: 1px solid #C7E4B9 !important;
+  background: #DCFCE7 !important;
+  color: #15803D !important;
+  border: 1px solid #BBF7D0 !important;
 }
 
-/* Warning / Pending statuses */
+/* Warning / Pending / Under Review / Open / Placed statuses */
 .payment-status-pending,
 .category-status-pending,
 .vendor-account-status.is-pending,
-.stock-low,
 .support-status-open,
 .support-priority-medium,
+.return-status-requested,
+.return-status-under_review,
+.return-status-pickup_scheduled,
+.transaction-outgoing,
 .reviews-page .review-badge[data-status="pending"] {
-  background: #FFF8E1 !important;
-  color: #8D6E18 !important;
-  border: 1px solid #FFE082 !important;
+  background: #FEF3C7 !important;
+  color: #B45309 !important;
+  border: 1px solid #FDE68A !important;
 }
 
-/* Danger / Rejected statuses */
+/* Danger / Rejected / Inactive / Cancelled / Urgent / Low Stock statuses */
 .payment-status-failed,
 .category-status-inactive,
 .category-status-select.category-status-inactive,
 .vendor-account-status.is-inactive,
 .customer-status.is-inactive,
 .customer-status.inactive,
+.stock-low,
 .support-priority-high,
 .support-priority-urgent,
-.reviews-page .review-badge[data-status="rejected"] {
-  background: #FFEBEE !important;
-  color: #B71C1C !important;
-  border: 1px solid #FFCDD2 !important;
-}
-
-/* Processing / Shipped / Info */
-.support-status-in_progress,
-.support-priority-low {
-  background: #E0F2F1 !important;
-  color: #004D40 !important;
-  border: 1px solid #B2DFDB !important;
-}
-
-.support-status-closed,
-.coupon-status.is-inactive {
-  background: #F1F4F1 !important;
-  color: #5F6E64 !important;
-  border: 1px solid #DAE4DA !important;
-}
-
-.return-status-requested,
-.return-status-under_review,
-.return-status-pickup_scheduled {
-  background: #FFF8E1;
-  color: #8D6E18;
-  border: 1px solid #FFE082;
-}
-
-.return-status-approved,
-.return-status-item_received,
-.return-status-completed {
-  background: #E8F5E2;
-  color: #21662D;
-  border: 1px solid #C7E4B9;
-}
-
-.return-status-replacement_processing,
-.return-status-refund_processing {
-  background: #E0F2F1;
-  color: #004D40;
-  border: 1px solid #B2DFDB;
-}
-
 .return-status-rejected,
-.return-status-cancelled {
-  background: #FFEBEE;
-  color: #B71C1C;
-  border: 1px solid #FFCDD2;
+.return-status-cancelled,
+.reviews-page .review-badge[data-status="rejected"] {
+  background: #FEE2E2 !important;
+  color: #B91C1C !important;
+  border: 1px solid #FECACA !important;
+}
+
+/* Processing / Shipped / Info / Exchange statuses */
+.support-status-in_progress,
+.return-status-replacement_processing,
+.return-status-refund_processing,
+.return-type-exchange {
+  background: #E0F2FE !important;
+  color: #0369A1 !important;
+  border: 1px solid #BAE6FD !important;
+}
+
+/* Closed / Neutral / Draft statuses */
+.support-status-closed,
+.support-priority-low,
+.coupon-status.is-inactive {
+  background: #F3F4F6 !important;
+  color: #4B5563 !important;
+  border: 1px solid #E5E7EB !important;
+}
+
+/* Featured Ayurvedic Badge */
+.featured-badge.is-featured {
+  background: #1F4D32 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #1F4D32 !important;
 }
 
 .return-type-pill {
@@ -1252,22 +1316,10 @@ input[type="checkbox"]:focus {
   justify-content: center;
   padding: 4px 11px;
   border: 1px solid transparent;
-  border-radius: 20px;
+  border-radius: 9999px;
   font-size: 11.5px;
   font-weight: 650;
   white-space: nowrap;
-}
-
-.return-type-return {
-  background: #E8F5E2;
-  color: #21662D;
-  border-color: #C7E4B9;
-}
-
-.return-type-exchange {
-  background: #E0F2F1;
-  color: #004D40;
-  border-color: #B2DFDB;
 }
 
 /* Modals & Overlays (Universal Aumveda Glassmorphism) */
@@ -1866,14 +1918,17 @@ input[type="checkbox"]:focus {
 }
 
 .notifications-page .notification-type {
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: var(--sage-light);
-  color: var(--brand-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.4;
-  text-transform: capitalize;
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 3px 10px !important;
+  border-radius: 9999px !important;
+  background: #E8F2E7 !important;
+  color: var(--brand-primary) !important;
+  border: 1px solid #CDE2CB !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  text-transform: capitalize !important;
 }
 
 .notifications-page .notification-date {

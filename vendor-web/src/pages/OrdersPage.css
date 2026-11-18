@@ -1,0 +1,1574 @@
+
+/* ==========================================================
+   AUMVEDA VENDOR WEB — ORDERS MANAGEMENT
+   Compatible with updated OrdersPage.jsx
+   Pending -> Accepted -> Packed -> Shipping
+   ========================================================== */
+
+.avo-page {
+  --avo-green: #173e32;
+  --avo-green-mid: #286447;
+  --avo-green-light: #e8f2e6;
+  --avo-border: #e3e9e0;
+  --avo-text: #273f30;
+  --avo-muted: #7d8d80;
+
+  display: flex;
+  flex-direction: column;
+  gap: 19px;
+  width: 100%;
+  min-width: 0;
+  padding-bottom: 35px;
+  color: var(--avo-text);
+  font-family: inherit;
+}
+
+.avo-page *,
+.avo-page *::before,
+.avo-page *::after,
+.avo-modal-backdrop *,
+.avo-modal-backdrop *::before,
+.avo-modal-backdrop *::after {
+  box-sizing: border-box;
+}
+
+.avo-page button,
+.avo-page input,
+.avo-page select,
+.avo-modal-backdrop button {
+  font-family: inherit;
+}
+
+.avo-page button,
+.avo-modal-backdrop button {
+  cursor: pointer;
+}
+
+.avo-page button:disabled,
+.avo-modal-backdrop button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.avo-page :is(button, input, select):focus-visible,
+.avo-modal-backdrop button:focus-visible {
+  outline: 2px solid #398153;
+  outline-offset: 2px;
+}
+
+.avo-eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: #64836e;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+}
+
+.avo-results {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border: 1px solid #dcebd9;
+  border-radius: 20px;
+  background: #edf5eb;
+  color: #326947;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ==========================================================
+   BUTTONS
+   ========================================================== */
+
+.avo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 39px;
+  padding: 9px 13px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.avo-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.avo-button-primary {
+  background: var(--avo-green-mid);
+  border-color: var(--avo-green-mid);
+  color: #fff;
+}
+
+.avo-button-primary:hover:not(:disabled) {
+  background: #174831;
+}
+
+.avo-button-light {
+  background: #fff;
+  border-color: #dce7da;
+  color: #356345;
+}
+
+.avo-button-light:hover:not(:disabled) {
+  background: #edf5eb;
+  border-color: #adcaaf;
+}
+
+/* ==========================================================
+   PAGE HEADER
+   ========================================================== */
+
+.avo-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 5px 0;
+}
+
+.avo-page-header > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.avo-page-header h1 {
+  margin: 0;
+  color: #173e32;
+  font: 600 clamp(26px, 2.8vw, 33px) Georgia, serif;
+  line-height: 1.25;
+}
+
+.avo-page-header p {
+  max-width: 660px;
+  margin: 7px 0 0;
+  color: #819184;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ==========================================================
+   ALERTS
+   ========================================================== */
+
+.avo-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.avo-alert svg {
+  flex-shrink: 0;
+}
+
+.avo-alert-error {
+  color: #974d43;
+  background: #fff7f4;
+  border-color: #ecd2cb;
+}
+
+.avo-alert-success {
+  color: #306b43;
+  background: #edf7eb;
+  border-color: #cce5cb;
+}
+
+/* ==========================================================
+   SUMMARY METRICS
+   ========================================================== */
+
+.avo-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.avo-metric {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+  min-height: 105px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--avo-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(29, 65, 43, 0.035);
+}
+
+.avo-metric-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  height: 40px;
+  width: 40px;
+  border-radius: 11px;
+  background: #e7f1e5;
+  color: #2e6d4b;
+}
+
+.avo-metric > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.avo-metric > div > span {
+  color: #788a7c;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.avo-metric strong {
+  color: #1c4935;
+  font: 600 clamp(20px, 2vw, 26px) Georgia, serif;
+  overflow-wrap: anywhere;
+}
+
+.avo-metric small {
+  color: #93a096;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* ==========================================================
+   PANELS
+   ========================================================== */
+
+.avo-pipeline,
+.avo-queue {
+  width: 100%;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--avo-border);
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 18px rgba(29, 65, 43, 0.035);
+}
+
+.avo-pipeline {
+  padding: 20px;
+}
+
+.avo-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 17px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid #edf0e9;
+}
+
+.avo-queue > .avo-section-header {
+  padding: 19px 21px;
+}
+
+.avo-section-header > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.avo-section-header h2 {
+  margin: 0;
+  color: #1d4834;
+  font: 600 22px Georgia, serif;
+}
+
+.avo-section-header p {
+  margin: 6px 0 0;
+  color: #879789;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ==========================================================
+   PREPARATION PIPELINE
+   ========================================================== */
+
+.avo-pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 11px;
+  padding-top: 18px;
+}
+
+.avo-pipeline-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 13px;
+  background: #fafcf8;
+  border: 1px solid #e1eade;
+  border-radius: 11px;
+  text-align: left;
+  color: #36704e;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.avo-pipeline-tile:hover {
+  border-color: #b2ceb7;
+  background: #f0f6ed;
+}
+
+.avo-pipeline-tile-active {
+  border-color: #77a984;
+  background: #e8f3e6;
+}
+
+.avo-pipeline-tile svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+}
+
+.avo-pipeline-tile > span {
+  flex: 1;
+  color: #4f7059;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.avo-pipeline-tile > strong {
+  color: #234f38;
+  font: 600 25px Georgia, serif;
+}
+
+.avo-secondary-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 15px;
+}
+
+.avo-cancel-filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 12px;
+  background: #fff9f6;
+  color: #9c5145;
+  border: 1px solid #ecd7d1;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.avo-cancel-filter:hover {
+  background: #f9e9e4;
+}
+
+.avo-cancel-filter strong {
+  font-size: 12px;
+}
+
+/* ==========================================================
+   SEARCH AND FILTER
+   ========================================================== */
+
+.avo-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 13px;
+  padding: 15px 20px;
+  background: #fbfcfa;
+  border-bottom: 1px solid #edf0e9;
+}
+
+.avo-search,
+.avo-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1px solid #e0e8de;
+  border-radius: 10px;
+  color: #688471;
+}
+
+.avo-search {
+  flex: 1;
+  min-width: 0;
+  max-width: 520px;
+}
+
+.avo-search:focus-within,
+.avo-filter:focus-within {
+  border-color: #90b698;
+}
+
+.avo-search input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #2c4636;
+  font-size: 12px;
+}
+
+.avo-search input::placeholder {
+  color: #a1ada3;
+}
+
+.avo-search button {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: #698373;
+}
+
+.avo-filter {
+  flex-shrink: 0;
+}
+
+.avo-filter select {
+  min-width: 190px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #385946;
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+/* ==========================================================
+   CUSTOMER ORDER LIST
+   ========================================================== */
+
+.avo-orders-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.avo-order-card {
+  appearance: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 20px;
+  align-items: center;
+  column-gap: 23px;
+  width: 100%;
+  min-width: 0;
+  min-height: 79px;
+  padding: 15px 20px;
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid #edf0e9;
+  border-radius: 0;
+  color: var(--avo-text);
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.avo-order-card:last-child {
+  border-bottom: 0;
+}
+
+.avo-order-card:hover {
+  background: #f9fcf8;
+}
+
+.avo-order-card > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.avo-order-card > div:first-child strong {
+  color: #244c36;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.avo-order-card > div:first-child small {
+  color: #97a59a;
+  font-size: 11px;
+}
+
+.avo-order-card > div:nth-child(2) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 17px;
+  min-width: 0;
+}
+
+.avo-order-card > div:nth-child(2) > strong {
+  color: #2e513b;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.avo-order-card > svg {
+  color: #668872;
+}
+
+/* ==========================================================
+   STATUS BADGES
+   ========================================================== */
+
+.avo-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border-radius: 20px;
+  background: #f0f2ef;
+  color: #66756a;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.avo-status-pending {
+  background: #f8efdc;
+  color: #97722d;
+}
+
+.avo-status-accepted,
+.avo-status-delivered {
+  background: #e8f4e7;
+  color: #34754a;
+}
+
+.avo-status-packed {
+  background: #ecf0df;
+  color: #64754d;
+}
+
+.avo-status-shipped {
+  background: #e7f0f5;
+  color: #476f83;
+}
+
+.avo-status-cancelled,
+.avo-status-failed {
+  background: #fae9e4;
+  color: #a14e44;
+}
+
+.avo-status-returned {
+  background: #f4ebdf;
+  color: #916c36;
+}
+
+.avo-status-refunded {
+  background: #f0e8f4;
+  color: #82638d;
+}
+
+/* ==========================================================
+   EMPTY / LOADING
+   ========================================================== */
+
+.avo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  min-height: 230px;
+  padding: 30px;
+  color: #407b52;
+  text-align: center;
+}
+
+.avo-empty h3 {
+  margin: 0;
+  color: #254d37;
+  font: 600 20px Georgia, serif;
+}
+
+.avo-empty p {
+  max-width: 420px;
+  margin: 0;
+  color: #859689;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.avo-spin {
+  animation: avo-rotate 0.85s linear infinite;
+}
+
+@keyframes avo-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================
+   ORDER DETAILS MODAL
+   ========================================================== */
+
+.avo-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100dvh;
+  padding: 17px;
+  overflow: hidden;
+  background: rgba(14, 36, 25, 0.65);
+  backdrop-filter: blur(4px);
+}
+
+.avo-modal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 100%);
+  max-height: calc(100dvh - 34px);
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #dfe8dd;
+  border-radius: 16px;
+  box-shadow: 0 24px 75px rgba(0, 0, 0, 0.24);
+}
+
+.avo-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  flex: 0 0 auto;
+  padding: 17px 21px;
+  background: #fff;
+  border-bottom: 1px solid #e8eee5;
+}
+
+.avo-modal-header > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.avo-modal-header h2 {
+  margin: 0;
+  color: #1c4934;
+  font: 600 clamp(18px, 2vw, 24px) Georgia, serif;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.avo-modal-header p {
+  margin: 5px 0 0;
+  color: #849487;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.avo-modal-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: #fff;
+  color: #657d6a;
+  border: 1px solid #dfe7dd;
+  border-radius: 9px;
+}
+
+.avo-modal-close:hover:not(:disabled) {
+  background: #edf5eb;
+}
+
+.avo-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 19px 21px 24px;
+  overscroll-behavior: contain;
+}
+
+.avo-modal-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 180px;
+  color: #407b52;
+  font-size: 12px;
+}
+
+/* ==========================================================
+   ORDER OVERVIEW
+   ========================================================== */
+
+.avo-order-overview {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.6fr)
+    minmax(0, 1fr)
+    minmax(0, 0.7fr)
+    minmax(0, 0.8fr);
+  gap: 12px;
+  margin-bottom: 15px;
+  padding: 14px;
+  background: #f3f8f1;
+  border: 1px solid #dfeadd;
+  border-radius: 11px;
+}
+
+.avo-order-overview > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.avo-order-overview small {
+  color: #849789;
+  font-size: 10px;
+}
+
+.avo-order-overview strong {
+  color: #26553b;
+  font-size: 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================================
+   ADDRESS AND PAYMENT
+   ========================================================== */
+
+.avo-details-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.15fr)
+    minmax(0, 1fr);
+  align-items: stretch;
+  gap: 13px;
+  margin-bottom: 17px;
+}
+
+.avo-detail-card {
+  min-width: 0;
+  min-height: 155px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e5ece2;
+  border-radius: 11px;
+}
+
+.avo-detail-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 14px;
+  color: #28513a;
+  font: 600 18px Georgia, serif;
+}
+
+.avo-detail-card h3 svg {
+  flex-shrink: 0;
+  color: #35734d;
+}
+
+.avo-address {
+  color: #617667;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.avo-address strong {
+  display: block;
+  color: #28503a;
+  font-size: 12px;
+}
+
+.avo-address p {
+  margin: 7px 0;
+}
+
+.avo-address span {
+  display: block;
+}
+
+.avo-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+  padding-bottom: 9px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid #edf0e9;
+}
+
+.avo-detail-row:last-child {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+.avo-detail-row span {
+  color: #819082;
+  font-size: 11px;
+}
+
+.avo-detail-row strong {
+  color: #2e513b;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ==========================================================
+   FULFILLMENT
+   ========================================================== */
+
+.avo-fulfillment {
+  min-width: 0;
+}
+
+.avo-fulfillment > .avo-section-header {
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+}
+
+.avo-fulfillment .avo-section-header h2 {
+  font-size: 21px;
+}
+
+.avo-fulfillment .avo-section-header p {
+  font-size: 11px;
+}
+
+.avo-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ==========================================================
+   ORDER ITEM CARD
+   ========================================================== */
+
+.avo-item {
+  min-width: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e1e9df;
+  border-radius: 12px;
+}
+
+.avo-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 17px;
+}
+
+.avo-item-product {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.avo-item-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 43px;
+  width: 43px;
+  height: 43px;
+  background: #e8f2e6;
+  color: #397550;
+  border-radius: 10px;
+}
+
+.avo-item-product > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.avo-item-product strong {
+  color: #264e38;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.avo-item-product span {
+  color: #748875;
+  font-size: 11px;
+}
+
+.avo-item-product small {
+  color: #96a398;
+  font-size: 10px;
+}
+
+.avo-item-amounts {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.avo-item-amounts > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.avo-item-amounts small {
+  color: #8d9d90;
+  font-size: 10px;
+}
+
+.avo-item-amounts strong {
+  color: #28533b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* ==========================================================
+   THREE-STAGE PREPARATION TIMELINE
+   ========================================================== */
+
+.avo-item-timeline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 13px;
+  border-top: 1px solid #edf0e9;
+  background: #f9fbf7;
+}
+
+.avo-timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  text-align: center;
+}
+
+.avo-timeline-step > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: #fff;
+  border: 1px solid #dce7d9;
+  border-radius: 50%;
+  color: #96a497;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.avo-timeline-step > small {
+  color: #859488;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.avo-timeline-done > span {
+  background: #37764f;
+  border-color: #37764f;
+  color: #fff;
+}
+
+.avo-timeline-current > small {
+  color: #245a3b;
+  font-weight: 800;
+}
+
+.avo-cancelled-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 17px;
+  background: #fff8f5;
+  border-top: 1px solid #f1ded8;
+  color: #a25147;
+  font-size: 11px;
+}
+
+/* ==========================================================
+   ITEM ACTIONS
+   ========================================================== */
+
+.avo-item-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 11px;
+  padding: 12px 17px;
+  border-top: 1px solid #edf0e9;
+}
+
+.avo-item-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.avo-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 13px;
+  background: #286647;
+  color: #fff;
+  border: 1px solid #286647;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.avo-action:hover:not(:disabled) {
+  background: #174831;
+}
+
+.avo-final {
+  color: #849488;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 1200px) {
+  .avo-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 850px) {
+  .avo-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .avo-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .avo-search {
+    max-width: none;
+  }
+
+  .avo-filter select {
+    width: 100%;
+  }
+
+  .avo-order-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .avo-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .avo-order-card {
+    gap: 11px;
+  }
+}
+
+@media (max-width: 650px) {
+  .avo-page {
+    gap: 15px;
+  }
+
+  .avo-metrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .avo-metric {
+    padding: 12px;
+    min-height: 100px;
+  }
+
+  .avo-metric-icon {
+    flex-basis: 34px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .avo-pipeline {
+    padding: 15px;
+  }
+
+  .avo-pipeline-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .avo-section-header,
+  .avo-queue > .avo-section-header {
+    padding: 15px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .avo-pipeline > .avo-section-header {
+    padding: 0 0 15px;
+  }
+
+  .avo-toolbar {
+    padding: 12px;
+  }
+
+  .avo-order-card {
+    grid-template-columns: minmax(0, 1fr) 18px;
+    row-gap: 10px;
+    padding: 14px;
+  }
+
+  .avo-order-card > div:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+    justify-content: space-between;
+  }
+
+  .avo-order-card > svg {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .avo-modal-backdrop {
+    padding: 7px;
+  }
+
+  .avo-modal {
+    width: 100%;
+    max-height: calc(100dvh - 14px);
+    border-radius: 12px;
+  }
+
+  .avo-modal-header {
+    padding: 14px;
+  }
+
+  .avo-modal-header h2 {
+    font-size: 18px;
+  }
+
+  .avo-modal-body {
+    padding: 14px;
+  }
+
+  .avo-order-overview {
+    padding: 11px;
+    gap: 11px;
+  }
+
+  .avo-detail-card {
+    padding: 13px;
+  }
+
+  .avo-item-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .avo-item-amounts {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .avo-item-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 420px) {
+  .avo-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .avo-order-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .avo-item-actions,
+  .avo-action {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avo-page *,
+  .avo-modal-backdrop * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+/* ==========================================================
+   CENTER CONFIRMATION POPUP INSIDE ORDER MODAL
+   ========================================================== */
+
+.avo-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(14, 36, 25, 0.48);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.avo-confirm {
+  width: min(430px, 100%);
+  padding: 24px;
+  border: 1px solid #dfe8dd;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 75px rgba(0, 0, 0, 0.22);
+}
+
+.avo-confirm-icon {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  margin: 0 0 16px;
+  border-radius: 14px;
+  background: #e6f3e5;
+  color: #347449;
+}
+
+.avo-confirm h3 {
+  margin: 0;
+  color: #244a35;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.avo-confirm p {
+  margin: 12px 0 22px;
+  color: #798b7e;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.avo-confirm p strong {
+  color: #31513d;
+}
+
+.avo-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 650px) {
+  .avo-confirm {
+    padding: 20px;
+  }
+
+  .avo-confirm h3 {
+    font-size: 20px;
+  }
+
+  .avo-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .avo-confirm-actions .avo-button {
+    width: 100%;
+  }
+}
+
+/* ==========================================================
+   AUMVEDA — CONFIRMATION POPUP BUTTON + ANIMATION
+   ========================================================== */
+
+/* Blurred background with smooth fade */
+.avo-confirm-overlay {
+  animation: avo-overlay-fade 0.22s ease-out both;
+}
+
+/* Centered popup with smooth entrance */
+.avo-confirm {
+  animation: avo-confirm-appear 0.25s ease-out both;
+}
+
+/* GREEN CONFIRM BUTTON */
+.avo-confirm-actions .avo-button-primary {
+  background: #176B4A !important;
+  border: 1px solid #176B4A !important;
+  color: #FFFFFF !important;
+  font-weight: 800;
+  box-shadow: 0 3px 10px rgba(23, 107, 74, 0.16);
+}
+
+.avo-confirm-actions .avo-button-primary:hover:not(:disabled) {
+  background: #104E36 !important;
+  border-color: #104E36 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 5px 15px rgba(23, 107, 74, 0.23);
+}
+
+/* CANCEL BUTTON */
+.avo-confirm-actions .avo-button-light {
+  background: #FFFFFF !important;
+  border: 1px solid #DCE7DA !important;
+  color: #356345 !important;
+}
+
+.avo-confirm-actions .avo-button-light:hover:not(:disabled) {
+  background: #EDF5EB !important;
+}
+
+/* Loading state */
+.avo-confirm-actions .avo-button-primary:disabled {
+  background: #176B4A !important;
+  color: #FFFFFF !important;
+  opacity: 0.65;
+}
+
+/* Animations */
+@keyframes avo-overlay-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes avo-confirm-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avo-confirm-overlay,
+  .avo-confirm {
+    animation: none !important;
+  }
+}
+/* ==========================================================
+   AUMVEDA — BULK ORDER ACTIONS AND MODAL BUTTON FIX
+   ========================================================== */
+
+.avo-page,
+.avo-modal-backdrop {
+  --avo-green: #173e32;
+  --avo-green-mid: #286447;
+  --avo-green-light: #e8f2e6;
+  --avo-border: #e3e9e0;
+  --avo-text: #273f30;
+  --avo-muted: #7d8d80;
+}
+
+/* ACTIVE PRIMARY BUTTONS */
+
+.avo-page .avo-button-primary,
+.avo-modal-backdrop .avo-button-primary {
+  background: #256344 !important;
+  border: 1px solid #256344 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  opacity: 1;
+  min-height: 39px;
+  box-shadow: 0 2px 5px rgba(37, 99, 68, 0.12);
+  transition: all 0.2s ease;
+}
+
+.avo-page .avo-button-primary:hover:not(:disabled),
+.avo-modal-backdrop .avo-button-primary:hover:not(:disabled) {
+  background: #194d33 !important;
+  border-color: #194d33 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(37, 99, 68, 0.22);
+  transform: translateY(-1px);
+}
+
+/* DISABLED PRIMARY BUTTONS */
+
+.avo-page .avo-button-primary:disabled,
+.avo-modal-backdrop .avo-button-primary:disabled {
+  background: #e1e9e0 !important;
+  border-color: #d3dfd2 !important;
+  color: #687e6d !important;
+  opacity: 1 !important;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* SECONDARY BUTTONS */
+
+.avo-page .avo-button-light,
+.avo-modal-backdrop .avo-button-light {
+  background: #ffffff !important;
+  border: 1px solid #c4d8c5 !important;
+  color: #256344 !important;
+  font-weight: 700;
+  opacity: 1;
+}
+
+.avo-page .avo-button-light:hover:not(:disabled),
+.avo-modal-backdrop .avo-button-light:hover:not(:disabled) {
+  background: #e8f3e7 !important;
+  border-color: #86ad8c !important;
+  color: #194d33 !important;
+}
+
+.avo-page .avo-button-light:disabled,
+.avo-modal-backdrop .avo-button-light:disabled {
+  background: #edf1eb !important;
+  border-color: #dce5da !important;
+  color: #687e6d !important;
+  opacity: 1 !important;
+  cursor: not-allowed;
+}
+
+/* INDIVIDUAL ITEM ACTION BUTTONS */
+
+.avo-modal-backdrop .avo-action {
+  background: #256344 !important;
+  border: 1px solid #256344 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.avo-modal-backdrop .avo-action:hover:not(:disabled) {
+  background: #194d33 !important;
+  border-color: #194d33 !important;
+}
+
+.avo-modal-backdrop .avo-action:disabled {
+  background: #e1e9e0 !important;
+  border-color: #d3dfd2 !important;
+  color: #687e6d !important;
+  opacity: 1 !important;
+  cursor: not-allowed;
+}
+
+/* BUTTON ICON VISIBILITY */
+
+.avo-button-primary svg,
+.avo-button-light svg,
+.avo-action svg {
+  color: inherit;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+/* CHECKBOXES */
+
+.avo-modal-backdrop input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  width: 18px;
+  height: 18px;
+  accent-color: #256344;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.avo-modal-backdrop input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* KEYBOARD FOCUS */
+
+.avo-modal-backdrop button:focus-visible,
+.avo-modal-backdrop input:focus-visible {
+  outline: 2px solid #398153;
+  outline-offset: 3px;
+}
+
+/* CENTERED CONFIRMATION BUTTON */
+
+.avo-modal-backdrop .avo-confirm-actions
+.avo-button-primary:not(:disabled) {
+  background: #176b4a !important;
+  border-color: #176b4a !important;
+  color: #ffffff !important;
+}
+
+/* RESPONSIVE BULK BUTTONS */
+
+@media (max-width: 600px) {
+  .avo-modal-backdrop .avo-button {
+    min-height: 42px;
+    white-space: normal;
+    text-align: center;
+  }
+}

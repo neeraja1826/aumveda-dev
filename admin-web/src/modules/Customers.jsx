@@ -19,6 +19,7 @@ import {
 import Pagination, {
   ADMIN_LIST_PAGE_SIZE,
 } from '../components/Pagination.jsx';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 const emptySummary = {
   total_customers: 0,
@@ -380,16 +381,13 @@ export default function Customers() {
 
   return (
     <section className="module-page customers-page">
-      <header
-        className="customers-page-heading"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-        }}
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA CLIENTELE & PATIENTS"
+        title="Customers & Ayurvedic Profiles"
+        description="View customer order histories, manage registered accounts, and support customer wellness journeys."
+        badgeText={`${items.length} Customers`}
+        doodle="tonic"
       >
-        <h1>Customers</h1>
         <button
           type="button"
           className="primary-button"
@@ -398,7 +396,7 @@ export default function Customers() {
         >
           Refresh
         </button>
-      </header>
+      </AyurvedicHeroBanner>
 
       <div className="customer-summary-grid">
         <CustomerSummaryCard
@@ -995,24 +993,78 @@ export default function Customers() {
           color: #8C9990;
         }
 
+        .customers-page .customer-table {
+          width: 100%;
+          table-layout: fixed;
+          border-collapse: separate;
+          border-spacing: 0;
+        }
+
+        .customers-page .customer-table th,
+        .customers-page .customer-table td {
+          padding: 12px 14px;
+          vertical-align: middle;
+        }
+
+        .customers-page .customer-table th:nth-child(1),
+        .customers-page .customer-table td:nth-child(1) {
+          width: 48px;
+          text-align: center;
+        }
+
+        .customers-page .customer-table th:nth-child(2),
+        .customers-page .customer-table td:nth-child(2) {
+          width: 32%;
+        }
+
+        .customers-page .customer-table th:nth-child(3),
+        .customers-page .customer-table td:nth-child(3) {
+          width: 25%;
+        }
+
+        .customers-page .customer-table th:nth-child(4),
+        .customers-page .customer-table td:nth-child(4) {
+          width: 10%;
+        }
+
+        .customers-page .customer-table th:nth-child(5),
+        .customers-page .customer-table td:nth-child(5) {
+          width: 13%;
+        }
+
+        .customers-page .customer-table th:nth-child(6),
+        .customers-page .customer-table td:nth-child(6) {
+          width: 12%;
+        }
+
+        .customers-page .customer-table th:nth-child(7),
+        .customers-page .customer-table td:nth-child(7) {
+          width: 86px;
+          text-align: right;
+        }
+
         .customers-page .customer-status {
-          display: inline-block;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           padding: 4px 12px;
-          border-radius: 20px;
+          border-radius: 9999px;
           font-size: 11.5px;
           font-weight: 600;
+          letter-spacing: 0.2px;
+          margin-top: 4px;
         }
 
         .customers-page .customer-status.active {
-          background: #E8F2E7;
-          color: var(--brand-primary);
-          border: 1px solid #CDE2CB;
+          background: #DCFCE7 !important;
+          color: #15803D !important;
+          border: 1px solid #BBF7D0 !important;
         }
 
         .customers-page .customer-status.inactive {
-          background: #FDF1F0;
-          color: #A3332A;
-          border: 1px solid #F8CECA;
+          background: #FEE2E2 !important;
+          color: #B91C1C !important;
+          border: 1px solid #FECACA !important;
         }
 
         @media (max-width: 620px) {

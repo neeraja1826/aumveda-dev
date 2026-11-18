@@ -1,0 +1,1241 @@
+
+/* ============================================================
+   AUMVEDA VENDOR WEB
+   ADD PRODUCT — TEMPLATE 1
+============================================================ */
+
+.ap-page {
+  --ap-green: #173e32;
+  --ap-green-mid: #245743;
+  --ap-green-soft: #e8f0e7;
+  --ap-ivory: #f8f9f5;
+  --ap-text: #273d30;
+  --ap-muted: #7d8c80;
+  --ap-border: #e3e9e0;
+
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
+  min-width: 0;
+  gap: 24px;
+
+  padding-bottom: 35px;
+
+  color: var(--ap-text);
+}
+
+.ap-page *,
+.ap-page *::before,
+.ap-page *::after {
+  box-sizing: border-box;
+}
+
+.ap-page button,
+.ap-page input,
+.ap-page select,
+.ap-page textarea {
+  font-family: inherit;
+}
+
+.ap-page button {
+  cursor: pointer;
+}
+
+.ap-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ap-page :is(
+  button,
+  input,
+  select,
+  textarea
+):focus-visible {
+  outline: 2px solid #397d54;
+  outline-offset: 3px;
+}
+
+
+/* ============================================================
+   PAGE HEADER
+============================================================ */
+
+.ap-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 8px 0 5px;
+}
+
+.ap-page-header > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.ap-back-link {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 22px;
+  padding: 0;
+
+  border: none;
+  background: transparent;
+
+  color: #52755d;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  transition: color 0.2s ease;
+}
+
+.ap-back-link:hover {
+  color: #173e32;
+}
+
+.ap-eyebrow {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #67856d;
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.ap-page-header h1 {
+  margin: 0;
+
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(28px, 3vw, 37px);
+  font-weight: 600;
+  line-height: 1.2;
+
+  color: #173e32;
+}
+
+.ap-page-header p {
+  max-width: 610px;
+
+  margin: 11px 0 0;
+
+  color: #7f8f82;
+
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.ap-header-icon {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 65px;
+
+  width: 65px;
+  height: 65px;
+
+  border: 1px solid #dce9db;
+  border-radius: 17px;
+
+  background: #e8f1e6;
+  color: #2d6b4b;
+}
+
+
+/* ============================================================
+   NOTIFICATIONS
+============================================================ */
+
+.ap-notice {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 14px 16px;
+
+  border: 1px solid;
+  border-radius: 12px;
+
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.ap-notice > svg {
+  flex-shrink: 0;
+}
+
+.ap-notice > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.ap-notice--error {
+  border-color: #edcfca;
+
+  background: #fff7f4;
+  color: #965044;
+}
+
+.ap-notice--success {
+  border-color: #c9e3c6;
+
+  background: #eff8eb;
+  color: #326b42;
+}
+
+.ap-notice button {
+  flex-shrink: 0;
+
+  padding: 5px 8px;
+
+  border: 0;
+  border-radius: 7px;
+
+  background: transparent;
+  color: inherit;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ap-notice button:hover {
+  background: rgba(0, 0, 0, 0.045);
+}
+
+
+/* ============================================================
+   FORM LAYOUT
+============================================================ */
+
+.ap-layout {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    300px;
+
+  align-items: start;
+
+  gap: 22px;
+}
+
+.ap-main {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  gap: 20px;
+}
+
+.ap-aside {
+  position: sticky;
+  top: 110px;
+
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  gap: 16px;
+}
+
+
+/* ============================================================
+   SECTION CARDS
+============================================================ */
+
+.ap-card {
+  min-width: 0;
+
+  padding: 27px;
+
+  border: 1px solid var(--ap-border);
+  border-radius: 17px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 5px 20px rgba(29, 65, 43, 0.035);
+}
+
+.ap-section-heading {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 15px;
+
+  margin-bottom: 25px;
+  padding-bottom: 21px;
+
+  border-bottom: 1px solid #edf0e9;
+}
+
+.ap-section-icon {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 46px;
+
+  width: 46px;
+  height: 46px;
+
+  border-radius: 12px;
+
+  background: #eaf2e8;
+  color: #326b4a;
+}
+
+.ap-section-number {
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+
+  color: #72927a;
+}
+
+.ap-section-heading h2 {
+  margin: 0;
+
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 23px;
+  font-weight: 600;
+
+  color: #1c4532;
+}
+
+.ap-section-heading p {
+  margin: 8px 0 0;
+
+  font-size: 12px;
+  line-height: 1.6;
+
+  color: #87978b;
+}
+
+
+/* ============================================================
+   FORM GRID
+============================================================ */
+
+.ap-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 21px 18px;
+}
+
+.ap-field {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  gap: 8px;
+}
+
+.ap-field--full {
+  grid-column: 1 / -1;
+}
+
+.ap-field-label {
+  font-size: 12px;
+  font-weight: 700;
+
+  color: #38543f;
+}
+
+.ap-required {
+  color: #ad5949;
+}
+
+.ap-field input,
+.ap-field select,
+.ap-field textarea {
+  width: 100%;
+  min-width: 0;
+
+  padding: 12px 14px;
+
+  border: 1px solid #dfe7dd;
+  border-radius: 10px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: #263f2e;
+
+  font-size: 13px;
+  line-height: 1.5;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.ap-field input,
+.ap-field select {
+  height: 47px;
+}
+
+.ap-field textarea {
+  min-height: 105px;
+  resize: vertical;
+}
+
+.ap-field input::placeholder,
+.ap-field textarea::placeholder {
+  color: #a4b0a5;
+}
+
+.ap-field input:hover:not(:disabled),
+.ap-field select:hover:not(:disabled),
+.ap-field textarea:hover:not(:disabled) {
+  border-color: #adc4af;
+}
+
+.ap-field input:focus,
+.ap-field select:focus,
+.ap-field textarea:focus {
+  border-color: #6da17a;
+
+  box-shadow:
+    0 0 0 3px rgba(62, 130, 79, 0.09);
+}
+
+.ap-field :is(
+  input,
+  select,
+  textarea
+):disabled {
+  background: #f6f8f4;
+  color: #7f9083;
+  cursor: not-allowed;
+}
+
+.ap-field-hint {
+  font-size: 11px;
+  line-height: 1.5;
+
+  color: #98a69a;
+}
+
+
+/* ============================================================
+   IMAGE UPLOAD
+============================================================ */
+
+.ap-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 11px;
+
+  width: 100%;
+  min-height: 214px;
+
+  padding: 25px 20px;
+
+  border: 2px dashed #b8d0bb;
+  border-radius: 15px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f9fbf7,
+      #f0f6ee
+    );
+
+  text-align: center;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.ap-upload-zone:hover:not(:disabled) {
+  border-color: #548b62;
+  background: #f0f7ef;
+}
+
+.ap-upload-zone:disabled {
+  opacity: 0.6;
+}
+
+.ap-upload-icon {
+  display: grid;
+  place-items: center;
+
+  width: 56px;
+  height: 56px;
+
+  border-radius: 15px;
+
+  background: #e1eee0;
+  color: #34744e;
+}
+
+.ap-upload-zone > strong {
+  font-size: 15px;
+  font-weight: 700;
+
+  color: #2c593e;
+}
+
+.ap-upload-zone > span:not(
+  .ap-upload-icon,
+  .ap-upload-button
+) {
+  font-size: 12px;
+  line-height: 1.6;
+
+  color: #849789;
+}
+
+.ap-upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  min-height: 36px;
+  margin-top: 4px;
+  padding: 0 15px;
+
+  border: 1px solid #c4d8c4;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #316447;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+/* ============================================================
+   IMAGE LIST
+============================================================ */
+
+.ap-image-section {
+  margin-top: 25px;
+  padding-top: 21px;
+
+  border-top: 1px solid #edf0e9;
+}
+
+.ap-image-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 16px;
+}
+
+.ap-image-section-heading > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.ap-image-section-heading strong {
+  font-size: 14px;
+  color: #244a34;
+}
+
+.ap-image-section-heading span {
+  font-size: 11px;
+  color: #8c9c90;
+}
+
+.ap-image-section-heading button {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 7px 10px;
+
+  border: 1px solid #dfe8dc;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #316b48;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ap-image-section-heading button:hover:not(:disabled) {
+  background: #eff6ed;
+}
+
+
+/* ============================================================
+   IMAGE GRID
+============================================================ */
+
+.ap-image-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 14px;
+}
+
+.ap-image-card {
+  min-width: 0;
+  overflow: hidden;
+
+  border: 1px solid #e0e8dd;
+  border-radius: 13px;
+
+  background: #ffffff;
+}
+
+.ap-image-card--primary {
+  border-color: #71a380;
+
+  box-shadow:
+    0 0 0 2px rgba(72, 133, 86, 0.08);
+}
+
+.ap-image-preview {
+  position: relative;
+
+  display: grid;
+  place-items: center;
+
+  height: 165px;
+
+  overflow: hidden;
+
+  background: #f7faf5;
+}
+
+.ap-image-preview img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+}
+
+.ap-primary-badge {
+  position: absolute;
+
+  top: 9px;
+  left: 9px;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 5px;
+
+  padding: 6px 9px;
+
+  border-radius: 7px;
+
+  background: #e6f1e2;
+  color: #2f7146;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ap-image-remove {
+  position: absolute;
+
+  top: 9px;
+  right: 9px;
+
+  display: grid;
+  place-items: center;
+
+  width: 31px;
+  height: 31px;
+
+  border: 1px solid #edddd8;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #a25144;
+}
+
+.ap-image-remove:hover:not(:disabled) {
+  background: #fff0ed;
+}
+
+.ap-image-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 9px;
+
+  padding: 12px;
+}
+
+.ap-image-footer > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+  min-width: 0;
+}
+
+.ap-image-footer strong {
+  font-size: 12px;
+  color: #2d4d38;
+}
+
+.ap-image-footer small {
+  font-size: 10px;
+  color: #849586;
+}
+
+.ap-image-footer button {
+  flex-shrink: 0;
+
+  padding: 6px 8px;
+
+  border: 1px solid #d4e4d3;
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #37724d;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ap-image-footer button:hover:not(:disabled) {
+  background: #edf5eb;
+}
+
+
+/* ============================================================
+   IMAGE TIP
+============================================================ */
+
+.ap-image-tip {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 11px;
+
+  margin-top: 20px;
+  padding: 14px;
+
+  border: 1px solid #e4ebe0;
+  border-radius: 10px;
+
+  background: #f7faf5;
+
+  color: #66826c;
+}
+
+.ap-image-tip svg {
+  flex-shrink: 0;
+}
+
+.ap-image-tip span {
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+
+/* ============================================================
+   SAVE CARD
+============================================================ */
+
+.ap-save-card {
+  padding: 24px;
+
+  border: 1px solid #dce7dc;
+  border-radius: 17px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 6px 23px rgba(29, 65, 43, 0.045);
+}
+
+.ap-save-icon {
+  display: grid;
+  place-items: center;
+
+  width: 49px;
+  height: 49px;
+
+  margin-bottom: 18px;
+
+  border-radius: 13px;
+
+  background: #e8f2e6;
+  color: #30724a;
+}
+
+.ap-save-card h2 {
+  margin: 0;
+
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px;
+  font-weight: 600;
+
+  color: #1b4732;
+}
+
+.ap-save-card > p {
+  margin: 11px 0 0;
+
+  font-size: 12px;
+  line-height: 1.7;
+
+  color: #809083;
+}
+
+
+/* ============================================================
+   CHECKLIST
+============================================================ */
+
+.ap-checklist {
+  display: flex;
+  flex-direction: column;
+
+  gap: 13px;
+
+  margin-top: 23px;
+  padding: 16px;
+
+  border: 1px solid #e7eee5;
+  border-radius: 12px;
+
+  background: #f9fbf7;
+}
+
+.ap-checklist-item {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-height: 22px;
+
+  color: #526b58;
+
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ap-checklist-icon {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 20px;
+
+  width: 20px;
+  height: 20px;
+
+  border: 1px solid #cbd8cc;
+  border-radius: 50%;
+
+  background: #ffffff;
+  color: #ffffff;
+}
+
+.ap-checklist-icon--done {
+  border-color: #3a8053;
+  background: #3a8053;
+}
+
+.ap-checklist-empty {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+  background: #c8d3c9;
+}
+
+.ap-checklist-item > small {
+  margin-left: auto;
+
+  font-size: 9px;
+  color: #96a39a;
+}
+
+
+/* ============================================================
+   PROGRESS
+============================================================ */
+
+.ap-progress {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  margin-top: 15px;
+  padding: 12px;
+
+  border: 1px solid #d5e6d3;
+  border-radius: 9px;
+
+  background: #edf6eb;
+  color: #356f48;
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ap-progress svg {
+  flex-shrink: 0;
+}
+
+.ap-spin {
+  animation: ap-spin 0.85s linear infinite;
+}
+
+@keyframes ap-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* ============================================================
+   SAVE BUTTONS
+============================================================ */
+
+.ap-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  width: 100%;
+  min-height: 47px;
+
+  margin-top: 21px;
+  padding: 11px 13px;
+
+  border: 1px solid #174a35;
+  border-radius: 10px;
+
+  background: #1d523c;
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.ap-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #123d2c;
+}
+
+.ap-continue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 9px;
+
+  width: 100%;
+  min-height: 43px;
+
+  margin-top: 10px;
+  padding: 10px;
+
+  border: 1px solid #c8ddca;
+  border-radius: 10px;
+
+  background: #edf6eb;
+  color: #286444;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ap-continue:hover:not(:disabled) {
+  background: #e3efe0;
+}
+
+.ap-cancel {
+  width: 100%;
+  min-height: 40px;
+
+  margin-top: 10px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: transparent;
+  color: #829085;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ap-cancel:hover:not(:disabled) {
+  background: #f3f6f1;
+  color: #355643;
+}
+
+
+/* ============================================================
+   SIDEBAR HELP
+============================================================ */
+
+.ap-help-card {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+
+  padding: 18px;
+
+  border: 1px solid #dfeadd;
+  border-radius: 14px;
+
+  background: #f0f6ed;
+}
+
+.ap-help-icon {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 36px;
+
+  width: 36px;
+  height: 36px;
+
+  border-radius: 10px;
+
+  background: #deebd9;
+  color: #39764d;
+}
+
+.ap-help-card strong {
+  font-size: 12px;
+  color: #2b6040;
+}
+
+.ap-help-card p {
+  margin: 7px 0 0;
+
+  font-size: 11px;
+  line-height: 1.65;
+
+  color: #788b78;
+}
+
+
+/* ============================================================
+   STEPS CARD
+============================================================ */
+
+.ap-steps-card {
+  display: flex;
+  flex-direction: column;
+
+  gap: 15px;
+
+  padding: 20px;
+
+  border: 1px solid #e3e9e0;
+  border-radius: 14px;
+
+  background: #ffffff;
+}
+
+.ap-steps-card > strong {
+  margin-bottom: 4px;
+
+  font-size: 13px;
+  color: #254b36;
+}
+
+.ap-steps-card > div {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  font-size: 11px;
+  color: #718475;
+}
+
+.ap-steps-card > div > span {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 28px;
+
+  width: 28px;
+  height: 28px;
+
+  border-radius: 8px;
+
+  background: #edf3eb;
+  color: #427552;
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.ap-steps-card > div > svg {
+  margin-left: auto;
+  color: #49845b;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1200px) {
+  .ap-layout {
+    grid-template-columns:
+      minmax(0, 1fr)
+      270px;
+
+    gap: 17px;
+  }
+
+  .ap-card,
+  .ap-save-card {
+    padding: 21px;
+  }
+
+  .ap-image-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .ap-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ap-aside {
+    position: static;
+
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    align-items: start;
+  }
+
+  .ap-save-card {
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 700px) {
+  .ap-page {
+    gap: 19px;
+  }
+
+  .ap-page-header {
+    align-items: flex-start;
+  }
+
+  .ap-header-icon {
+    display: none;
+  }
+
+  .ap-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ap-field--full {
+    grid-column: auto;
+  }
+
+  .ap-aside {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ap-save-card {
+    grid-row: auto;
+  }
+
+  .ap-card {
+    padding: 19px;
+  }
+
+  .ap-section-heading {
+    gap: 12px;
+  }
+
+  .ap-section-heading h2 {
+    font-size: 21px;
+  }
+}
+
+@media (max-width: 470px) {
+  .ap-page-header h1 {
+    font-size: 28px;
+  }
+
+  .ap-card,
+  .ap-save-card {
+    padding: 17px;
+  }
+
+  .ap-image-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ap-image-preview {
+    height: 205px;
+  }
+
+  .ap-upload-zone {
+    min-height: 190px;
+    padding: 20px 13px;
+  }
+
+  .ap-section-icon {
+    flex-basis: 40px;
+
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-page *,
+  .ap-page *::before,
+  .ap-page *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

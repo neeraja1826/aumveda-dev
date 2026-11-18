@@ -7,13 +7,15 @@
     "scheme": "aumveda",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/app-icon.png",
+
     "android": {
       "predictiveBackGestureEnabled": false,
       "package": "com.aumveda.wellness",
+
       "adaptiveIcon": {
-        "foregroundImage": "./assets/app-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "foregroundImage": "./assets/app-icon.png"
       },
+
       "intentFilters": [
         {
           "action": "VIEW",
@@ -32,13 +34,17 @@
         }
       ]
     },
-    "web": {
-      "output": "static",
-      "bundler": "metro"
-    },
+
     "plugins": [
       "expo-router",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash screen.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F7F1E8"
+        }
+      ],
       "expo-status-bar",
       "expo-font",
       "expo-video",
@@ -47,6 +53,12 @@
       "expo-sharing",
       "expo-notifications"
     ],
+
+    "web": {
+      "output": "static",
+      "bundler": "metro"
+    },
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

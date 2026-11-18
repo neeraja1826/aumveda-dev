@@ -414,6 +414,7 @@ export default function Orders() {
 
                     <td>
                       <select
+                        className={`order-status-select order-status-${item.status || 'placed'}`}
                         value={item.status || 'pending'}
                         disabled={updatingId !== ''}
                         onChange={(event) =>
@@ -939,12 +940,70 @@ export default function Orders() {
         }
 
         .orders-page .data-table {
-          min-width: 980px;
+          width: 100%;
+          table-layout: fixed;
+          border-collapse: separate;
+          border-spacing: 0;
         }
 
-        .orders-page .data-table th:first-child,
-        .orders-page .data-table td:first-child {
-          min-width: 240px;
+        .orders-page .data-table th,
+        .orders-page .data-table td {
+          padding: 12px 14px;
+          vertical-align: middle;
+        }
+
+        .orders-page .data-table th:nth-child(1),
+        .orders-page .data-table td:nth-child(1) {
+          width: 28%;
+        }
+
+        .orders-page .data-table th:nth-child(2),
+        .orders-page .data-table td:nth-child(2) {
+          width: 15%;
+        }
+
+        .orders-page .data-table th:nth-child(3),
+        .orders-page .data-table td:nth-child(3) {
+          width: 16%;
+        }
+
+        .orders-page .data-table th:nth-child(4),
+        .orders-page .data-table td:nth-child(4) {
+          width: 11%;
+        }
+
+        .orders-page .data-table th:nth-child(5),
+        .orders-page .data-table td:nth-child(5) {
+          width: 12%;
+        }
+
+        .orders-page .data-table th:nth-child(6),
+        .orders-page .data-table td:nth-child(6) {
+          width: 10%;
+        }
+
+        .orders-page .data-table th:nth-child(7),
+        .orders-page .data-table td:nth-child(7) {
+          width: 115px;
+          text-align: right;
+        }
+
+        .orders-page .order-status-select {
+          appearance: none !important;
+          -webkit-appearance: none !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          padding: 4px 22px 4px 11px !important;
+          border-radius: 9999px !important;
+          font-size: 11.5px !important;
+          font-weight: 600 !important;
+          letter-spacing: 0.2px !important;
+          cursor: pointer !important;
+          min-height: 26px !important;
+          height: 26px !important;
+          line-height: 1 !important;
+          box-shadow: none !important;
         }
 
         .orders-page .order-number-button {

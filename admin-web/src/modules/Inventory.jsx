@@ -424,26 +424,79 @@ const [stockFilter, setStockFilter] = useState('all');
   font-size: 13px;
   line-height: 1.7;
 }
+.inventory-page .inventory-stock-card .data-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.inventory-page .inventory-stock-card .data-table th,
+.inventory-page .inventory-stock-card .data-table td {
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+.inventory-page .inventory-stock-card .data-table th:nth-child(1),
+.inventory-page .inventory-stock-card .data-table td:nth-child(1) {
+  width: 32%;
+}
+
+.inventory-page .inventory-stock-card .data-table th:nth-child(2),
+.inventory-page .inventory-stock-card .data-table td:nth-child(2) {
+  width: 14%;
+}
+
+.inventory-page .inventory-stock-card .data-table th:nth-child(3),
+.inventory-page .inventory-stock-card .data-table td:nth-child(3) {
+  width: 12%;
+}
+
+.inventory-page .inventory-stock-card .data-table th:nth-child(4),
+.inventory-page .inventory-stock-card .data-table td:nth-child(4) {
+  width: 14%;
+}
+
+.inventory-page .inventory-stock-card .data-table th:nth-child(5),
+.inventory-page .inventory-stock-card .data-table td:nth-child(5) {
+  width: 14%;
+}
+
+.inventory-page .inventory-stock-card .data-table th:nth-child(6),
+.inventory-page .inventory-stock-card .data-table td:nth-child(6) {
+  width: 100px;
+}
+
+.inventory-page .inventory-stock-card .data-table th:nth-child(7),
+.inventory-page .inventory-stock-card .data-table td:nth-child(7) {
+  width: 110px;
+  text-align: right;
+}
+
 .inventory-page .transaction-incoming {
-  background: #E8F2E7;
-  color: var(--brand-primary);
-  border: 1px solid #CDE2CB;
-  border-radius: 14px;
-  padding: 4px 10px;
-  font-size: 11.5px;
-  font-weight: 600;
-  display: inline-block;
+  background: #DCFCE7 !important;
+  color: #15803D !important;
+  border: 1px solid #BBF7D0 !important;
+  border-radius: 9999px !important;
+  padding: 4px 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
 }
 
 .inventory-page .transaction-outgoing {
-  background: #FEF7E6;
-  color: #946800;
-  border: 1px solid #F8E2A7;
-  border-radius: 14px;
-  padding: 4px 10px;
-  font-size: 11.5px;
-  font-weight: 600;
-  display: inline-block;
+  background: #FEF3C7 !important;
+  color: #B45309 !important;
+  border: 1px solid #FDE68A !important;
+  border-radius: 9999px !important;
+  padding: 4px 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
 }
 .inventory-page .stock-modal-product strong {
   display: block;

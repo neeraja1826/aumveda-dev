@@ -1,0 +1,785 @@
+
+.avpay-page {
+  --avpay-green: #173e32;
+  --avpay-border: #e4eae2;
+  --avpay-muted: #819183;
+
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 26px 30px 50px;
+  color: #283e30;
+  font-family: inherit;
+}
+
+.avpay-page * {
+  box-sizing: border-box;
+}
+
+.avpay-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 23px;
+}
+
+.avpay-eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: #7d9c82;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.avpay-page-header h1 {
+  margin: 0 0 7px;
+  font: 600 27px Georgia, serif;
+  color: var(--avpay-green);
+}
+
+.avpay-page-header p {
+  max-width: 570px;
+  margin: 0;
+  color: var(--avpay-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.avpay-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.avpay-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.avpay-btn--primary {
+  color: #fff;
+  background: var(--avpay-green);
+}
+
+.avpay-btn--primary:hover {
+  background: #28604b;
+}
+
+.avpay-btn--outline {
+  color: var(--avpay-green);
+  border-color: var(--avpay-border);
+  background: #fff;
+}
+
+.avpay-btn--outline:hover {
+  background: #eef5ec;
+}
+
+.avpay-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.avpay-btn:focus-visible,
+.avpay-page button:focus-visible,
+.avpay-page input:focus-visible,
+.avpay-page select:focus-visible {
+  outline: 2px solid #6fa182;
+  outline-offset: 2px;
+}
+
+.avpay-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(270px, 1.1fr) minmax(0, 1.9fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.avpay-main-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 24px;
+  border-radius: 15px;
+  color: #fff;
+  background: linear-gradient(
+    135deg,
+    #1f5741,
+    #11392a
+  );
+}
+
+.avpay-main-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.avpay-main-card-top span:first-child {
+  color: #c6e0d0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.avpay-main-card h2 {
+  margin: 8px 0 0;
+  font: 600 19px Georgia, serif;
+  color: #fff;
+}
+
+.avpay-main-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.avpay-main-card > strong {
+  display: block;
+  margin-top: 24px;
+  color: #fff;
+  font-size: clamp(27px, 3vw, 36px);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.avpay-main-card > p {
+  margin: 10px 0 25px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #c7ddcc;
+}
+
+.avpay-main-footer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: auto;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255,255,255,0.13);
+  color: #d7eadb;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.avpay-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.avpay-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+  padding: 19px 15px;
+  text-align: left;
+  color: #314a39;
+  background: #fff;
+  border: 1px solid var(--avpay-border);
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.avpay-metric:hover,
+.avpay-metric--active {
+  border-color: #8cb99a;
+  background: #fcfefc;
+}
+
+.avpay-metric-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 43px;
+}
+
+.avpay-metric-top > span:first-child {
+  color: #75887b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.avpay-metric-icon {
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: #edf4ec;
+  color: #30754d;
+}
+
+.avpay-metric--pending .avpay-metric-icon {
+  color: #99702a;
+  background: #fff3df;
+}
+
+.avpay-metric--failed .avpay-metric-icon {
+  color: #b4534c;
+  background: #fff0ed;
+}
+
+.avpay-metric strong {
+  color: var(--avpay-green);
+  font-size: clamp(17px, 2vw, 22px);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.avpay-metric small {
+  margin-top: auto;
+  font-size: 10px;
+  color: #88978b;
+}
+
+.avpay-information {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 21px;
+  color: #386647;
+  background: #edf6ec;
+  border: 1px solid #d9e9d8;
+  border-radius: 11px;
+}
+
+.avpay-information > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.avpay-information strong {
+  font-size: 12px;
+}
+
+.avpay-information p {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.avpay-section {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--avpay-border);
+  border-radius: 15px;
+  box-shadow: 0 4px 18px rgba(24, 69, 41, 0.025);
+}
+
+.avpay-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 22px;
+  border-bottom: 1px solid #edf0ec;
+}
+
+.avpay-section-header h2 {
+  margin: 0 0 6px;
+  color: var(--avpay-green);
+  font: 600 21px Georgia, serif;
+}
+
+.avpay-section-header p {
+  margin: 0;
+  color: var(--avpay-muted);
+  font-size: 12px;
+}
+
+.avpay-record-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.avpay-record-count strong {
+  color: var(--avpay-green);
+  font-size: 22px;
+}
+
+.avpay-record-count span {
+  color: #8c9d8d;
+  font-size: 10px;
+}
+
+.avpay-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 13px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+}
+
+.avpay-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  width: min(100%, 390px);
+  padding: 0 12px;
+  border: 1px solid var(--avpay-border);
+  border-radius: 9px;
+  color: #85988b;
+}
+
+.avpay-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #294833;
+  font: inherit;
+  font-size: 12px;
+}
+
+.avpay-search button {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: #849687;
+  cursor: pointer;
+}
+
+.avpay-toolbar select {
+  min-height: 42px;
+  padding: 0 12px;
+  color: #4e6755;
+  background: #fff;
+  border: 1px solid var(--avpay-border);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.avpay-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.avpay-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.avpay-table thead {
+  background: #fafcf9;
+}
+
+.avpay-table th {
+  padding: 15px 17px;
+  color: #8b9a8e;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.avpay-table td {
+  padding: 17px;
+  border-top: 1px solid #edf0ec;
+  color: #4d6354;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.avpay-table tbody tr:hover {
+  background: #fbfdfb;
+}
+
+.avpay-reference {
+  display: block;
+  color: #32563d;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.avpay-table td small {
+  display: block;
+  margin-top: 5px;
+  color: #89978c;
+  font-size: 10px;
+}
+
+.avpay-amount {
+  white-space: nowrap;
+}
+
+.avpay-amount strong {
+  color: #255f40;
+  font-size: 13px;
+}
+
+.avpay-view-btn {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+.avpay-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.avpay-badge--pending {
+  color: #9a722b;
+  background: #fff3de;
+}
+
+.avpay-badge--processing {
+  color: #426fb0;
+  background: #eaf2ff;
+}
+
+.avpay-badge--paid {
+  color: #237648;
+  background: #e6f5e9;
+}
+
+.avpay-badge--failed {
+  color: #ae4e48;
+  background: #fff0ee;
+}
+
+.avpay-empty {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+  padding: 48px 20px;
+  text-align: center;
+  color: #8ea393;
+}
+
+.avpay-empty h3 {
+  margin: 0;
+  color: #386748;
+  font-size: 15px;
+}
+
+.avpay-empty p {
+  max-width: 390px;
+  margin: 0 0 7px;
+  color: #849587;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.avpay-table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 20px;
+  border-top: 1px solid #edf0eb;
+  color: #85968a;
+  font-size: 11px;
+}
+
+.avpay-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 17px;
+  padding: 13px 15px;
+  color: #a44843;
+  background: #fff0ee;
+  border: 1px solid #efceca;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.avpay-alert button {
+  margin-left: auto;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* DETAILS MODAL */
+
+.avpay-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(10, 28, 18, 0.66);
+}
+
+.avpay-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(510px, 100%);
+  max-height: 100dvh;
+  overflow-y: auto;
+  background: #fff;
+  box-shadow: -15px 0 45px rgba(0, 0, 0, 0.1);
+}
+
+.avpay-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 24px;
+  border-bottom: 1px solid var(--avpay-border);
+}
+
+.avpay-modal-header h2 {
+  margin: 0 0 6px;
+  color: var(--avpay-green);
+  font: 600 23px Georgia, serif;
+}
+
+.avpay-modal-header p {
+  margin: 0;
+  color: #87978a;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.avpay-modal-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  color: #44664d;
+  background: #edf3eb;
+  cursor: pointer;
+}
+
+.avpay-modal-body {
+  padding: 23px;
+}
+
+.avpay-detail-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 22px;
+  margin-bottom: 18px;
+  background: #f0f6ef;
+  border: 1px solid #dfebdc;
+  border-radius: 12px;
+}
+
+.avpay-detail-hero > span:first-child {
+  color: #78917f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.avpay-detail-hero > strong {
+  color: #1e583a;
+  font-size: 31px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.avpay-detail-card {
+  padding: 19px;
+  border: 1px solid var(--avpay-border);
+  border-radius: 12px;
+}
+
+.avpay-detail-card h3 {
+  margin: 0 0 20px;
+  color: var(--avpay-green);
+  font-size: 14px;
+}
+
+.avpay-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid #edf1eb;
+  font-size: 12px;
+}
+
+.avpay-detail-row > span {
+  color: #839587;
+}
+
+.avpay-detail-row strong {
+  color: #355740;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.avpay-monospace {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+}
+
+.avpay-detail-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  margin-top: 18px;
+  color: #4f7859;
+  background: #f0f7ee;
+  border-radius: 10px;
+}
+
+.avpay-detail-note > svg {
+  flex-shrink: 0;
+}
+
+.avpay-detail-note p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.avpay-modal-state,
+.avpay-page-state {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 11px;
+  min-height: 250px;
+  padding: 30px;
+  text-align: center;
+  color: #7c9c85;
+}
+
+.avpay-page-state {
+  min-height: 330px;
+}
+
+.avpay-page-state h2 {
+  margin: 0;
+  color: var(--avpay-green);
+  font-size: 17px;
+}
+
+.avpay-modal-state p,
+.avpay-page-state p {
+  margin: 0;
+  color: #899a8d;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.avpay-spin {
+  animation: avpay-rotate 1s linear infinite;
+}
+
+@keyframes avpay-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1150px) {
+  .avpay-page {
+    padding: 22px 20px 40px;
+  }
+
+  .avpay-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .avpay-page {
+    padding: 18px 13px 34px;
+  }
+
+  .avpay-page-header,
+  .avpay-section-header {
+    flex-direction: column;
+  }
+
+  .avpay-page-header h1 {
+    font-size: 23px;
+  }
+
+  .avpay-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .avpay-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .avpay-search,
+  .avpay-toolbar select {
+    width: 100%;
+  }
+
+  .avpay-record-count {
+    align-items: flex-start;
+  }
+
+  .avpay-table-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .avpay-modal-header,
+  .avpay-modal-body {
+    padding: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avpay-page *,
+  .avpay-modal * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

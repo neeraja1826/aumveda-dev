@@ -1,0 +1,1059 @@
+
+/* ==========================================================
+   AUMVEDA VENDOR WEB — SHIPPING MANAGEMENT
+   Compatible with ShippingPage.jsx
+   Premium herbal green / white design
+   ========================================================== */
+
+.shipping-page {
+  --ship-green: #173e32;
+  --ship-green-mid: #286447;
+  --ship-border: #e4e9e1;
+  --ship-muted: #7b8b81;
+  --ship-background: #f8faf7;
+  --ship-text: #273d30;
+
+  width: 100%;
+  max-width: 1600px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 22px 25px 40px;
+  color: var(--ship-text);
+  font-family: inherit;
+}
+
+.shipping-page *,
+.shipping-page *::before,
+.shipping-page *::after,
+.shipping-modal-backdrop *,
+.shipping-modal-backdrop *::before,
+.shipping-modal-backdrop *::after {
+  box-sizing: border-box;
+}
+
+.shipping-page button,
+.shipping-page input,
+.shipping-modal-backdrop button,
+.shipping-modal-backdrop input {
+  font-family: inherit;
+}
+
+.shipping-page button,
+.shipping-modal-backdrop button {
+  cursor: pointer;
+}
+
+.shipping-page button:disabled,
+.shipping-modal-backdrop button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shipping-page :is(button, input):focus-visible,
+.shipping-modal-backdrop :is(button, input):focus-visible {
+  outline: 2px solid #6aa17c;
+  outline-offset: 2px;
+}
+
+/* ==========================================================
+   HEADER
+   ========================================================== */
+
+.shipping-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 21px;
+}
+
+.shipping-page-head > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.shipping-eyebrow {
+  display: block;
+  color: #72967d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  margin-bottom: 7px;
+}
+
+.shipping-page-head h1 {
+  margin: 0 0 7px;
+  color: var(--ship-green);
+  font: 600 clamp(25px, 2.5vw, 30px) Georgia, serif;
+  line-height: 1.25;
+}
+
+.shipping-page-head p {
+  margin: 0;
+  color: var(--ship-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ==========================================================
+   BUTTONS
+   ========================================================== */
+
+.shipping-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 37px;
+  padding: 8px 13px;
+  border: 1px solid var(--ship-border);
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.shipping-button--primary {
+  background: var(--ship-green-mid);
+  border-color: var(--ship-green-mid);
+  color: #fff;
+}
+
+.shipping-button--primary:hover:not(:disabled) {
+  background: #174831;
+  border-color: #174831;
+}
+
+.shipping-button--outline {
+  background: #fff;
+  border-color: #dbe6d9;
+  color: var(--ship-green);
+}
+
+.shipping-button--outline:hover:not(:disabled) {
+  background: #edf5eb;
+  border-color: #a5c5ab;
+}
+
+/* ==========================================================
+   FOUR SUMMARY CARDS
+   ========================================================== */
+
+.shipping-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+  width: 100%;
+  margin-bottom: 19px;
+}
+
+.shipping-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+  min-height: 119px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid var(--ship-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(29, 65, 43, 0.035);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.shipping-stat:hover {
+  transform: translateY(-2px);
+  border-color: #abcab1;
+  box-shadow: 0 7px 20px rgba(29, 65, 43, 0.06);
+}
+
+.shipping-stat > svg {
+  width: 19px;
+  height: 19px;
+  color: #37764f;
+}
+
+.shipping-stat > span {
+  color: var(--ship-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.shipping-stat > strong {
+  display: block;
+  color: #203d2d;
+  font: 700 26px Georgia, serif;
+  line-height: 1;
+}
+
+/* ==========================================================
+   PANELS
+   ========================================================== */
+
+.shipping-panel {
+  min-width: 0;
+  margin-bottom: 19px;
+  background: #fff;
+  border: 1px solid var(--ship-border);
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(29, 65, 43, 0.035);
+}
+
+.shipping-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #edf0eb;
+}
+
+.shipping-panel-head > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.shipping-panel-head h3 {
+  margin: 0 0 5px;
+  color: var(--ship-green);
+  font: 600 20px Georgia, serif;
+}
+
+.shipping-panel-head p {
+  margin: 0;
+  color: var(--ship-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.shipping-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  background: #edf4ec;
+  color: #376447;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ==========================================================
+   TABLES
+   ========================================================== */
+
+.shipping-table-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.shipping-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  border-spacing: 0;
+  text-align: left;
+}
+
+.shipping-table thead {
+  background: #f8faf7;
+}
+
+.shipping-table th {
+  padding: 13px 15px;
+  color: #829386;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom: 1px solid #e8eee6;
+}
+
+.shipping-table td {
+  padding: 15px;
+  color: #415648;
+  font-size: 12px;
+  line-height: 1.5;
+  vertical-align: middle;
+  border-bottom: 1px solid #edf0eb;
+}
+
+.shipping-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.shipping-table tbody tr:hover {
+  background: #fbfdf9;
+}
+
+.shipping-table td strong {
+  display: block;
+  color: #284333;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.shipping-table td small {
+  display: block;
+  color: #87968b;
+  font-size: 10px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.shipping-mono {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.shipping-action-col {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.shipping-table .shipping-button {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+/* ==========================================================
+   STATUS
+   ========================================================== */
+
+.shipping-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: #f0f2ee;
+  color: #657467;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.shipping-pill--ready {
+  background: #ecf3fd;
+  color: #386da4;
+}
+
+.shipping-pill--shipped,
+.shipping-pill--in_transit,
+.shipping-pill--out_for_delivery {
+  background: #fff3da;
+  color: #9b7026;
+}
+
+.shipping-pill--delivered {
+  background: #e5f4e9;
+  color: #278047;
+}
+
+.shipping-pill--returned {
+  background: #ffe9e8;
+  color: #a94442;
+}
+
+/* ==========================================================
+   TOOLBAR
+   ========================================================== */
+
+.shipping-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 13px;
+  padding: 15px 19px;
+  border-bottom: 1px solid #edf0eb;
+}
+
+.shipping-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+  min-height: 41px;
+  padding: 0 12px;
+  color: #819184;
+  border: 1px solid var(--ship-border);
+  border-radius: 9px;
+  background: #fff;
+}
+
+.shipping-search:focus-within {
+  border-color: #83ad8c;
+}
+
+.shipping-search input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 39px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #273d30;
+  font-size: 12px;
+  outline: none;
+}
+
+.shipping-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: #f3f6f2;
+  border-radius: 9px;
+}
+
+.shipping-tabs button {
+  border: 0;
+  border-radius: 7px;
+  padding: 8px 12px;
+  background: transparent;
+  color: #738679;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.shipping-tabs button.selected {
+  background: #fff;
+  color: var(--ship-green);
+  box-shadow: 0 1px 5px #12312117;
+}
+
+/* ==========================================================
+   FEEDBACK
+   ========================================================== */
+
+.shipping-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 190px;
+  padding: 32px 20px;
+  text-align: center;
+  color: #839788;
+}
+
+.shipping-empty svg {
+  color: #87a48d;
+}
+
+.shipping-empty h3 {
+  margin: 12px 0 5px;
+  color: #345540;
+  font-size: 15px;
+}
+
+.shipping-empty p {
+  max-width: 440px;
+  margin: 0;
+  color: #839788;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.shipping-loading {
+  padding: 30px 20px;
+  color: #708376;
+  font-size: 12px;
+}
+
+.shipping-complete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #eaf6ed;
+  color: #267349;
+  border: 1px solid #cfe8d4;
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ==========================================================
+   DRAWER / MODAL
+   ========================================================== */
+
+.shipping-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(14, 33, 25, 0.65);
+  backdrop-filter: blur(3px);
+}
+
+.shipping-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(590px, 100%);
+  max-width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: -15px 0 55px #0002;
+}
+
+.shipping-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex: 0 0 auto;
+  padding: 19px 21px;
+  background: #fff;
+  border-bottom: 1px solid var(--ship-border);
+}
+
+.shipping-modal-head > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.shipping-modal-head h3 {
+  margin: 0 0 6px;
+  color: var(--ship-green);
+  font: 600 22px Georgia, serif;
+  overflow-wrap: anywhere;
+}
+
+.shipping-modal-head p {
+  margin: 0;
+  color: #839489;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.shipping-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dfe8dd;
+  border-radius: 9px;
+  background: #f5f7f4;
+  color: #41614a;
+}
+
+.shipping-close:hover:not(:disabled) {
+  background: #e7f0e5;
+}
+
+.shipping-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: 19px 21px 30px;
+}
+
+.shipping-modal-body > .shipping-panel {
+  padding: 15px;
+  margin-bottom: 13px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.shipping-modal-body > .shipping-panel h3 {
+  margin: 0 0 8px;
+  color: #31533e;
+  font: 600 17px Georgia, serif;
+}
+
+.shipping-modal-body > .shipping-panel p {
+  color: #819184;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.shipping-modal-body h4 {
+  margin: 20px 0 11px;
+  color: #31533e;
+  font-size: 13px;
+}
+
+/* ==========================================================
+   SHIPMENT INFORMATION
+   ========================================================== */
+
+.shipping-detail-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.shipping-detail-line > span {
+  flex: 1;
+  color: #89978a;
+}
+
+.shipping-detail-line strong {
+  min-width: 0;
+  max-width: 65%;
+  color: #31513b;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================================
+   SHIPPING PROGRESS
+   ========================================================== */
+
+.shipping-stages {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+  padding: 17px 0;
+  margin-top: 17px;
+  border-top: 1px solid #edf1eb;
+  border-bottom: 1px solid #edf1eb;
+}
+
+.shipping-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  color: #9da8a0;
+}
+
+.shipping-stage > span {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border: 1px solid #e1e7df;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 11px;
+}
+
+.shipping-stage.done {
+  color: #3a7351;
+}
+
+.shipping-stage.done > span {
+  color: #2b7544;
+  border-color: #bddbc4;
+  background: #e5f3e6;
+}
+
+.shipping-stage small {
+  color: inherit;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+/* ==========================================================
+   SHIPMENT ITEMS
+   ========================================================== */
+
+.shipping-item-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 12px;
+  border: 1px solid #eaf0e9;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.shipping-item-list strong {
+  display: block;
+  color: #2d4a37;
+}
+
+.shipping-item-list small {
+  display: block;
+  color: #8b998e;
+  margin-top: 4px;
+}
+
+.shipping-item-list span {
+  white-space: nowrap;
+}
+
+.shipping-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 9px;
+  background: #f8faf7;
+  color: #65796a;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.shipping-address svg {
+  flex-shrink: 0;
+}
+
+/* ==========================================================
+   AWB FORM / COURIER FORM
+   ========================================================== */
+
+.shipping-dispatch,
+.shipping-courier {
+  margin-top: 15px;
+  padding: 14px;
+  background: #f8faf7;
+  border: 1px solid #edf0eb;
+  border-radius: 11px;
+}
+
+.shipping-dispatch p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 13px;
+  color: #849387;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.shipping-dispatch label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 12px 0;
+  color: #4c6553;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.shipping-dispatch input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 11px;
+  background: #fff;
+  color: #284333;
+  border: 1px solid #dbe4d9;
+  border-radius: 9px;
+  font-size: 12px;
+  outline: none;
+}
+
+.shipping-dispatch input:focus {
+  border-color: #70a083;
+  box-shadow: 0 0 0 3px #70a08316;
+}
+
+.shipping-modal-body input[type="radio"] {
+  accent-color: #286447;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.shipping-modal-body label small {
+  color: #87958a;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* ==========================================================
+   CONFIRMATION
+   ========================================================== */
+
+.shipping-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.shipping-confirm {
+  width: 100%;
+  padding: 14px;
+  background: #fff8e9;
+  border: 1px solid #efe0bb;
+  border-radius: 10px;
+}
+
+.shipping-confirm p {
+  margin: 0 0 12px;
+  color: #6c5736;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.shipping-confirm > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 1100px) {
+  .shipping-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shipping-page {
+    padding: 20px 18px 35px;
+  }
+}
+
+@media (max-width: 680px) {
+  .shipping-page {
+    padding: 15px 12px 28px;
+  }
+
+  .shipping-page-head {
+    align-items: flex-start;
+  }
+
+  .shipping-page-head h1 {
+    font-size: 24px;
+  }
+
+  .shipping-stats {
+    gap: 9px;
+  }
+
+  .shipping-stat {
+    min-height: 105px;
+    padding: 13px;
+  }
+
+  .shipping-stat strong {
+    font-size: 23px;
+  }
+
+  .shipping-panel-head {
+    padding: 15px;
+  }
+
+  .shipping-panel-head h3 {
+    font-size: 18px;
+  }
+
+  .shipping-toolbar {
+    padding: 12px;
+    align-items: stretch;
+  }
+
+  .shipping-search {
+    width: 100%;
+    max-width: none;
+  }
+
+  .shipping-tabs {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .shipping-modal-head,
+  .shipping-modal-body {
+    padding: 16px;
+  }
+
+  .shipping-stages {
+    gap: 2px;
+  }
+
+  .shipping-stage small {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 390px) {
+  .shipping-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .shipping-stat {
+    padding: 10px;
+  }
+
+  .shipping-detail-line {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shipping-page *,
+  .shipping-modal-backdrop * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+/* ==========================================================
+   AUMVEDA — COMBINED SHIPMENT AND MODAL BUTTON FIX
+   ========================================================== */
+
+.shipping-page,
+.shipping-modal-backdrop {
+  --ship-green: #173e32;
+  --ship-green-mid: #286447;
+  --ship-border: #e4e9e1;
+  --ship-muted: #7b8b81;
+  --ship-background: #f8faf7;
+  --ship-text: #273d30;
+}
+
+/* ACTIVE PRIMARY BUTTONS */
+
+.shipping-page .shipping-button--primary,
+.shipping-modal-backdrop .shipping-button--primary {
+  background: #256344 !important;
+  border: 1px solid #256344 !important;
+  color: #ffffff !important;
+  opacity: 1;
+  font-weight: 700;
+  box-shadow: 0 2px 5px rgba(37, 99, 68, 0.12);
+  transition: all 0.2s ease;
+}
+
+.shipping-page .shipping-button--primary:hover:not(:disabled),
+.shipping-modal-backdrop .shipping-button--primary:hover:not(:disabled) {
+  background: #194d33 !important;
+  border-color: #194d33 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(37, 99, 68, 0.22);
+  transform: translateY(-1px);
+}
+
+/* DISABLED PRIMARY BUTTONS */
+
+.shipping-page .shipping-button--primary:disabled,
+.shipping-modal-backdrop .shipping-button--primary:disabled {
+  background: #e1e9e0 !important;
+  border: 1px solid #d3dfd2 !important;
+  color: #687e6d !important;
+  opacity: 1 !important;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* OUTLINE BUTTONS */
+
+.shipping-page .shipping-button--outline,
+.shipping-modal-backdrop .shipping-button--outline {
+  background: #ffffff !important;
+  border: 1px solid #c4d8c5 !important;
+  color: #256344 !important;
+  opacity: 1;
+  font-weight: 700;
+}
+
+.shipping-page .shipping-button--outline:hover:not(:disabled),
+.shipping-modal-backdrop .shipping-button--outline:hover:not(:disabled) {
+  background: #e8f3e7 !important;
+  border-color: #86ad8c !important;
+  color: #194d33 !important;
+}
+
+.shipping-page .shipping-button--outline:disabled,
+.shipping-modal-backdrop .shipping-button--outline:disabled {
+  background: #edf1eb !important;
+  border-color: #dce5da !important;
+  color: #687e6d !important;
+  opacity: 1 !important;
+  cursor: not-allowed;
+}
+
+/* BUTTON ICONS */
+
+.shipping-button svg {
+  color: inherit;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+/* PRODUCT SELECTION CHECKBOXES */
+
+.shipping-modal-backdrop input[type="checkbox"],
+.shipping-modal-backdrop input[type="radio"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  width: 18px;
+  height: 18px;
+  accent-color: #256344;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.shipping-modal-backdrop input[type="checkbox"]:disabled,
+.shipping-modal-backdrop input[type="radio"]:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* AWB AND COURIER INPUTS */
+
+.shipping-modal-backdrop .shipping-dispatch input {
+  background: #ffffff;
+  border: 1px solid #cddccb;
+  color: #273d30;
+  outline: none;
+}
+
+.shipping-modal-backdrop .shipping-dispatch input:focus {
+  border-color: #398153;
+  box-shadow: 0 0 0 3px rgba(57, 129, 83, 0.10);
+}
+
+/* MODAL BACKGROUND */
+
+.shipping-modal-backdrop {
+  background: rgba(18, 43, 29, 0.48);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.shipping-modal {
+  color: #273d30;
+}
+
+/* RESPONSIVE BUTTONS */
+
+@media (max-width: 600px) {
+  .shipping-modal-backdrop .shipping-button {
+    min-height: 42px;
+    white-space: normal;
+    text-align: center;
+  }
+}

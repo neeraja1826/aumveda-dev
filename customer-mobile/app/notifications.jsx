@@ -618,6 +618,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     borderWidth: 1,
+    borderTopWidth: 0,
     borderColor: '#CDE2CB',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },

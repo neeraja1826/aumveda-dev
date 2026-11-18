@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 import {
   getSupportSummary,
   getSupportTickets,
@@ -174,20 +175,22 @@ export default function Support() {
 
   return (
     <div className="support-page">
-      <div className="support-header">
-        <div>
-          <h1>Support</h1>
-          <p>Manage customer support tickets and conversations.</p>
-        </div>
-
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA HELP DESK & CONCIERGE"
+        title="Customer Support & Inquiries"
+        description="Manage customer questions, order inquiries, wellness consultations, and ticket resolutions."
+        badgeText={`${summary.total} Tickets`}
+        doodle="tonic"
+      >
         <button
-          className="support-refresh"
+          type="button"
+          className="primary-button"
           onClick={loadSupport}
           disabled={loading}
         >
           {loading ? 'Loading...' : 'Refresh'}
         </button>
-      </div>
+      </AyurvedicHeroBanner>
 
       <div className="support-summary">
         <div className="support-card">
@@ -622,19 +625,60 @@ export default function Support() {
 
         .support-table {
           width: 100%;
-          border-collapse: collapse;
+          table-layout: fixed;
+          border-collapse: separate;
+          border-spacing: 0;
         }
 
         .support-table th,
         .support-table td {
-          padding: 16px 18px;
+          padding: 12px 14px;
+          vertical-align: middle;
           text-align: left;
           border-bottom: 1px solid #F0F5EE;
+        }
+
+        .support-table th:nth-child(1),
+        .support-table td:nth-child(1) {
+          width: 130px;
+        }
+
+        .support-table th:nth-child(2),
+        .support-table td:nth-child(2) {
+          width: 32%;
+          overflow: hidden;
+          text-overflow: ellipsis;
           white-space: nowrap;
         }
 
+        .support-table th:nth-child(3),
+        .support-table td:nth-child(3) {
+          width: 14%;
+        }
+
+        .support-table th:nth-child(4),
+        .support-table td:nth-child(4) {
+          width: 12%;
+        }
+
+        .support-table th:nth-child(5),
+        .support-table td:nth-child(5) {
+          width: 14%;
+        }
+
+        .support-table th:nth-child(6),
+        .support-table td:nth-child(6) {
+          width: 14%;
+        }
+
+        .support-table th:nth-child(7),
+        .support-table td:nth-child(7) {
+          width: 76px;
+          text-align: right;
+        }
+
         .support-table th {
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 700;
           color: #43624D;
           text-transform: uppercase;
@@ -662,59 +706,62 @@ export default function Support() {
         .support-priority {
           display: inline-flex;
           align-items: center;
-          padding: 4px 10px;
-          border-radius: 999px;
-          font-size: 12px;
+          justify-content: center;
+          padding: 4px 12px;
+          border-radius: 9999px;
+          font-size: 11.5px;
           font-weight: 600;
+          letter-spacing: 0.2px;
           text-transform: capitalize;
+          white-space: nowrap;
         }
 
         .support-status-open {
-          background: #FEF3C7;
-          color: #92400E;
-          border: 1px solid #FDE68A;
+          background: #FEF3C7 !important;
+          color: #B45309 !important;
+          border: 1px solid #FDE68A !important;
         }
 
         .support-status-in_progress {
-          background: #EFF6FF;
-          color: #1E40AF;
-          border: 1px solid #BFDBFE;
+          background: #E0F2FE !important;
+          color: #0369A1 !important;
+          border: 1px solid #BAE6FD !important;
         }
 
         .support-status-resolved {
-          background: #E8F5E9;
-          color: #1E5E38;
-          border: 1px solid #C8E6C9;
+          background: #DCFCE7 !important;
+          color: #15803D !important;
+          border: 1px solid #BBF7D0 !important;
         }
 
         .support-status-closed {
-          background: #F3F4F6;
-          color: #4B5563;
-          border: 1px solid #E5E7EB;
+          background: #F3F4F6 !important;
+          color: #4B5563 !important;
+          border: 1px solid #E5E7EB !important;
         }
 
         .support-priority-low {
-          background: #F1F5F9;
-          color: #475569;
-          border: 1px solid #E2E8F0;
+          background: #F3F4F6 !important;
+          color: #4B5563 !important;
+          border: 1px solid #E5E7EB !important;
         }
 
         .support-priority-medium {
-          background: #FEF3C7;
-          color: #92400E;
-          border: 1px solid #FDE68A;
+          background: #FEF3C7 !important;
+          color: #B45309 !important;
+          border: 1px solid #FDE68A !important;
         }
 
         .support-priority-high {
-          background: #FEE2E2;
-          color: #991B1B;
-          border: 1px solid #FECACA;
+          background: #FFEDD5 !important;
+          color: #C2410C !important;
+          border: 1px solid #FED7AA !important;
         }
 
         .support-priority-urgent {
-          background: #FCE7F3;
-          color: #9D174D;
-          border: 1px solid #FBCFE8;
+          background: #FEE2E2 !important;
+          color: #B91C1C !important;
+          border: 1px solid #FECACA !important;
         }
 
         .support-view-btn {

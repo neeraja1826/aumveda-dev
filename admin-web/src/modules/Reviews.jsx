@@ -252,21 +252,67 @@ export default function Reviews() {
           color: #465448;
         }
 
+        .reviews-page .data-table {
+          width: 100%;
+          table-layout: fixed;
+          border-collapse: separate;
+          border-spacing: 0;
+        }
+
+        .reviews-page .data-table th,
+        .reviews-page .data-table td {
+          padding: 12px 14px;
+          vertical-align: middle;
+        }
+
+        .reviews-page .data-table th:nth-child(1),
+        .reviews-page .data-table td:nth-child(1) {
+          width: 20%;
+        }
+
+        .reviews-page .data-table th:nth-child(2),
+        .reviews-page .data-table td:nth-child(2) {
+          width: 22%;
+        }
+
+        .reviews-page .data-table th:nth-child(3),
+        .reviews-page .data-table td:nth-child(3) {
+          width: 85px;
+        }
+
+        .reviews-page .data-table th:nth-child(4),
+        .reviews-page .data-table td:nth-child(4) {
+          width: 32%;
+        }
+
+        .reviews-page .data-table th:nth-child(5),
+        .reviews-page .data-table td:nth-child(5) {
+          width: 12%;
+        }
+
+        .reviews-page .data-table th:nth-child(6),
+        .reviews-page .data-table td:nth-child(6) {
+          width: 86px;
+          text-align: right;
+        }
+
         .reviews-page .review-rating {
           display: inline-flex;
           align-items: center;
-          padding: 4px 10px;
-          border: 1px solid #F3E2A8;
-          border-radius: 999px;
-          background: #FFF8E1;
-          color: #785B13;
-          font-weight: 650;
+          gap: 4px;
+          padding: 3px 10px;
+          border: 1px solid #FDE68A;
+          border-radius: 9999px;
+          background: #FEF3C7;
+          color: #B45309;
+          font-weight: 600;
+          font-size: 11.5px;
           white-space: nowrap;
         }
 
         .reviews-page .review-star {
-          margin-right: 4px;
-          color: #D9A52E;
+          color: #D97706;
+          font-size: 12px;
         }
 
         .reviews-page .review-comment {

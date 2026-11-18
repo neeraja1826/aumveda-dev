@@ -19,6 +19,7 @@ import {
 import Pagination, {
   ADMIN_LIST_PAGE_SIZE,
 } from '../components/Pagination.jsx';
+import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
 
 const COUPON_PLACEMENTS = [
   { value: 'home', label: 'Home Page' },
@@ -316,12 +317,13 @@ export default function Coupons() {
 
   return (
     <section className="module-page coupons-page">
-      <div className="coupons-heading">
-        <div>
-          <span className="coupons-eyebrow">PROMOTIONS & OFFERS</span>
-          <h2>Coupons</h2>
-        </div>
-
+      <AyurvedicHeroBanner
+        eyebrow="AUMVEDA PROMOTIONS & OFFERS"
+        title="Coupons & Promotional Campaigns"
+        description="Create and manage discount coupons, minimum order thresholds, and promotional offers for your customers."
+        badgeText={`${coupons.length} Active Coupons`}
+        doodle="flower"
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
             type="button"
@@ -340,7 +342,7 @@ export default function Coupons() {
             Create Coupon
           </button>
         </div>
-      </div>
+      </AyurvedicHeroBanner>
 
       {error && <div className="error-state">{error}</div>}
       {success && <div className="coupon-success">{success}</div>}
@@ -933,6 +935,11 @@ export default function Coupons() {
           border: 1px solid #CDE2CB;
           flex-shrink: 0;
         }
+        .coupon-stat-info {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
         .coupon-stat-info small {
           display: block;
           color: #5F6E64;
@@ -940,7 +947,8 @@ export default function Coupons() {
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          margin-bottom: 4px;
+          margin-bottom: 2px;
+          line-height: 1.2;
         }
         .coupon-stat-info strong {
           display: block;
@@ -948,7 +956,7 @@ export default function Coupons() {
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 26px;
           font-weight: 700;
-          line-height: 1;
+          line-height: 1.1;
         }
         .coupon-toolbar {
           display: flex;
@@ -1041,12 +1049,69 @@ export default function Coupons() {
         }
         .coupon-table {
           width: 100%;
-          border-collapse: collapse;
+          table-layout: fixed;
+          border-collapse: separate;
+          border-spacing: 0;
           text-align: left;
           font-size: 13px;
         }
+        .coupon-table th,
+        .coupon-table td {
+          padding: 12px 14px;
+          vertical-align: middle;
+        }
+        .coupon-table th:nth-child(1),
+        .coupon-table td:nth-child(1) {
+          width: 27%;
+        }
+        .coupon-table th:nth-child(2),
+        .coupon-table td:nth-child(2) {
+          width: 20%;
+        }
+        .coupon-table th:nth-child(3),
+        .coupon-table td:nth-child(3) {
+          width: 12%;
+        }
+        .coupon-table th:nth-child(4),
+        .coupon-table td:nth-child(4) {
+          width: 13%;
+        }
+        .coupon-table th:nth-child(5),
+        .coupon-table td:nth-child(5) {
+          width: 13%;
+        }
+        .coupon-table th:nth-child(6),
+        .coupon-table td:nth-child(6) {
+          width: 95px;
+        }
+        .coupon-table th:nth-child(7),
+        .coupon-table td:nth-child(7) {
+          width: 86px;
+          text-align: right;
+        }
+        .coupon-status {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px 12px;
+          border-radius: 9999px;
+          font-size: 11.5px;
+          font-weight: 600;
+          letter-spacing: 0.2px;
+          white-space: nowrap;
+        }
+        .coupon-status.is-active {
+          background: #DCFCE7 !important;
+          color: #15803D !important;
+          border: 1px solid #BBF7D0 !important;
+        }
+        .coupon-status.is-inactive {
+          background: #FEE2E2 !important;
+          color: #B91C1C !important;
+          border: 1px solid #FECACA !important;
+        }
         .coupon-table th {
-          padding: 14px 20px;
+          padding: 12px 14px;
           color: #43624D;
           background: #F6F9F5;
           font-size: 11px;
@@ -1057,7 +1122,7 @@ export default function Coupons() {
           border-bottom: 1px solid #E2ECE0;
         }
         .coupon-table td {
-          padding: 16px 20px;
+          padding: 12px 14px;
           color: #1E2D24;
           border-bottom: 1px solid #EDF3EC;
           vertical-align: middle;
