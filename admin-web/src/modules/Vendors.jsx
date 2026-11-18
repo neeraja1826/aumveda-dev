@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Search } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Plus, Search, X } from 'lucide-react';
 import {
   getResource,
   updateResourceStatus,
   updateVendorActiveStatus,
   getVendorDetails,
   createVendor,
+  updateProductApproval,
 } from '../services/adminService.js';
 
 const statuses = ['pending', 'approved', 'rejected', 'suspended'];
@@ -603,21 +604,22 @@ function VendorDetailsPage({
   const [productPage, setProductPage] = useState(0);
   const [orderPage, setOrderPage] = useState(0);
   const [notificationPage, setNotificationPage] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedProductId = searchParams.get('productId') || '';
+  const requestedApprovalStatus = searchParams.get('approvalStatus') || 'all';
+  const [productStatus, setProductStatus] = useState(requestedApprovalStatus);
+  const [productApprovalLoading, setProductApprovalLoading] = useState(false);
+  const [productApprovalError, setProductApprovalError] = useState('');
+
   const details = vendorDetails || {};
+
   const vendor =
     details.vendor ||
     (vendorDetails ? details : selectedVendor) ||
     {};
 
-  const products =
-    Array.isArray(details.products)
-      ? details.products
-      : [];
-
   const teamMembers =
-    Array.isArray(
-      details.team_members
-    )
+    Array.isArray(details.team_members)
       ? details.team_members
       : Array.isArray(details.team)
         ? details.team
@@ -629,31 +631,131 @@ function VendorDetailsPage({
     Array.isArray(details.orders)
       ? details.orders
       : [];
+
   const orderItems = Array.isArray(details.order_items)
     ? details.order_items
     : [];
-  const visibleProducts = products.slice(
+
+  /* ============================================================
+     PRODUCT STATUS FILTER
+
+     The existing products API currently returns `status: "active"`
+     for approved/live products. Vendor approval is displayed in the
+     UI as Approved, Pending, or Rejected without changing the
+     existing product `status` field. If the API later returns a
+     dedicated approval field, that field takes precedence.
+  ============================================================ */
+
+  const products = Array.isArray(details.products)
+    ? details.products
+    : [];
+
+  const getProductApprovalStatus = (product) => {
+    const dedicatedStatus =
+      product?.approval_status ??
+      product?.approvalStatus ??
+      product?.product_approval_status ??
+      product?.productApprovalStatus;
+
+    if (dedicatedStatus != null && String(dedicatedStatus).trim()) {
+      return String(dedicatedStatus).trim().toLowerCase();
+    }
+
+    const status = String(product?.status ?? "")
+      .trim()
+      .toLowerCase();
+
+    // Existing backend uses `active` for live/approved products.
+    if (status === "active") return "approved";
+
+    if (status === "pending") return "pending";
+    if (status === "rejected") return "rejected";
+
+    return status;
+  };
+
+  const filteredProducts =
+    productStatus === "all"
+      ? products
+      : products.filter(
+          (product) =>
+            getProductApprovalStatus(product) === productStatus
+        );
+
+  const visibleProducts = filteredProducts.slice(
     productPage * VENDOR_DETAILS_PAGE_SIZE,
     (productPage + 1) * VENDOR_DETAILS_PAGE_SIZE
   );
+
   const visibleOrderItems = orderItems.slice(
     orderPage * VENDOR_DETAILS_PAGE_SIZE,
     (orderPage + 1) * VENDOR_DETAILS_PAGE_SIZE
   );
+
   const ordersById = new Map(
-    orders.map((order) => [String(order.id), order])
+    orders.map((order) => [
+      String(order.id),
+      order,
+    ])
   );
+
   const productsById = new Map(
-    products.map((product) => [String(product.id), product])
+    products.map((product) => [
+      String(product.id),
+      product,
+    ])
   );
+
   const pendingNotifications =
     Number(stats.pending_requests || 0) +
     Number(stats.pending_products || 0);
 
+  const selectedProduct = products.find(
+    (product) => String(product.id) === String(requestedProductId)
+  ) || null;
+
+  function openProduct(product) {
+    if (!product?.id) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('productId', String(product.id));
+    setSearchParams(nextParams);
+    setProductApprovalError('');
+  }
+
+  function closeProductDetails() {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('productId');
+    setSearchParams(nextParams);
+    setProductApprovalError('');
+  }
+
+  async function handleProductApproval(product, approvalStatus) {
+    if (!product?.id || productApprovalLoading) return;
+
+    setProductApprovalLoading(true);
+    setProductApprovalError('');
+
+    try {
+      await updateProductApproval(product.id, approvalStatus);
+      onRefresh();
+    } catch (requestError) {
+      setProductApprovalError(
+        requestError.message ||
+          `Unable to ${approvalStatus === 'approved' ? 'approve' : 'reject'} product.`
+      );
+    } finally {
+      setProductApprovalLoading(false);
+    }
+  }
+
   return (
     <section className="module-page vendor-details-page">
 
-      {/* Back */}
+      {/* ==================================================
+          TOP BAR
+      ================================================== */}
+
       <div className="vendor-details-topbar">
 
         <button
@@ -676,7 +778,10 @@ function VendorDetailsPage({
       </div>
 
 
-      {/* Vendor Header */}
+      {/* ==================================================
+          VENDOR HEADER
+      ================================================== */}
+
       <div className="vendor-details-hero">
 
         <div className="vendor-details-identity">
@@ -689,7 +794,7 @@ function VendorDetailsPage({
             />
           ) : (
             <div className="vendor-details-logo vendor-details-logo-fallback">
-              {(vendor.business_name || 'V')
+              {(vendor.business_name || "V")
                 .trim()
                 .charAt(0)
                 .toUpperCase()}
@@ -704,12 +809,12 @@ function VendorDetailsPage({
 
             <h1>
               {vendor.business_name ||
-                'Unnamed Vendor'}
+                "Unnamed Vendor"}
             </h1>
 
             <p>
               {vendor.legal_name ||
-                'Business profile and operational overview'}
+                "Business profile and operational overview"}
             </p>
 
           </div>
@@ -721,30 +826,32 @@ function VendorDetailsPage({
 
           <span
             className={`vendor-status-pill status-${
-              vendor.status ||
-              'pending'
+              vendor.status || "pending"
             }`}
           >
-            {vendor.status ||
-              'pending'}
+            {vendor.status || "pending"}
           </span>
 
           <span
             className={`vendor-status-pill ${
               vendor.is_active
-                ? 'status-active'
-                : 'status-inactive'
+                ? "status-active"
+                : "status-inactive"
             }`}
           >
             {vendor.is_active
-              ? 'Active'
-              : 'Inactive'}
+              ? "Active"
+              : "Inactive"}
           </span>
 
         </div>
 
       </div>
 
+
+      {/* ==================================================
+          LOADING / ERROR / CONTENT
+      ================================================== */}
 
       {loading ? (
 
@@ -774,7 +881,10 @@ function VendorDetailsPage({
             <VendorStatCard
               href="#vendor-products"
               label="Total Products"
-              value={stats.total_products ?? products.length}
+              value={
+                stats.total_products ??
+                products.length
+              }
               hint="Products under this business"
             />
 
@@ -789,7 +899,8 @@ function VendorDetailsPage({
               href="#vendor-orders"
               label="Total Orders"
               value={
-                stats.total_orders ?? orders.length
+                stats.total_orders ??
+                orders.length
               }
               hint="Orders containing vendor products"
             />
@@ -821,30 +932,22 @@ function VendorDetailsPage({
 
                 <InfoField
                   label="Business Name"
-                  value={
-                    vendor.business_name
-                  }
+                  value={vendor.business_name}
                 />
 
                 <InfoField
                   label="Legal Name"
-                  value={
-                    vendor.legal_name
-                  }
+                  value={vendor.legal_name}
                 />
 
                 <InfoField
                   label="Email"
-                  value={
-                    vendor.email
-                  }
+                  value={vendor.email}
                 />
 
                 <InfoField
                   label="Phone"
-                  value={
-                    vendor.phone
-                  }
+                  value={vendor.phone}
                 />
 
                 <InfoField
@@ -858,7 +961,7 @@ function VendorDetailsPage({
                     vendor.country,
                   ]
                     .filter(Boolean)
-                    .join(', ')}
+                    .join(", ")}
                 />
 
                 <InfoField
@@ -926,12 +1029,16 @@ function VendorDetailsPage({
 
                 <SummaryRow
                   label="Pending product requests"
-                  value={stats.pending_products ?? 0}
+                  value={
+                    stats.pending_products ?? 0
+                  }
                 />
 
                 <SummaryRow
                   label="Pending business requests"
-                  value={stats.pending_requests ?? 0}
+                  value={
+                    stats.pending_requests ?? 0
+                  }
                 />
 
               </div>
@@ -952,17 +1059,71 @@ function VendorDetailsPage({
             count={products.length}
             empty="No products found for this vendor."
             footer={
-              <VendorDetailPagination
-                page={productPage}
-                pageSize={VENDOR_DETAILS_PAGE_SIZE}
-                total={products.length}
-                label="products"
-                onPageChange={setProductPage}
-              />
+              filteredProducts.length > 0 ? (
+                <VendorDetailPagination
+                  page={productPage}
+                  pageSize={VENDOR_DETAILS_PAGE_SIZE}
+                  total={filteredProducts.length}
+                  label="products"
+                  onPageChange={setProductPage}
+                />
+              ) : null
             }
           >
 
-            {products.length > 0 && (
+            {/* ==================================================
+                PRODUCT STATUS CHIPS
+            ================================================== */}
+
+            <div className="vendor-product-status-chips">
+
+  <button
+    type="button"
+    className={`vendor-product-status-chip ${
+      productStatus === "approved" ? "active" : ""
+    }`}
+    onClick={() => {
+      setProductStatus("approved");
+      setProductPage(0);
+    }}
+  >
+    Approved
+  </button>
+
+  <button
+    type="button"
+    className={`vendor-product-status-chip ${
+      productStatus === "pending" ? "active" : ""
+    }`}
+    onClick={() => {
+      setProductStatus("pending");
+      setProductPage(0);
+    }}
+  >
+    Pending
+  </button>
+
+  <button
+    type="button"
+    className={`vendor-product-status-chip ${
+      productStatus === "rejected" ? "active" : ""
+    }`}
+    onClick={() => {
+      setProductStatus("rejected");
+      setProductPage(0);
+    }}
+  >
+    Rejected
+  </button>
+
+</div>
+
+
+            {/* ==================================================
+                FILTERED PRODUCTS
+            ================================================== */}
+
+            {filteredProducts.length > 0 ? (
 
               <table className="data-table vendor-detail-table">
 
@@ -982,74 +1143,138 @@ function VendorDetailsPage({
                 <tbody>
 
                   {visibleProducts.map((product) => {
-                    const images = Array.isArray(product.images)
+
+                    const images = Array.isArray(
+                      product.images
+                    )
                       ? product.images
                       : [];
+
                     const productImage =
                       images.find(
                         (image) =>
-                          image.is_primary && image.image_url
+                          image.is_primary &&
+                          image.image_url
                       ) ||
-                      images.find((image) => image.image_url);
+                      images.find(
+                        (image) =>
+                          image.image_url
+                      );
+
+                    const productStatusValue =
+                      getProductApprovalStatus(product) ||
+                      "—";
 
                     return (
-                      <tr key={product.id}>
+
+                      <tr
+                        key={product.id}
+                        className={`vendor-product-row-clickable ${
+                          String(requestedProductId) === String(product.id)
+                            ? 'is-selected'
+                            : ''
+                        }`}
+                        onClick={() => openProduct(product)}
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openProduct(product);
+                          }
+                        }}
+                      >
+
+                        {/* Product */}
 
                         <td>
+
                           <div className="vendor-product-info">
+
                             {productImage ? (
+
                               <img
-                                src={productImage.image_url}
+                                src={
+                                  productImage.image_url
+                                }
                                 alt=""
                                 className="vendor-product-image"
                                 loading="lazy"
                               />
+
                             ) : (
+
                               <div
                                 className="vendor-product-image vendor-product-image-fallback"
                                 aria-hidden="true"
                               >
                                 —
                               </div>
+
                             )}
 
                             <div>
+
                               <strong>
                                 {product.name ||
-                                  'Unnamed Product'}
+                                  "Unnamed Product"}
                               </strong>
 
                               <div className="vendor-subtitle">
                                 {product.slug ||
                                   product.id ||
-                                  '—'}
+                                  "—"}
                               </div>
+
                             </div>
+
                           </div>
+
                         </td>
+
+
+                        {/* Price */}
 
                         <td>
                           {product.price == null
-                            ? '—'
-                            : formatCurrency(product.price)}
+                            ? "—"
+                            : formatCurrency(
+                                product.price
+                              )}
                         </td>
 
+
+                        {/* Status */}
+
                         <td>
-                          {product.status ||
-                            '—'}
+
+                          <span
+                            className={`vendor-product-status-text status-${String(
+                              productStatusValue
+                            ).toLowerCase()}`}
+                          >
+                            {productStatusValue}
+                          </span>
+
                         </td>
+
+
+                        {/* Variants */}
 
                         <td>
                           {product.variant_count ??
-                            product.variants
-                              ?.length ??
+                            product.variants?.length ??
                             0}
                         </td>
 
+
+                        {/* Stock */}
+
                         <td>
-                          {product.total_stock ??
-                            0}
+                          {product.total_stock ?? 0}
                         </td>
+
+
+                        {/* Created */}
 
                         <td>
                           {formatDate(
@@ -1058,17 +1283,48 @@ function VendorDetailsPage({
                         </td>
 
                       </tr>
-                    );
 
+                    );
                   })}
 
                 </tbody>
 
               </table>
 
+            ) : (
+
+              <div className="vendor-product-filter-empty">
+                No {productStatus} products found for this vendor.
+              </div>
+
             )}
 
           </DetailTableCard>
+
+
+          {/* ==================================================
+              SELECTED PRODUCT DETAILS
+
+              A notification can open this vendor page with
+              ?productId=<product-id>. The exact pending product
+              is selected here and can be approved or rejected.
+          ================================================== */}
+
+          {selectedProduct && (
+            <SelectedProductDetails
+              product={selectedProduct}
+              approvalStatus={getProductApprovalStatus(selectedProduct)}
+              loading={productApprovalLoading}
+              error={productApprovalError}
+              onClose={closeProductDetails}
+              onApprove={() =>
+                handleProductApproval(selectedProduct, 'approved')
+              }
+              onReject={() =>
+                handleProductApproval(selectedProduct, 'rejected')
+              }
+            />
+          )}
 
 
           {/* ==================================================
@@ -1117,7 +1373,7 @@ function VendorDetailsPage({
                             {member.full_name ||
                               member.profile?.full_name ||
                               member.name ||
-                              'Team Member'}
+                              "Team Member"}
                           </strong>
 
                           <div className="vendor-subtitle">
@@ -1125,7 +1381,7 @@ function VendorDetailsPage({
                               member.profile?.email ||
                               member.profile?.phone ||
                               member.user_id ||
-                              '—'}
+                              "—"}
                           </div>
 
                         </td>
@@ -1134,18 +1390,18 @@ function VendorDetailsPage({
                           {member.member_role ||
                             member.role ||
                             member.profile?.role ||
-                            '—'}
+                            "—"}
                         </td>
 
                         <td>
                           {member.is_active === false
-                            ? 'Inactive'
-                            : 'Active'}
+                            ? "Inactive"
+                            : "Active"}
                         </td>
 
                         <td>
                           {member.permission_mode ||
-                            '—'}
+                            "—"}
                         </td>
 
                         <td>
@@ -1210,69 +1466,89 @@ function VendorDetailsPage({
 
                 <tbody>
 
-                  {visibleOrderItems.map((item, index) => {
-                    const order =
-                      ordersById.get(String(item.order_id)) || {};
-                    const product =
-                      productsById.get(String(item.product_id)) || {};
-                    const productName =
-                      item.product_name ||
-                      product.name ||
-                      'Unnamed Product';
-                    const variantName =
-                      item.variant_name ||
-                      item.variant?.name ||
-                      '—';
+                  {visibleOrderItems.map(
+                    (item, index) => {
 
-                    return (
-                      <tr
-                        key={
-                          item.id ||
-                          `${item.order_id}-${item.product_id}-${
-                            orderPage * VENDOR_DETAILS_PAGE_SIZE + index
-                          }`
-                        }
-                      >
-                        <td>
-                          <strong>
-                            {productName}
-                          </strong>
-                        </td>
+                      const order =
+                        ordersById.get(
+                          String(
+                            item.order_id
+                          )
+                        ) || {};
 
-                        <td>
-                          {order.order_number ||
-                            order.id ||
-                            item.order_id ||
-                            '—'}
-                        </td>
+                      const product =
+                        productsById.get(
+                          String(
+                            item.product_id
+                          )
+                        ) || {};
 
-                        <td>
-                          {variantName}
-                        </td>
+                      const productName =
+                        item.product_name ||
+                        product.name ||
+                        "Unnamed Product";
 
-                        <td>
-                          {Number(item.quantity || 0)}
-                        </td>
+                      const variantName =
+                        item.variant_name ||
+                        item.variant?.name ||
+                        "—";
 
-                        <td>
-                          {formatCurrency(
-                            item.unit_price ?? item.total_price
-                          )}
-                        </td>
+                      return (
 
-                        <td>
-                          {item.status ||
-                            order.delivery_status ||
-                            order.status ||
-                            '—'}
-                        </td>
+                        <tr
+                          key={
+                            item.id ||
+                            `${item.order_id}-${item.product_id}-${orderPage * VENDOR_DETAILS_PAGE_SIZE + index}`
+                          }
+                        >
 
-                        <td>
-                          {order.payment_status || '—'}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          <td>
+                            <strong>
+                              {productName}
+                            </strong>
+                          </td>
+
+                          <td>
+                            {order.order_number ||
+                              order.id ||
+                              item.order_id ||
+                              "—"}
+                          </td>
+
+                          <td>
+                            {variantName}
+                          </td>
+
+                          <td>
+                            {Number(
+                              item.quantity || 0
+                            )}
+                          </td>
+
+                          <td>
+                            {formatCurrency(
+                              item.unit_price ??
+                                item.total_price
+                            )}
+                          </td>
+
+                          <td>
+                            {item.status ||
+                              order.delivery_status ||
+                              order.status ||
+                              "—"}
+                          </td>
+
+                          <td>
+                            {order.payment_status ||
+                              "—"}
+                          </td>
+
+                        </tr>
+
+                      );
+                    }
+                  )}
 
                 </tbody>
 
@@ -1308,6 +1584,243 @@ function VendorDetailsPage({
   );
 }
 
+
+
+function SelectedProductDetails({
+  product,
+  approvalStatus,
+  loading,
+  error,
+  onClose,
+  onApprove,
+  onReject,
+}) {
+  const images = Array.isArray(product?.images)
+    ? product.images
+    : [];
+
+  const primaryImage =
+    images.find(
+      (image) => image?.is_primary && image?.image_url
+    ) ||
+    images.find((image) => image?.image_url) ||
+    null;
+
+  const variants = Array.isArray(product?.variants)
+    ? product.variants
+    : [];
+
+  const categories = Array.isArray(product?.categories)
+    ? product.categories
+    : [];
+
+  return (
+    <div
+      className="vendor-product-modal-overlay"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        id="vendor-selected-product"
+        className="vendor-product-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="vendor-selected-product-title"
+        tabIndex={-1}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') onClose();
+        }}
+      >
+        <div className="vendor-section-heading vendor-selected-product-heading">
+          <div>
+            <div className="vendor-details-eyebrow">SELECTED PRODUCT</div>
+            <h2 id="vendor-selected-product-title">
+              {product?.name || 'Unnamed Product'}
+            </h2>
+            <p>
+              Review the complete product information and approval state before taking action.
+            </p>
+          </div>
+
+          <div className="vendor-product-modal-heading-actions">
+            <span
+              className={`vendor-product-status-text status-${String(
+                approvalStatus || 'neutral'
+              ).toLowerCase()}`}
+            >
+              {approvalStatus || 'Info'}
+            </span>
+            <button
+              type="button"
+              className="vendor-product-modal-close"
+              onClick={onClose}
+              aria-label="Close product details"
+              autoFocus
+            >
+              <X size={19} />
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="error-state vendor-product-approval-error" role="alert">
+            {error}
+          </div>
+        )}
+
+      <div className="vendor-selected-product-layout">
+        <div className="vendor-selected-product-media">
+          {primaryImage ? (
+            <img
+              src={primaryImage.image_url}
+              alt={product?.name || 'Product'}
+              className="vendor-selected-product-image"
+            />
+          ) : (
+            <div className="vendor-selected-product-image vendor-selected-product-image-fallback">
+              No image
+            </div>
+          )}
+
+          {images.length > 1 && (
+            <div className="vendor-selected-product-thumbs">
+              {images.slice(0, 5).map((image, index) => (
+                <img
+                  key={image?.id || image?.image_url || index}
+                  src={image?.image_url}
+                  alt=""
+                  loading="lazy"
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="vendor-selected-product-fields">
+          <InfoField label="Product Name" value={product?.name} />
+          <InfoField label="SKU" value={product?.sku} />
+          <InfoField label="Slug" value={product?.slug} />
+          <InfoField
+            label="Price"
+            value={
+              product?.price == null
+                ? null
+                : formatCurrency(product.price)
+            }
+          />
+          <InfoField
+            label="Compare at Price"
+            value={
+              product?.compare_at_price == null
+                ? null
+                : formatCurrency(product.compare_at_price)
+            }
+          />
+          <InfoField label="Category" value={product?.category_name || product?.category?.name} />
+          <InfoField label="Operational Status" value={product?.status} />
+          <InfoField label="Approval Status" value={approvalStatus} />
+          <InfoField label="Stock" value={product?.total_stock ?? product?.stock_quantity} />
+          <InfoField label="Created" value={formatDate(product?.created_at)} />
+          <InfoField label="Product ID" value={product?.id} />
+        </div>
+      </div>
+
+      {product?.description && (
+        <div className="vendor-selected-product-description">
+          <span>Description</span>
+          <p>{product.description}</p>
+        </div>
+      )}
+
+      {categories.length > 0 && (
+        <div className="vendor-selected-product-meta">
+          <span>Categories</span>
+          <div>
+            {categories.map((category, index) => (
+              <span key={category?.id || category?.name || index}>
+                {category?.name || category?.title || String(category)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="vendor-selected-product-section">
+        <div className="vendor-selected-product-section-heading">
+          <div>
+            <h3>Variants</h3>
+            <p>{variants.length} variant{variants.length === 1 ? '' : 's'}</p>
+          </div>
+        </div>
+
+        {variants.length > 0 ? (
+          <div className="table-scroll">
+            <table className="data-table vendor-detail-table">
+              <thead>
+                <tr>
+                  <th>Variant</th>
+                  <th>SKU</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {variants.map((variant, index) => (
+                  <tr key={variant?.id || variant?.sku || index}>
+                    <td>{variant?.name || variant?.title || '—'}</td>
+                    <td>{variant?.sku || '—'}</td>
+                    <td>
+                      {variant?.price == null
+                        ? '—'
+                        : formatCurrency(variant.price)}
+                    </td>
+                    <td>{variant?.stock_quantity ?? variant?.stock ?? 0}</td>
+                    <td>{variant?.status || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="vendor-empty-section">No variants found for this product.</div>
+        )}
+      </div>
+
+      {approvalStatus === 'pending' && (
+        <div className="vendor-product-approval-actions">
+          <div>
+            <strong>Pending Approval</strong>
+            <p>This product was submitted by the vendor and is waiting for admin approval.</p>
+          </div>
+
+          <div className="vendor-product-approval-buttons">
+            <button
+              type="button"
+              className="vendor-product-reject-button"
+              onClick={onReject}
+              disabled={loading}
+            >
+              {loading ? 'Updating…' : 'Reject Product'}
+            </button>
+            <button
+              type="button"
+              className="vendor-product-approve-button"
+              onClick={onApprove}
+              disabled={loading}
+            >
+              {loading ? 'Updating…' : 'Approve Product'}
+            </button>
+          </div>
+        </div>
+      )}
+      </section>
+    </div>
+  );
+}
 
 function VendorActivitySection({
   id,
@@ -3145,6 +3658,270 @@ function VendorStyles() {
       }
 
 
+
+      .vendor-product-row-clickable {
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .vendor-product-row-clickable:hover td,
+      .vendor-product-row-clickable.is-selected td {
+        background: #f4f9f3;
+      }
+
+      .vendor-product-row-clickable:focus-visible td {
+        background: #f4f9f3;
+        outline: 2px solid #276345;
+        outline-offset: -2px;
+      }
+
+      .vendor-product-modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(18, 30, 24, 0.6);
+      }
+
+      .vendor-product-modal {
+        width: min(960px, 100%);
+        max-height: min(90vh, 900px);
+        overflow: auto;
+        overscroll-behavior: contain;
+        padding: 24px;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
+      }
+
+      .vendor-selected-product-heading {
+        align-items: flex-start;
+      }
+
+      .vendor-selected-product-heading h2 {
+        margin-top: 2px;
+      }
+
+      .vendor-product-modal-heading-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      .vendor-product-modal-close {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border: 1px solid #e1e9e0;
+        border-radius: 9px;
+        background: #fff;
+        color: #526461;
+        cursor: pointer;
+      }
+
+      .vendor-product-modal-close:hover {
+        background: #f3f8f2;
+        color: #276345;
+      }
+
+      .vendor-selected-product-layout {
+        display: grid;
+        grid-template-columns: minmax(220px, 0.55fr) minmax(0, 1.45fr);
+        gap: 24px;
+        align-items: start;
+      }
+
+      .vendor-selected-product-media {
+        min-width: 0;
+      }
+
+      .vendor-selected-product-image {
+        width: 100%;
+        max-width: 300px;
+        aspect-ratio: 1 / 1;
+        display: block;
+        object-fit: contain;
+        border: 1px solid #e1ebe0;
+        border-radius: 14px;
+        background: #f8fbf7;
+      }
+
+      .vendor-selected-product-image-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #7b887e;
+        font-size: 12px;
+      }
+
+      .vendor-selected-product-thumbs {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+
+      .vendor-selected-product-thumbs img {
+        width: 48px;
+        height: 48px;
+        border: 1px solid #dfe9de;
+        border-radius: 8px;
+        object-fit: cover;
+        background: #f8fbf7;
+      }
+
+      .vendor-selected-product-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px 18px;
+      }
+
+      .vendor-selected-product-description {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 10px;
+        background: #f7faf6;
+        border: 1px solid #e7eee5;
+      }
+
+      .vendor-selected-product-description > span,
+      .vendor-selected-product-meta > span {
+        display: block;
+        margin-bottom: 6px;
+        color: #66746a;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .vendor-selected-product-description p {
+        margin: 0;
+        color: #39463e;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+
+      .vendor-selected-product-meta {
+        margin-top: 16px;
+      }
+
+      .vendor-selected-product-meta > div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+
+      .vendor-selected-product-meta > div > span {
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: #edf5ec;
+        color: #276345;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .vendor-selected-product-section {
+        margin-top: 22px;
+        padding-top: 20px;
+        border-top: 1px solid #e9eee8;
+      }
+
+      .vendor-selected-product-section-heading {
+        margin-bottom: 12px;
+      }
+
+      .vendor-selected-product-section-heading h3 {
+        margin: 0;
+        color: var(--brand-primary);
+        font-size: 14px;
+      }
+
+      .vendor-selected-product-section-heading p {
+        margin: 4px 0 0;
+        color: #7a857d;
+        font-size: 11px;
+      }
+
+      .vendor-product-approval-error {
+        margin-bottom: 16px;
+        padding: 10px 12px;
+      }
+
+      .vendor-product-approval-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin-top: 22px;
+        padding: 16px;
+        border: 1px solid #eadfbf;
+        border-radius: 12px;
+        background: #fffaf0;
+      }
+
+      .vendor-product-approval-actions strong {
+        display: block;
+        color: #6f5214;
+        font-size: 13px;
+      }
+
+      .vendor-product-approval-actions p {
+        margin: 4px 0 0;
+        color: #7d6a3b;
+        font-size: 11.5px;
+        line-height: 1.45;
+      }
+
+      .vendor-product-approval-buttons {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .vendor-product-approve-button,
+      .vendor-product-reject-button {
+        min-height: 36px;
+        padding: 0 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .vendor-product-approve-button {
+        border: 1px solid #287653;
+        background: #287653;
+        color: #fff;
+      }
+
+      .vendor-product-approve-button:hover:not(:disabled) {
+        background: #236746;
+        border-color: #236746;
+      }
+
+      .vendor-product-reject-button {
+        border: 1px solid #e1b7b3;
+        background: #fff;
+        color: #a3332a;
+      }
+
+      .vendor-product-reject-button:hover:not(:disabled) {
+        background: #fdf1f0;
+        border-color: #c97a73;
+      }
+
+      .vendor-product-approve-button:disabled,
+      .vendor-product-reject-button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+
       @media (max-width: 1000px) {
 
         .vendor-stat-grid {
@@ -3156,10 +3933,37 @@ function VendorStyles() {
           grid-template-columns: 1fr;
         }
 
+        .vendor-selected-product-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .vendor-selected-product-image {
+          max-width: 260px;
+        }
+
       }
 
 
       @media (max-width: 620px) {
+
+        .vendor-product-modal-overlay {
+          align-items: flex-end;
+          padding: 0;
+        }
+
+        .vendor-product-modal {
+          max-height: 94vh;
+          padding: 18px;
+          border-radius: 16px 16px 0 0;
+        }
+
+        .vendor-selected-product-heading {
+          gap: 10px;
+        }
+
+        .vendor-product-modal-heading-actions {
+          gap: 6px;
+        }
 
         .vendor-toolbar {
           align-items: stretch !important;
@@ -3199,13 +4003,110 @@ function VendorStyles() {
           flex-direction: column;
         }
 
+        .vendor-selected-product-fields {
+          grid-template-columns: 1fr;
+        }
+
+        .vendor-product-approval-actions {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .vendor-product-approval-buttons {
+          width: 100%;
+        }
+
+        .vendor-product-approval-buttons button {
+          flex: 1;
+        }
+
         .vendor-detail-pagination > div {
           width: 100%;
           justify-content: space-between;
         }
 
       }
+      .vendor-details-page .vendor-product-status-chips {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
 
+      .vendor-details-page .vendor-product-status-chip {
+        appearance: none;
+        border: 1px solid #dce7dc;
+        background: #ffffff;
+        color: #526457;
+        padding: 7px 15px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1;
+        cursor: pointer;
+        transition:
+          background 0.2s ease,
+          border-color 0.2s ease,
+          color 0.2s ease;
+      }
+
+      .vendor-details-page .vendor-product-status-chip:hover {
+        background: #f3f8f3;
+        border-color: #b9d1bb;
+        color: #245d3f;
+      }
+
+      .vendor-details-page .vendor-product-status-chip.active {
+        background: #287653;
+        border-color: #287653;
+        color: #ffffff;
+      }
+
+      .vendor-details-page .vendor-product-status-chip.active:hover {
+        background: #236746;
+        border-color: #236746;
+        color: #ffffff;
+      }
+
+      .vendor-details-page .vendor-product-filter-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 90px;
+        padding: 20px;
+        border: 1px dashed #dce7dc;
+        border-radius: 8px;
+        background: #fafcf9;
+        color: #78847b;
+        font-size: 12px;
+      }
+
+      .vendor-details-page .vendor-product-status-text {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 9px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: capitalize;
+      }
+
+      .vendor-details-page .vendor-product-status-text.status-approved {
+        background: #e8f6eb;
+        color: #287653;
+      }
+
+      .vendor-details-page .vendor-product-status-text.status-pending {
+        background: #fff5dc;
+        color: #9a6a00;
+      }
+
+      .vendor-details-page .vendor-product-status-text.status-rejected {
+        background: #fdeceb;
+        color: #b64b42;
+      }
     `}</style>
   );
 }

@@ -6,6 +6,44 @@ from fastapi import HTTPException, status
 from app.core.supabase import supabase_admin
 
 
+def _notify_admin_product_submission(
+    product_id: str,
+    product_name: str,
+) -> None:
+    admins_response = (
+        supabase_admin
+        .table("profiles")
+        .select("id")
+        .eq("role", "admin")
+        .eq("is_active", True)
+        .execute()
+    )
+    admins = admins_response.data or []
+
+    if not admins:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "No active admin accounts are available for "
+                "product approval notifications."
+            ),
+        )
+
+    supabase_admin.table("notifications").insert([
+        {
+            "recipient_id": admin["id"],
+            "recipient_role": "admin",
+            "title": "New Product Submitted For Approval",
+            "message": f"{product_name} was submitted for approval.",
+            "notification_type": "new_product",
+            "reference_type": "product",
+            "reference_id": product_id,
+            "is_read": False,
+        }
+        for admin in admins
+    ]).execute()
+
+
 # ============================================================
 # CONFIGURATION
 # ============================================================
@@ -1337,6 +1375,11 @@ def submit_vendor_product_for_approval(
                     "submission. Refresh and try again."
                 ),
             )
+
+        _notify_admin_product_submission(
+            product_id=product_id,
+            product_name=product_name,
+        )
 
         return {
             "message": (

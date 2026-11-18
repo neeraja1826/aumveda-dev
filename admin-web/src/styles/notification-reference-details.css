@@ -1,0 +1,74 @@
+.notification-reference-details {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #e3ebe7;
+  border-radius: 12px;
+  background: #fbfdfb;
+  color: #344b45;
+}
+
+.notification-reference-details h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.notification-reference-details dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.notification-reference-details dl > div {
+  min-width: 0;
+}
+
+.notification-reference-details dt {
+  margin-bottom: 4px;
+  color: #71817b;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.notification-reference-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notification-reference-details dd ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.notification-reference-details .notification-reference-nested {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+  padding-left: 12px;
+  border-left: 2px solid #e3ebe7;
+}
+
+.notification-reference-details
+  .notification-reference-related
+  > dd
+  > .notification-reference-nested {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 600px) {
+  .notification-reference-details dl,
+  .notification-reference-details
+    .notification-reference-related
+    > dd
+    > .notification-reference-nested {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

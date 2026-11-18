@@ -24,6 +24,7 @@ import Settings from './modules/Settings.jsx';
 import Login from './modules/Login.jsx';
 import Coupons from './modules/Coupons.jsx';
 import Notifications from './modules/Notifications.jsx';
+import NotificationDetails from './modules/NotificationDetails.jsx';
 import Support from './modules/Support.jsx';
 import ContentManagement from './modules/ContentManagement.jsx';
 
@@ -139,6 +140,11 @@ function AdminLayout({ onLogout }) {
             <Route
               path="/admin/notifications"
               element={<Notifications />}
+            />
+
+            <Route
+              path="/admin/notifications/:notificationId"
+              element={<NotificationDetails />}
             />
 
             <Route

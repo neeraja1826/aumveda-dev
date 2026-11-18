@@ -1,5 +1,11 @@
 import { Bell, Home, LogOut, Menu } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import {
+  ADMIN_NOTIFICATIONS_UPDATED_EVENT,
+  getAdminNotifications,
+  getAdminUnreadCount,
+} from '../services/adminService.js';
 
 const PAGE_TITLES = {
   '/admin/dashboard': 'Dashboard',
@@ -20,6 +26,31 @@ const PAGE_TITLES = {
   '/admin/content-management': 'Content Management',
 };
 
+function playNotificationSound(audioContext) {
+  if (!audioContext || audioContext.state !== 'running') return false;
+
+  const startTime = audioContext.currentTime;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(784, startTime);
+  oscillator.frequency.setValueAtTime(988, startTime + 0.12);
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.08, startTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.3);
+
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  oscillator.onended = () => {
+    oscillator.disconnect();
+    gain.disconnect();
+  };
+  oscillator.start(startTime);
+  oscillator.stop(startTime + 0.31);
+  return true;
+}
+
 export default function Header({
   tokenConnected,
   onMenuClick,
@@ -27,6 +58,161 @@ export default function Header({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(null);
+  const [notificationCountError, setNotificationCountError] = useState('');
+  const audioContextRef = useRef(null);
+  const audioReadyRef = useRef(false);
+  const pendingNotificationSoundRef = useRef(false);
+  const latestNotificationIdRef = useRef(null);
+  const hasCheckedNotificationsRef = useRef(false);
+  const checkingNotificationsRef = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+
+    function removeUnlockListeners() {
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    }
+
+    function unlockAudio() {
+      if (audioReadyRef.current) return;
+
+      const AudioContextConstructor =
+        window.AudioContext || window.webkitAudioContext;
+
+      if (!AudioContextConstructor) {
+        console.warn('Notification sound is not supported by this browser.');
+        removeUnlockListeners();
+        return;
+      }
+
+      try {
+        const audioContext =
+          audioContextRef.current || new AudioContextConstructor();
+        audioContextRef.current = audioContext;
+
+        audioContext.resume().then(() => {
+          if (!active || audioContext.state !== 'running') return;
+
+          audioReadyRef.current = true;
+          removeUnlockListeners();
+
+          if (pendingNotificationSoundRef.current) {
+            pendingNotificationSoundRef.current =
+              !playNotificationSound(audioContext);
+          }
+        }).catch((error) => {
+          console.warn('Unable to enable notification sound:', error);
+        });
+      } catch (error) {
+        console.warn('Unable to enable notification sound:', error);
+      }
+    }
+
+    window.addEventListener('pointerdown', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
+
+    return () => {
+      active = false;
+      removeUnlockListeners();
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch((error) => {
+          console.warn('Unable to close notification audio:', error);
+        });
+        audioContextRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function refreshUnreadCount() {
+      try {
+        const result = await getAdminUnreadCount();
+        const count = Number(result?.unread_count);
+
+        if (!Number.isFinite(count) || count < 0) {
+          throw new Error('The unread notification count is invalid.');
+        }
+
+        if (active) {
+          setUnreadCount(count);
+          setNotificationCountError('');
+        }
+      } catch (error) {
+        if (active) {
+          setNotificationCountError(
+            error.message || 'Unable to load notification count.'
+          );
+        }
+      }
+    }
+
+    async function checkForNewNotifications() {
+      if (checkingNotificationsRef.current) return;
+      checkingNotificationsRef.current = true;
+
+      try {
+        const result = await getAdminNotifications({
+          limit: 1,
+          offset: 0,
+        });
+        const items = Array.isArray(result)
+          ? result
+          : result?.items || [];
+        const latestId = items[0]?.id
+          ? String(items[0].id)
+          : null;
+
+        if (!active) return;
+
+        if (
+          hasCheckedNotificationsRef.current &&
+          latestId &&
+          latestId !== latestNotificationIdRef.current
+        ) {
+          pendingNotificationSoundRef.current =
+            !playNotificationSound(audioContextRef.current);
+        }
+
+        latestNotificationIdRef.current = latestId;
+        hasCheckedNotificationsRef.current = true;
+      } catch (error) {
+        console.warn('Unable to check for new notifications:', error);
+      } finally {
+        checkingNotificationsRef.current = false;
+      }
+    }
+
+    function refreshNotifications() {
+      refreshUnreadCount();
+      checkForNewNotifications();
+    }
+
+    refreshNotifications();
+    const intervalId = window.setInterval(refreshNotifications, 15000);
+    window.addEventListener(
+      ADMIN_NOTIFICATIONS_UPDATED_EVENT,
+      refreshUnreadCount
+    );
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener(
+        ADMIN_NOTIFICATIONS_UPDATED_EVENT,
+        refreshUnreadCount
+      );
+    };
+  }, [location.pathname]);
+
+  const notificationLabel = notificationCountError
+    ? 'View notifications, unread count unavailable'
+    : `View notifications${
+        unreadCount ? `, ${unreadCount} unread` : ''
+      }`;
 
   const getPageTitle = () => {
     const pathname = location.pathname;
@@ -110,11 +296,21 @@ export default function Header({
           className="topbar-bell-button"
           type="button"
           onClick={() => navigate('/admin/notifications')}
-          aria-label="View notifications"
-          title="Notifications"
+          aria-label={notificationLabel}
+          title={
+            notificationCountError
+              ? notificationCountError
+              : unreadCount === null
+                ? 'Notifications'
+                : `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
+          }
         >
           <Bell size={18} />
-          <span className="topbar-bell-dot" />
+          {unreadCount > 0 && (
+            <span className="topbar-bell-count">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </button>
 
         <button

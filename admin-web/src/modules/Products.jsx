@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   CheckCircle2,
-  Clock,
-  Eye,
+  Clock3,
   Filter,
   Package,
   Pencil,
@@ -10,6 +9,7 @@ import {
   Search,
   Star,
   Trash2,
+  XCircle,
 } from 'lucide-react';
 import {
   archiveProduct,
@@ -20,6 +20,7 @@ import {
   getResource,
   replaceProductImage,
   updateProduct,
+  updateProductApproval,
   updateResourceStatus,
 } from '../services/adminService.js';
 import { AyurvedicHeroBanner } from '../components/AyurvedicDoodles.jsx';
@@ -29,9 +30,7 @@ import Pagination, {
 
 const statuses = [
   'draft',
-  'pending',
   'active',
-  'rejected',
   'archived',
 ];
 
@@ -329,8 +328,13 @@ function ProductDetailsView({
   product,
   categories,
   vendors,
+  approvalStatus,
+  approvalLoading,
+  approvalError,
   onClose,
   onEdit,
+  onApprove,
+  onReject,
 }) {
   const variants = product.variants || [];
   const images = product.images || [];
@@ -517,7 +521,35 @@ function ProductDetailsView({
         )}
       </section>
 
+      {approvalError && (
+        <div className="error-state product-review-error" role="alert">
+          {approvalError}
+        </div>
+      )}
+
       <div className="product-details-footer">
+        {approvalStatus === 'pending' && (
+          <div className="product-details-approval-actions">
+            <button
+              type="button"
+              className="product-review-reject-button"
+              onClick={onReject}
+              disabled={approvalLoading}
+            >
+              <XCircle size={15} />
+              {approvalLoading ? 'Updating...' : 'Reject'}
+            </button>
+            <button
+              type="button"
+              className="product-review-approve-button"
+              onClick={onApprove}
+              disabled={approvalLoading}
+            >
+              <CheckCircle2 size={15} />
+              {approvalLoading ? 'Updating...' : 'Approve'}
+            </button>
+          </div>
+        )}
         <button
           type="button"
           className="secondary-button"
@@ -541,13 +573,15 @@ export default function Products() {
   const fetchBatchSize = 100;
   const [items, setItems] = useState([]);
   const [counts, setCounts] = useState({
-    all: 0,
-    approved: 0,
-    pending: 0,
-  });
+  all: 0,
+  approved: 0,
+  pending: 0,
+  rejected: 0,
+});
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [approvalFilter, setApprovalFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [vendorFilter, setVendorFilter] = useState('');
   const [featuredOnly, setFeaturedOnly] = useState(false);
@@ -581,6 +615,7 @@ export default function Products() {
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [modalApprovalError, setModalApprovalError] = useState('');
   const [loadingProduct, setLoadingProduct] = useState(false);
   const [imageBusyIndex, setImageBusyIndex] = useState(-1);
   const [adjustingVariantIndex, setAdjustingVariantIndex] =
@@ -595,6 +630,16 @@ export default function Products() {
     useState('');
   const [stockAdjustmentLoading, setStockAdjustmentLoading] =
     useState(false);
+  const modalProduct = items.find(
+    (item) => String(item.id) === String(editingId)
+  );
+  const modalApprovalStatus =
+    modalProduct?.approval_status ||
+    (modalProduct?.status === 'active'
+      ? 'approved'
+      : modalProduct?.status === 'rejected'
+        ? 'rejected'
+        : 'pending');
 
   useEffect(() => {
     const timer = setTimeout(
@@ -645,16 +690,19 @@ export default function Products() {
 
       try {
         const filters = {
-          ...(debouncedSearch
-            ? { search: debouncedSearch }
-            : {}),
-          ...(status ? { status } : {}),
-          ...(categoryFilter
-            ? { category_id: categoryFilter }
-            : {}),
-          ...(vendorFilter ? { vendor_id: vendorFilter } : {}),
-          ...(featuredOnly ? { featured: true } : {}),
-        };
+  ...(debouncedSearch
+    ? { search: debouncedSearch }
+    : {}),
+  ...(status ? { status } : {}),
+  ...(approvalFilter
+    ? { approval_status: approvalFilter }
+    : {}),
+  ...(categoryFilter
+    ? { category_id: categoryFilter }
+    : {}),
+  ...(vendorFilter ? { vendor_id: vendorFilter } : {}),
+  ...(featuredOnly ? { featured: true } : {}),
+};
         const firstResult = await getResource('products', {
           ...filters,
           limit: fetchBatchSize,
@@ -712,6 +760,7 @@ export default function Products() {
   }, [
     debouncedSearch,
     status,
+    approvalFilter,
     categoryFilter,
     vendorFilter,
     featuredOnly,
@@ -719,38 +768,46 @@ export default function Products() {
   ]);
 
   useEffect(() => {
-    let active = true;
+  let cancelled = false;
 
-    async function loadProductCounts() {
-      try {
-        const [allResult, approvedResult, pendingResult] =
-          await Promise.all([
-            getResource('products', { limit: 1 }),
-            getResource('products', { status: 'active', limit: 1 }),
-            getResource('products', { status: 'pending', limit: 1 }),
-          ]);
-        if (active) {
-          setCounts({
-            all: Number(allResult?.total) || 0,
-            approved: Number(approvedResult?.total) || 0,
-            pending: Number(pendingResult?.total) || 0,
-          });
-        }
-      } catch (requestError) {
-        if (active) {
-          setError(
-            requestError.message ||
-              'Unable to load product status counts.'
-          );
-        }
-      }
+  async function loadCounts() {
+    try {
+      const [allResult, approvedResult, pendingResult, rejectedResult] =
+        await Promise.all([
+          getResource('products', { limit: 1 }),
+          getResource('products', {
+            approval_status: 'approved',
+            limit: 1,
+          }),
+          getResource('products', {
+            approval_status: 'pending',
+            limit: 1,
+          }),
+          getResource('products', {
+            approval_status: 'rejected',
+            limit: 1,
+          }),
+        ]);
+
+      if (cancelled) return;
+
+      setCounts({
+        all: Number(allResult?.total ?? 0),
+        approved: Number(approvedResult?.total ?? 0),
+        pending: Number(pendingResult?.total ?? 0),
+        rejected: Number(rejectedResult?.total ?? 0),
+      });
+    } catch (error) {
+      console.error('Unable to load product counts:', error);
     }
+  }
 
-    loadProductCounts();
-    return () => {
-      active = false;
-    };
-  }, [reload]);
+  loadCounts();
+
+  return () => {
+    cancelled = true;
+  };
+}, [reload]);
 
   async function loadFormOptions() {
     setLoadingOptions(true);
@@ -801,6 +858,7 @@ export default function Products() {
     setViewOnly(readOnly);
     setForm(blankForm());
     setFormError('');
+    setModalApprovalError('');
     setModalOpen(true);
     setLoadingProduct(true);
 
@@ -1039,64 +1097,119 @@ export default function Products() {
       setImageBusyIndex(-1);
     }
   }
+async function changeApproval(product, approvalStatus) {
+  const currentApproval =
+    product.approval_status || 'pending';
 
-  async function changeStatus(product, newStatus) {
-    if (newStatus === product.status) return;
-
-    setUpdatingId(product.id);
-    setError('');
-
-    try {
-      await updateResourceStatus(
-        'products',
-        product.id,
-        newStatus
-      );
-
-      setItems((current) =>
-        current.map((item) =>
-          item.id === product.id
-            ? { ...item, status: newStatus }
-            : item
-        )
-      );
-      setCounts((current) => ({
-        ...current,
-        approved:
-          current.approved -
-          (product.status === 'active' ? 1 : 0),
-        pending:
-          current.pending -
-          (product.status === 'pending' ? 1 : 0),
-      }));
-      setCounts((current) => ({
-        ...current,
-        approved:
-          current.approved +
-          (newStatus === 'active' ? 1 : 0) -
-          (product.status === 'active' ? 1 : 0),
-        pending:
-          current.pending +
-          (newStatus === 'pending' ? 1 : 0) -
-          (product.status === 'pending' ? 1 : 0),
-      }));
-
-      if (
-        status &&
-        status !== newStatus
-      ) {
-        setReload((current) => current + 1);
-      }
-    } catch (requestError) {
-      setError(
-        requestError.message ||
-          'Unable to update product status.'
-      );
-      setReload((current) => current + 1);
-    } finally {
-      setUpdatingId('');
-    }
+  if (currentApproval === approvalStatus) {
+    return false;
   }
+
+  const actionLabel =
+    approvalStatus === 'approved'
+      ? 'approve'
+      : 'reject';
+
+  if (
+    !window.confirm(
+      `${actionLabel.charAt(0).toUpperCase()}${actionLabel.slice(
+        1
+      )} "${product.name || 'this product'}"?`
+    )
+  ) {
+    return false;
+  }
+
+  setUpdatingId(product.id);
+  setError('');
+  setModalApprovalError('');
+
+  try {
+    const result = await updateProductApproval(
+      product.id,
+      approvalStatus
+    );
+
+    const updatedProduct =
+      result?.product || result?.data || {};
+
+    setItems((current) =>
+      current.map((item) =>
+        item.id === product.id
+          ? {
+              ...item,
+              ...updatedProduct,
+              approval_status: approvalStatus,
+              ...(approvalStatus === 'approved'
+                ? { status: 'active' }
+                : approvalStatus === 'rejected'
+                  ? { status: 'rejected' }
+                  : {}),
+            }
+          : item
+      )
+    );
+
+    setReload((current) => current + 1);
+    return true;
+  } catch (requestError) {
+    const message =
+      requestError.message ||
+      `Unable to ${actionLabel} product.`;
+    setError(
+      message
+    );
+    setModalApprovalError(message);
+    return false;
+  } finally {
+    setUpdatingId('');
+  }
+}
+
+async function handleModalApproval(approvalStatus) {
+  if (!modalProduct) {
+    setError('Unable to find this product in the current list.');
+    return;
+  }
+
+  setModalApprovalError('');
+  const updated = await changeApproval(modalProduct, approvalStatus);
+  if (updated) setModalOpen(false);
+}
+  async function changeStatus(product, newStatus) {
+  if (newStatus === product.status) return;
+
+  setUpdatingId(product.id);
+  setError('');
+
+  try {
+    await updateResourceStatus(
+      'products',
+      product.id,
+      newStatus
+    );
+
+    setItems((current) =>
+      current.map((item) =>
+        item.id === product.id
+          ? { ...item, status: newStatus }
+          : item
+      )
+    );
+
+    if (status && status !== newStatus) {
+      setReload((current) => current + 1);
+    }
+  } catch (requestError) {
+    setError(
+      requestError.message ||
+        'Unable to update product status.'
+    );
+    setReload((current) => current + 1);
+  } finally {
+    setUpdatingId('');
+  }
+}
 
 function toggleProductSelection(productId) {
   setSelectedIds((current) =>
@@ -1117,46 +1230,6 @@ function toggleCurrentPageSelection() {
       ? current.filter((id) => !pageIds.includes(id))
       : [...new Set([...current, ...pageIds])]
   );
-}
-
-async function handleBulkAction() {
-  if (!bulkAction || selectedIds.length === 0) return;
-
-  if (
-    bulkAction === 'archive' &&
-    !window.confirm(
-      `Archive ${selectedIds.length} selected product(s)?`
-    )
-  ) {
-    return;
-  }
-
-  setBulkSaving(true);
-  setError('');
-  try {
-    await Promise.all(
-      selectedIds.map((productId) =>
-        bulkAction === 'archive'
-          ? archiveProduct(productId)
-          : updateResourceStatus(
-              'products',
-              productId,
-              bulkAction
-            )
-      )
-    );
-    setSelectedIds([]);
-    setBulkAction('');
-    setReload((current) => current + 1);
-  } catch (requestError) {
-    setError(
-      requestError.message ||
-        'Unable to apply the bulk product action.'
-    );
-    setReload((current) => current + 1);
-  } finally {
-    setBulkSaving(false);
-  }
 }
 
 async function saveProduct(event) {
@@ -1298,30 +1371,69 @@ async function saveProduct(event) {
   }
 
   async function handleBulkActionWithValue(action) {
-    if (!action || selectedIds.length === 0) return;
+  if (!action || selectedIds.length === 0) return;
 
-    setBulkSaving(true);
-    setError('');
-    try {
-      await Promise.all(
-        selectedIds.map((productId) =>
-          action === 'archive'
-            ? archiveProduct(productId)
-            : updateResourceStatus('products', productId, action)
-        )
-      );
-      setSelectedIds([]);
-      setBulkAction('');
-      setReload((current) => current + 1);
-    } catch (requestError) {
-      setError(
-        requestError.message ||
-          'Unable to update selected products.'
-      );
-    } finally {
-      setBulkSaving(false);
-    }
+  const selectedCount = selectedIds.length;
+
+  let confirmationMessage = '';
+
+  if (action === 'approved') {
+    confirmationMessage = `Approve ${selectedCount} selected product${
+      selectedCount === 1 ? '' : 's'
+    }?`;
+  } else if (action === 'rejected') {
+    confirmationMessage = `Reject ${selectedCount} selected product${
+      selectedCount === 1 ? '' : 's'
+    }?`;
+  } else if (action === 'archived') {
+    confirmationMessage = `Archive ${selectedCount} selected product${
+      selectedCount === 1 ? '' : 's'
+    }?`;
   }
+
+  if (confirmationMessage && !window.confirm(confirmationMessage)) {
+    setBulkAction('');
+    return;
+  }
+
+  setBulkSaving(true);
+  setError('');
+
+  try {
+    await Promise.all(
+      selectedIds.map((productId) => {
+        if (
+          action === 'approved' ||
+          action === 'rejected'
+        ) {
+          return updateProductApproval(
+            productId,
+            action
+          );
+        }
+
+        if (action === 'archived') {
+          return archiveProduct(productId);
+        }
+
+        return null;
+      })
+    );
+
+    setSelectedIds([]);
+    setBulkAction('');
+    setReload((current) => current + 1);
+  } catch (requestError) {
+    setError(
+      requestError.message ||
+        'Unable to update selected products.'
+    );
+
+    setReload((current) => current + 1);
+  } finally {
+    setBulkSaving(false);
+  }
+}
 
   const getCategoryBadgeClass = (categoryName = '') => {
     const name = String(categoryName).toLowerCase();
@@ -1366,7 +1478,88 @@ async function saveProduct(event) {
           Refresh
         </button>
       </div>
+{/* Product Approval Summary */}
+<div className="product-approval-tabs">
+  <button
+    type="button"
+    className={`product-approval-tab all ${
+      approvalFilter === '' ? 'active' : ''
+    }`}
+    onClick={() => {
+      setApprovalFilter('');
+      setCurrentPage(0);
+    }}
+  >
+    <div className="approval-tab-icon">
+      <Package size={20} />
+    </div>
 
+    <div className="approval-tab-content">
+      <span>All Products</span>
+      <strong>{counts.all}</strong>
+    </div>
+  </button>
+
+  <button
+    type="button"
+    className={`product-approval-tab approved ${
+      approvalFilter === 'approved' ? 'active' : ''
+    }`}
+    onClick={() => {
+      setApprovalFilter('approved');
+      setCurrentPage(0);
+    }}
+  >
+    <div className="approval-tab-icon">
+      <CheckCircle2 size={20} />
+    </div>
+
+    <div className="approval-tab-content">
+      <span>Approved</span>
+      <strong>{counts.approved}</strong>
+    </div>
+  </button>
+
+  <button
+    type="button"
+    className={`product-approval-tab pending ${
+      approvalFilter === 'pending' ? 'active' : ''
+    }`}
+    onClick={() => {
+      setApprovalFilter('pending');
+      setCurrentPage(0);
+    }}
+  >
+    <div className="approval-tab-icon">
+      <Clock3 size={20} />
+    </div>
+
+    <div className="approval-tab-content">
+      <span>Pending</span>
+      <strong>{counts.pending}</strong>
+    </div>
+  </button>
+
+  <button
+    type="button"
+    className={`product-approval-tab rejected ${
+      approvalFilter === 'rejected' ? 'active' : ''
+    }`}
+    onClick={() => {
+      setApprovalFilter('rejected');
+      setCurrentPage(0);
+    }}
+  >
+    <div className="approval-tab-icon">
+      <XCircle size={20} />
+    </div>
+
+    <div className="approval-tab-content">
+      <span>Rejected</span>
+      <strong>{counts.rejected}</strong>
+    </div>
+  </button>
+</div>
       {/* Main Filter & Search Toolbar */}
       <div className="products-toolbar">
         <div className="products-search-wrap">
@@ -1403,20 +1596,20 @@ async function saveProduct(event) {
           </select>
 
           <select
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value);
-              setCurrentPage(0);
-            }}
-            aria-label="Filter by type"
-            className="products-select-control"
-          >
-            <option value="">All Types</option>
-            <option value="active">Approved</option>
-            <option value="pending">Pending</option>
-            <option value="draft">Draft</option>
-            <option value="archived">Archived</option>
-          </select>
+  value={status}
+  onChange={(event) => {
+    setStatus(event.target.value);
+    setCurrentPage(0);
+  }}
+  aria-label="Filter by product status"
+  className="products-select-control"
+>
+  <option value="">All Product Status</option>
+  <option value="active">Active</option>
+  <option value="draft">Draft</option>
+  <option value="rejected">Rejected</option>
+  <option value="archived">Archived</option>
+</select>
 
           <select
             value={vendorFilter}
@@ -1453,32 +1646,27 @@ async function saveProduct(event) {
           </button>
 
           <select
-            value={bulkAction}
-            onChange={(event) => {
-              const action = event.target.value;
-              setBulkAction(action);
-              if (action && selectedIds.length > 0) {
-                if (action === 'archive') {
-                  if (
-                    window.confirm(
-                      `Archive ${selectedIds.length} selected product(s)?`
-                    )
-                  ) {
-                    handleBulkActionWithValue(action);
-                  }
-                } else {
-                  handleBulkActionWithValue(action);
-                }
-              }
-            }}
-            aria-label="Bulk actions"
-            className="products-select-control products-bulk-select"
-          >
-            <option value="">Bulk Actions</option>
-            <option value="active">Approve</option>
-            <option value="pending">Mark pending</option>
-            <option value="archived">Archive</option>
-          </select>
+  value={bulkAction}
+  onChange={(event) => {
+    const action = event.target.value;
+
+    if (!action || selectedIds.length === 0) {
+      setBulkAction(action);
+      return;
+    }
+
+    setBulkAction(action);
+    handleBulkActionWithValue(action);
+  }}
+  disabled={bulkSaving || selectedIds.length === 0}
+  aria-label="Bulk actions"
+  className="products-select-control products-bulk-select"
+>
+  <option value="">Bulk Actions</option>
+  <option value="approved">Approve Selected</option>
+  <option value="rejected">Reject Selected</option>
+  <option value="archived">Archive Selected</option>
+</select>
 
           <button
             type="button"
@@ -1546,6 +1734,7 @@ async function saveProduct(event) {
                     />
                   </th>
                   <th className="th-product">PRODUCT</th>
+                  <th className="th-vendor">VENDOR</th>
                   <th className="th-sku">SKU</th>
                   <th className="th-category">CATEGORY</th>
                   <th className="th-price">PRICE</th>
@@ -1553,6 +1742,7 @@ async function saveProduct(event) {
                   <th className="th-rating">RATING</th>
                   <th className="th-featured">FEATURED</th>
                   <th className="th-status">STATUS</th>
+                  <th className="th-approval">APPROVAL</th>
                   <th className="th-actions">ACTIONS</th>
                 </tr>
               </thead>
@@ -1568,19 +1758,35 @@ async function saveProduct(event) {
                       ? '—'
                       : `₹${Number(product.price).toLocaleString('en-IN')}`;
                   const stock = product.stock_quantity ?? 0;
-                  const isApproved =
-                    (product.status || 'draft') === 'active';
+                  const approvalStatus =
+  product.approval_status || 'pending';
+
 
                   return (
                     <tr
                       key={product.id}
-                      className={
+                      className={`product-row-clickable ${
                         selectedIds.includes(product.id)
                           ? 'row-selected'
                           : ''
-                      }
+                      }`}
+                      tabIndex={0}
+                      aria-label={`Open details for ${product.name || 'product'}`}
+                      onClick={() => openEdit(product, true)}
+                      onKeyDown={(event) => {
+                        if (
+                          event.target === event.currentTarget &&
+                          (event.key === 'Enter' || event.key === ' ')
+                        ) {
+                          event.preventDefault();
+                          openEdit(product, true);
+                        }
+                      }}
                     >
-                      <td className="td-checkbox">
+                      <td
+                        className="td-checkbox"
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(product.id)}
@@ -1619,6 +1825,24 @@ async function saveProduct(event) {
                                 'Ayurvedic wellness product'}
                             </span>
                           </div>
+                        </div>
+                      </td>
+
+                      <td className="td-vendor">
+                        <div className="vendor-info-cell">
+                          <strong className="vendor-name">
+                            {product.vendor_business_name ||
+                              product.vendor_name ||
+                              product.vendor?.business_name ||
+                              product.vendor?.name ||
+                              product.vendor?.legal_name ||
+                              '—'}
+                          </strong>
+                          {(product.vendor?.email || product.vendor_email) && (
+                            <span className="vendor-email">
+                              {product.vendor?.email || product.vendor_email}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -1676,48 +1900,57 @@ async function saveProduct(event) {
                         <div
                           className={`status-pill-wrap status-${product.status || 'draft'}`}
                         >
-                          {isApproved && (
+                          <span className="status-pill-select">
+                            {product.status === 'active'
+                              ? 'Active'
+                              : product.status === 'draft'
+                                ? 'Draft'
+                                : product.status === 'archived'
+                                  ? 'Archived'
+                                  : product.status === 'rejected'
+                                    ? 'Rejected'
+                                    : product.status || '—'}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="td-approval">
+                        <div
+                          className={`status-pill-wrap status-${approvalStatus}`}
+                        >
+                          {approvalStatus === 'approved' && (
                             <CheckCircle2
                               size={13}
                               className="status-pill-icon"
                             />
                           )}
-                          {(product.status || 'draft') === 'pending' && (
-                            <Clock
+                          {approvalStatus === 'pending' && (
+                            <Clock3
                               size={13}
                               className="status-pill-icon"
                             />
                           )}
-                          <select
-                            className="status-pill-select"
-                            value={product.status || 'draft'}
-                            disabled={updatingId === product.id}
-                            onChange={(event) =>
-                              changeStatus(product, event.target.value)
-                            }
-                            aria-label={`Status for ${product.name || 'product'}`}
-                          >
-                            <option value="active">Approved</option>
-                            <option value="pending">Pending</option>
-                            <option value="draft">Draft</option>
-                            <option value="archived">Archived</option>
-                          </select>
+                          {approvalStatus === 'rejected' && (
+                            <XCircle
+                              size={13}
+                              className="status-pill-icon"
+                            />
+                          )}
+                          <span className="status-pill-select">
+                            {approvalStatus === 'approved'
+                              ? 'Approved'
+                              : approvalStatus === 'rejected'
+                                ? 'Rejected'
+                                : 'Pending'}
+                          </span>
                         </div>
                       </td>
 
-                      <td className="td-actions">
-                        <div className="product-action-btn-group">
-                          <button
-                            type="button"
-                            className="action-icon-btn view-btn"
-                            onClick={() => openEdit(product, true)}
-                            disabled={updatingId === product.id}
-                            title="View product details"
-                            aria-label={`View ${product.name || 'product'}`}
-                          >
-                            <Eye size={15} />
-                          </button>
-
+                      <td
+                        className="td-actions"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <div className="product-row-actions">
                           <button
                             type="button"
                             className="action-icon-btn edit-btn"
@@ -1731,10 +1964,17 @@ async function saveProduct(event) {
 
                           <button
                             type="button"
-                            className="action-icon-btn delete-btn"
+                            className="action-icon-btn archive-btn"
                             onClick={() => handleArchive(product)}
-                            disabled={updatingId === product.id}
-                            title="Archive product"
+                            disabled={
+                              updatingId === product.id ||
+                              product.status === 'archived'
+                            }
+                            title={
+                              product.status === 'archived'
+                                ? 'Product already archived'
+                                : 'Archive product'
+                            }
                             aria-label={`Archive ${product.name || 'product'}`}
                           >
                             <Trash2 size={15} />
@@ -1819,8 +2059,13 @@ async function saveProduct(event) {
                 product={form}
                 categories={categories}
                 vendors={vendors}
+                approvalStatus={modalApprovalStatus}
+                approvalLoading={updatingId === editingId}
+                approvalError={modalApprovalError}
                 onClose={() => setModalOpen(false)}
                 onEdit={() => openEdit({ id: editingId })}
+                onApprove={() => handleModalApproval('approved')}
+                onReject={() => handleModalApproval('rejected')}
               />
             ) : (
               <form
@@ -2532,68 +2777,124 @@ async function saveProduct(event) {
         }
 
         /* Hero Banner */
-        .product-hero-card {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          padding: 22px 28px;
-          border-radius: 16px;
-          background: linear-gradient(135deg, #E6F1E3 0%, #EDF6EB 60%, #E2EFE0 100%);
-          border: 1px solid #D8E7D4;
-          box-shadow: 0 2px 10px rgba(18, 61, 43, 0.04);
-        }
+       .product-hero-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 120px;
+  padding: 24px 26px;
+  margin-bottom: 4px;
+  border: 1px solid #c8ddc8;
+  border-radius: 16px;
+  background:
+    radial-gradient(
+      circle at 85% 20%,
+      rgba(188, 221, 190, 0.35),
+      transparent 35%
+    ),
+    linear-gradient(
+      135deg,
+      #f7fbf6 0%,
+      #eaf4e8 100%
+    );
+  box-sizing: border-box;
+}
 
-        .product-hero-content {
-          max-width: 700px;
-        }
+.product-hero-content {
+  min-width: 0;
+}
 
-        .product-hero-tag {
-          display: inline-block;
-          color: #1F5133;
-          font-size: 10.5px;
-          font-weight: 800;
-          letter-spacing: 1.6px;
-          text-transform: uppercase;
-          margin-bottom: 6px;
-        }
+.product-hero-tag {
+  display: block;
+  margin-bottom: 7px;
+  color: #276345;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
 
-        .product-hero-content h2 {
-          margin: 0 0 6px 0;
-          color: var(--brand-primary);
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 24px;
-          font-weight: 700;
-          letter-spacing: -0.2px;
-          line-height: 1.25;
-        }
+.product-hero-content h2 {
+  margin: 0;
+  color: #143b28;
+  font-size: 22px;
+  line-height: 1.25;
+}
 
-        .product-hero-content p {
-          margin: 0;
-          color: #556B5C;
-          font-size: 13.5px;
-          line-height: 1.5;
-        }
+.product-hero-content p {
+  margin: 7px 0 0;
+  color: #607565;
+  font-size: 12px;
+}
 
+.product-hero-card .primary-button {
+  flex-shrink: 0;
+  min-width: 92px;
+}
         /* Toolbar Row */
         .product-hero-card {
           flex-wrap: wrap;
         }
 
         .products-toolbar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1px solid #dce8dc;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(18, 61, 43, 0.04);
+}
 
-        .products-search-wrap {
-          position: relative;
-          flex: 1 1 300px;
-          min-width: 240px;
-        }
+.products-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+}
+
+.products-search-wrap input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px 0 40px;
+  border: 1px solid #d5e4d2;
+  border-radius: 11px;
+  background: #fbfdfb;
+  color: #173f2d;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.products-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: nowrap;
+}
+
+.products-select-control {
+  height: 42px;
+  padding: 0 13px;
+  border: 1px solid #d5e4d2;
+  border-radius: 11px;
+  background: #ffffff;
+  color: #22422e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.products-bulk-select {
+  min-width: 145px;
+}
+
+.products-create-button {
+  height: 42px;
+  padding: 0 17px;
+  border-radius: 11px;
+  white-space: nowrap;
+}
 
         .products-search-icon {
           position: absolute;
@@ -2764,6 +3065,15 @@ async function saveProduct(event) {
           background: #FAFDF9;
         }
 
+        .products-data-table tr.product-row-clickable {
+          cursor: pointer;
+        }
+
+        .products-data-table tr.product-row-clickable:focus-visible {
+          outline: 2px solid #276345;
+          outline-offset: -2px;
+        }
+
         .products-data-table tr.row-selected td {
           background: #F2F8F1;
         }
@@ -2787,6 +3097,33 @@ async function saveProduct(event) {
           align-items: center;
           gap: 12px;
           min-width: 220px;
+        }
+
+        .vendor-info-cell {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 150px;
+          max-width: 190px;
+        }
+
+        .vendor-name {
+          color: var(--brand-primary);
+          font-size: 12.5px;
+          font-weight: 650;
+          line-height: 1.3;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .vendor-email {
+          color: #718475;
+          font-size: 10.5px;
+          line-height: 1.3;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .product-thumbnail {
@@ -3417,11 +3754,51 @@ async function saveProduct(event) {
 
         .product-details-footer {
           display: flex;
+          flex-wrap: wrap;
+          align-items: center;
           justify-content: flex-end;
           gap: 10px;
           margin-top: 24px;
           padding-top: 18px;
           border-top: 1px solid #E7EEE5;
+        }
+
+        .product-details-approval-actions {
+          display: flex;
+          gap: 8px;
+          margin-right: auto;
+        }
+
+        .product-review-approve-button,
+        .product-review-reject-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          min-height: 38px;
+          padding: 0 14px;
+          border-radius: 9px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .product-review-approve-button {
+          border: 1px solid #287653;
+          background: #287653;
+          color: #FFFFFF;
+        }
+
+        .product-review-reject-button {
+          border: 1px solid #E1B7B3;
+          background: #FFFFFF;
+          color: #A3332A;
+        }
+
+        .product-review-approve-button:disabled,
+        .product-review-reject-button:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
         }
 
         .product-form-grid {
@@ -3701,6 +4078,157 @@ async function saveProduct(event) {
             align-items: flex-start;
           }
         }
+      /* =========================================
+   PRODUCT APPROVAL SUMMARY
+========================================= */
+
+.product-approval-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.product-approval-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 88px;
+  padding: 16px 18px;
+  border: 1px solid #dce8dc;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #173f2d;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.product-approval-tab:hover {
+  transform: translateY(-2px);
+  border-color: #b9d5bd;
+  box-shadow: 0 8px 20px rgba(25, 70, 45, 0.08);
+}
+
+.product-approval-tab.active {
+  border-color: #276345;
+  box-shadow: 0 8px 22px rgba(39, 99, 69, 0.12);
+}
+
+/* Icon */
+
+.approval-tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+}
+
+.approval-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.approval-tab-content span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #668070;
+}
+
+.approval-tab-content strong {
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 700;
+  color: #173f2d;
+}
+
+/* All */
+
+.product-approval-tab.all {
+  background: linear-gradient(
+    135deg,
+    #f3faf4 0%,
+    #ffffff 100%
+  );
+}
+
+.product-approval-tab.all .approval-tab-icon {
+  background: #e1f3e5;
+  color: #276345;
+}
+
+.product-approval-tab.all.active {
+  background: #edf8ef;
+}
+
+/* Approved */
+
+.product-approval-tab.approved {
+  background: linear-gradient(
+    135deg,
+    #f2fbf4 0%,
+    #ffffff 100%
+  );
+}
+
+.product-approval-tab.approved .approval-tab-icon {
+  background: #d9f3df;
+  color: #15803d;
+}
+
+.product-approval-tab.approved.active {
+  background: #eaf8ed;
+  border-color: #9ed4aa;
+}
+
+/* Pending */
+
+.product-approval-tab.pending {
+  background: linear-gradient(
+    135deg,
+    #fffaf0 0%,
+    #ffffff 100%
+  );
+}
+
+.product-approval-tab.pending .approval-tab-icon {
+  background: #fff0c9;
+  color: #c47b00;
+}
+
+.product-approval-tab.pending.active {
+  background: #fff8e7;
+  border-color: #e8ca82;
+}
+
+/* Rejected */
+
+.product-approval-tab.rejected {
+  background: linear-gradient(
+    135deg,
+    #fff5f4 0%,
+    #ffffff 100%
+  );
+}
+
+.product-approval-tab.rejected .approval-tab-icon {
+  background: #ffe0dd;
+  color: #c0392b;
+}
+
+.product-approval-tab.rejected.active {
+  background: #fff0ee;
+  border-color: #e8aaa3;
+}
       `}</style>
     </section>
   );

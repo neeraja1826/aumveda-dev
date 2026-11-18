@@ -12,6 +12,17 @@ const resources = {
   support: '/admin/support/tickets',
 };
 
+export const ADMIN_NOTIFICATIONS_UPDATED_EVENT =
+  'admin-notifications-updated';
+
+function dispatchAdminNotificationsUpdated() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new Event(ADMIN_NOTIFICATIONS_UPDATED_EVENT)
+    );
+  }
+}
+
 export const getDashboardSummary = () =>
   apiRequest('/admin/dashboard/summary');
 
@@ -106,7 +117,20 @@ export const updateProduct = (productId, product) =>
       body: JSON.stringify(product),
     }
   );
-
+export const updateProductApproval = (
+  productId,
+  approvalStatus
+) =>
+  apiRequest(
+    `/admin/products/${encodeURIComponent(
+      productId
+    )}/approval?approval_status=${encodeURIComponent(
+      approvalStatus
+    )}`,
+    {
+      method: 'PATCH',
+    }
+  );
 export const archiveProduct = (productId) =>
   apiRequest(
     `/admin/products/${encodeURIComponent(productId)}`,
@@ -558,10 +582,24 @@ export const getAdminUnreadCount = () =>
     '/admin/notifications/unread-count'
   );
 
-export const markAdminNotificationRead = (
+export const getAdminNotification = (notificationId) => {
+  if (!notificationId) {
+    throw new Error('Notification ID is required.');
+  }
+
+  return apiRequest(
+    `/admin/notifications/${encodeURIComponent(notificationId)}`
+  );
+};
+
+export const markAdminNotificationRead = async (
   notificationId
-) =>
-  apiRequest(
+) => {
+  if (!notificationId) {
+    throw new Error('Notification ID is required.');
+  }
+
+  const result = await apiRequest(
     `/admin/notifications/${encodeURIComponent(
       notificationId
     )}/read`,
@@ -569,15 +607,39 @@ export const markAdminNotificationRead = (
       method: 'PATCH',
     }
   );
+  dispatchAdminNotificationsUpdated();
+  return result;
+};
 
-export const markAllAdminNotificationsRead =
-  () =>
-    apiRequest(
-      '/admin/notifications/read-all',
-      {
-        method: 'PATCH',
-      }
-    );
+export const markAdminNotificationUnread = async (
+  notificationId
+) => {
+  if (!notificationId) {
+    throw new Error('Notification ID is required.');
+  }
+
+  const result = await apiRequest(
+    `/admin/notifications/${encodeURIComponent(
+      notificationId
+    )}/unread`,
+    {
+      method: 'PATCH',
+    }
+  );
+  dispatchAdminNotificationsUpdated();
+  return result;
+};
+
+export const markAllAdminNotificationsRead = async () => {
+  const result = await apiRequest(
+    '/admin/notifications/read-all',
+    {
+      method: 'PATCH',
+    }
+  );
+  dispatchAdminNotificationsUpdated();
+  return result;
+};
 
 /* ============================================================
    SUPPORT
