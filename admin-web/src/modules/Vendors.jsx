@@ -651,6 +651,14 @@ function VendorDetailsPage({
     : [];
 
   const getProductApprovalStatus = (product) => {
+    const status = String(product?.status ?? "")
+      .trim()
+      .toLowerCase();
+
+    if (status === "draft" || status === "pending") {
+      return status;
+    }
+
     const dedicatedStatus =
       product?.approval_status ??
       product?.approvalStatus ??
@@ -661,23 +669,27 @@ function VendorDetailsPage({
       return String(dedicatedStatus).trim().toLowerCase();
     }
 
-    const status = String(product?.status ?? "")
-      .trim()
-      .toLowerCase();
-
     // Existing backend uses `active` for live/approved products.
     if (status === "active") return "approved";
 
-    if (status === "pending") return "pending";
     if (status === "rejected") return "rejected";
 
     return status;
   };
 
+  const submittedProducts = products.filter((product) =>
+    ["pending", "approved", "rejected"].includes(
+      getProductApprovalStatus(product)
+    )
+  );
+  const pendingProductsCount = submittedProducts.filter(
+    (product) => getProductApprovalStatus(product) === "pending"
+  ).length;
+
   const filteredProducts =
     productStatus === "all"
-      ? products
-      : products.filter(
+      ? submittedProducts
+      : submittedProducts.filter(
           (product) =>
             getProductApprovalStatus(product) === productStatus
         );
@@ -705,10 +717,6 @@ function VendorDetailsPage({
       product,
     ])
   );
-
-  const pendingNotifications =
-    Number(stats.pending_requests || 0) +
-    Number(stats.pending_products || 0);
 
   const selectedProduct = products.find(
     (product) => String(product.id) === String(requestedProductId)
@@ -881,11 +889,15 @@ function VendorDetailsPage({
             <VendorStatCard
               href="#vendor-products"
               label="Total Products"
-              value={
-                stats.total_products ??
-                products.length
-              }
-              hint="Products under this business"
+              value={submittedProducts.length}
+              hint="Products submitted by this vendor"
+            />
+
+            <VendorStatCard
+              href="#vendor-products"
+              label="Pending Approval"
+              value={pendingProductsCount}
+              hint="Products awaiting Admin review"
             />
 
             <VendorStatCard
@@ -903,13 +915,6 @@ function VendorDetailsPage({
                 orders.length
               }
               hint="Orders containing vendor products"
-            />
-
-            <VendorStatCard
-              href="#vendor-notifications"
-              label="Notifications"
-              value={pendingNotifications}
-              hint="Pending product and business requests"
             />
 
           </div>
@@ -1028,13 +1033,6 @@ function VendorDetailsPage({
                 />
 
                 <SummaryRow
-                  label="Pending product requests"
-                  value={
-                    stats.pending_products ?? 0
-                  }
-                />
-
-                <SummaryRow
                   label="Pending business requests"
                   value={
                     stats.pending_requests ?? 0
@@ -1055,9 +1053,9 @@ function VendorDetailsPage({
           <DetailTableCard
             id="vendor-products"
             title="Products"
-            description="Products currently associated with this vendor business."
-            count={products.length}
-            empty="No products found for this vendor."
+            description="Products this vendor has submitted for Admin review."
+            count={filteredProducts.length}
+            empty="No products submitted for approval."
             footer={
               filteredProducts.length > 0 ? (
                 <VendorDetailPagination

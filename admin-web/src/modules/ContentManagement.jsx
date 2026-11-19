@@ -8,13 +8,15 @@ import {
   LayoutGrid,
   Loader2,
   Megaphone,
+  MessageCircle,
   Percent,
+  Pencil,
+  Plus,
   Tag,
   UploadCloud,
   X,
   GripVertical,
-Pencil,
-Trash2,
+  Trash2,
 } from 'lucide-react';
 
 import {
@@ -44,6 +46,12 @@ import {
   deleteContentManagementItem,
   reorderContentManagementSections,
   uploadContentManagementImage,
+  getFAQCategories,
+  getFAQs,
+  createFAQ,
+  updateFAQ,
+  updateFAQStatus,
+  deleteFAQ,
 } from '../services/adminService';
 
 /* ============================================================
@@ -279,7 +287,6 @@ function getWebHomeSectionDefaultOrder(section) {
     Number.MAX_SAFE_INTEGER
   );
 }
-
 function sortWebHomeSections(sections) {
   return sections
     .map((section, index) => ({ section, index }))
@@ -397,6 +404,7 @@ export default function ContentManagement() {
   const [webPromoReturnToHome, setWebPromoReturnToHome] = useState(false);
   const [appCampaignReturnToHome, setAppCampaignReturnToHome] = useState(false);
   const [appCategoryReturnToHome, setAppCategoryReturnToHome] = useState(false);
+  const [contentManagementSection, setContentManagementSection] = useState(null);
   const [activeHeaderCategoryId, setActiveHeaderCategoryId] = useState(null);
   const [headerCategorySavingId, setHeaderCategorySavingId] = useState(null);
   const [headerCategoryError, setHeaderCategoryError] = useState('');
@@ -2597,6 +2605,7 @@ export default function ContentManagement() {
   ========================================================== */
 
   const goBackToPlatforms = () => {
+    setContentManagementSection(null);
     setBannerPlatform(null);
     setBannerType(null);
     setShowAppBannerTypes(false);
@@ -2649,6 +2658,8 @@ export default function ContentManagement() {
   });
 
   const refreshCurrentContent = async () => {
+    if (contentManagementSection === 'faq') return;
+
     if (bannerPlatform === 'web') {
       if (bannerType === null) return loadWebContentSections();
       if (bannerType === 'hero') return loadWebHeroBanners();
@@ -2746,15 +2757,17 @@ export default function ContentManagement() {
               letterSpacing: '-0.02em',
             }}
           >
-            {bannerPlatform === null
-              ? 'Content Management'
-              : bannerType === null
-                ? bannerPlatform === 'app'
-                  ? 'Mobile App'
-                  : 'Customer Web'
-                : selectedBannerType
-                    ?.title ||
-                  'Content Management'}
+            {contentManagementSection === 'faq'
+              ? 'FAQ Management'
+              : bannerPlatform === null
+                ? 'Content Management'
+                : bannerType === null
+                  ? bannerPlatform === 'app'
+                    ? 'Mobile App'
+                    : 'Customer Web'
+                  : selectedBannerType
+                      ?.title ||
+                    'Content Management'}
           </h1>
 
           <p
@@ -2766,17 +2779,19 @@ export default function ContentManagement() {
               lineHeight: 1.6,
             }}
           >
-            {bannerPlatform === null
-              ? 'Manage and customize content for your customer platforms.'
-              : bannerType === null
-                ? `Manage ${
-                    bannerPlatform === 'app'
-                      ? 'customer mobile app'
-                      : 'customer website'
-                  } content.`
-                : selectedBannerType
-                    ?.description ||
-                  ''}
+            {contentManagementSection === 'faq'
+              ? 'Manage frequently asked questions and approved customer answers.'
+              : bannerPlatform === null
+                ? 'Manage and customize content for your customer platforms.'
+                : bannerType === null
+                  ? `Manage ${
+                      bannerPlatform === 'app'
+                        ? 'customer mobile app'
+                        : 'customer website'
+                    } content.`
+                  : selectedBannerType
+                      ?.description ||
+                    ''}
           </p>
         </div>
         <button
@@ -2793,10 +2808,28 @@ export default function ContentManagement() {
           PLATFORM SELECTION
       ====================================================== */}
 
-      {bannerPlatform === null && (
+      {bannerPlatform === null && contentManagementSection === null && (
         <PlatformSelection
           onSelect={(platform) => {
+            setContentManagementSection(null);
             setBannerPlatform(platform);
+            setBannerType(null);
+            setShowAppBannerTypes(false);
+          }}
+          onSelectFAQ={() => {
+            setBannerPlatform(null);
+            setBannerType(null);
+            setShowAppBannerTypes(false);
+            setContentManagementSection('faq');
+          }}
+        />
+      )}
+
+      {bannerPlatform === null && contentManagementSection === 'faq' && (
+        <FAQManagement
+          onBack={() => {
+            setContentManagementSection(null);
+            setBannerPlatform(null);
             setBannerType(null);
             setShowAppBannerTypes(false);
           }}
@@ -5352,12 +5385,13 @@ function WebShopByNeedCreateModal({
 
 function PlatformSelection({
   onSelect,
+  onSelectFAQ,
 }) {
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
         gap: 24,
         width: '100%',
       }}
@@ -5729,6 +5763,46 @@ function PlatformSelection({
           </button>
         </div>
       </div>
+      <div
+        onClick={onSelectFAQ}
+        style={{
+          position: 'relative',
+          minHeight: 210,
+          padding: '28px 30px',
+          borderRadius: 18,
+          background: 'linear-gradient(135deg, #F2F8F2 0%, #E5F0E3 100%)',
+          border: '1px solid #D7E5D3',
+          boxShadow: '0 8px 24px rgba(18, 61, 43, 0.06)',
+          cursor: 'pointer',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        }}
+        onMouseEnter={(event) => {
+          event.currentTarget.style.transform = 'translateY(-2px)';
+          event.currentTarget.style.boxShadow = '0 14px 32px rgba(18, 61, 43, 0.10)';
+        }}
+        onMouseLeave={(event) => {
+          event.currentTarget.style.transform = 'translateY(0)';
+          event.currentTarget.style.boxShadow = '0 8px 24px rgba(18, 61, 43, 0.06)';
+        }}
+      >
+        <div style={{ position: 'absolute', width: 170, height: 170, borderRadius: '50%', background: 'rgba(255,255,255,0.42)', top: -65, left: -55 }} />
+        <div style={{ position: 'relative', zIndex: 2, width: '100%' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: '#FFFFFF', color: '#276345', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18, boxShadow: '0 6px 16px rgba(18,61,43,0.08)' }}>
+            <MessageCircle size={28} />
+          </div>
+          <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.25, fontWeight: 700, color: '#111827' }}>FAQ Management</h3>
+          <p style={{ margin: '8px 0 20px', maxWidth: 300, color: '#4B4B4B', fontSize: 14, lineHeight: 1.55 }}>
+            Manage customer questions, answers, categories and FAQ status.
+          </p>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onSelectFAQ(); }} style={{ border: 'none', borderRadius: 9, padding: '11px 22px', background: '#075B3B', color: '#FFFFFF', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10, boxShadow: '0 5px 12px rgba(7,91,59,0.18)' }}>
+            Manage FAQs <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -10649,3 +10723,437 @@ const campaignSmallButtonStyle = {
   fontSize: 12,
   fontWeight: 600,
 };
+
+/* ============================================================
+   FAQ MANAGEMENT
+============================================================ */
+
+function FAQManagement({ onBack }) {
+  const [categories, setCategories] = useState([]);
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editingFAQ, setEditingFAQ] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [updatingFAQId, setUpdatingFAQId] = useState(null);
+  const [deletingFAQId, setDeletingFAQId] = useState(null);
+  const [faqForm, setFAQForm] = useState({
+    category_id: '',
+    question: '',
+    answer: '',
+    keywords: '',
+    priority: '0',
+    sort_order: '0',
+    is_active: true,
+  });
+
+  const loadFAQs = async () => {
+    try {
+      const [categoriesResponse, faqsResponse] = await Promise.all([
+        getFAQCategories(),
+        getFAQs(),
+      ]);
+      setError('');
+      setCategories(categoriesResponse?.data || categoriesResponse?.categories || []);
+      setFaqs(faqsResponse?.data || faqsResponse?.faqs || []);
+    } catch (loadError) {
+      console.error('FAQ LOAD ERROR:', loadError);
+      setError(loadError?.message || 'Unable to load FAQ data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadFAQs();
+  }, []);
+
+  const filteredFAQs = selectedCategory === 'all'
+    ? faqs
+    : faqs.filter((faq) => String(faq.category_id) === String(selectedCategory));
+
+  const openCreateFAQ = () => {
+    if (categories.length === 0) {
+      setActionError('Create an FAQ category before adding a question.');
+      return;
+    }
+
+    setActionError('');
+    setSuccessMessage('');
+    setEditingFAQ(null);
+    setFAQForm({
+      category_id:
+        selectedCategory !== 'all'
+          ? String(selectedCategory)
+          : String(categories[0].id),
+      question: '',
+      answer: '',
+      keywords: '',
+      priority: '0',
+      sort_order: '0',
+      is_active: true,
+    });
+    setIsEditorOpen(true);
+  };
+
+  const openEditFAQ = (faq) => {
+    setActionError('');
+    setSuccessMessage('');
+    setEditingFAQ(faq);
+    setFAQForm({
+      category_id: String(faq.category_id || ''),
+      question: faq.question || '',
+      answer: faq.answer || '',
+      keywords: Array.isArray(faq.keywords)
+        ? faq.keywords.join(', ')
+        : '',
+      priority: String(faq.priority ?? 0),
+      sort_order: String(faq.sort_order ?? 0),
+      is_active: Boolean(faq.is_active),
+    });
+    setIsEditorOpen(true);
+  };
+
+  const handleSaveFAQ = async (event) => {
+    event.preventDefault();
+    setActionError('');
+    setSuccessMessage('');
+
+    const question = faqForm.question.trim();
+    const answer = faqForm.answer.trim();
+
+    if (!faqForm.category_id || !question || !answer) {
+      setActionError('Choose a category and enter both a question and answer.');
+      return;
+    }
+
+    const payload = {
+      category_id: faqForm.category_id,
+      question,
+      answer,
+      keywords: faqForm.keywords
+        .split(/[,\n]/)
+        .map((keyword) => keyword.trim())
+        .filter(Boolean),
+      priority: Number(faqForm.priority) || 0,
+      sort_order: Number(faqForm.sort_order) || 0,
+      is_active: faqForm.is_active,
+    };
+
+    try {
+      setSaving(true);
+
+      if (editingFAQ) {
+        await updateFAQ(editingFAQ.id, payload);
+      } else {
+        await createFAQ(payload);
+      }
+
+      setIsEditorOpen(false);
+      setSuccessMessage(
+        editingFAQ ? 'FAQ updated successfully.' : 'FAQ added successfully.'
+      );
+      setLoading(true);
+      await loadFAQs();
+    } catch (saveError) {
+      console.error('FAQ SAVE ERROR:', saveError);
+      setActionError(saveError?.message || 'Unable to save this FAQ.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleFAQStatus = async (faq) => {
+    setActionError('');
+    setSuccessMessage('');
+    setUpdatingFAQId(faq.id);
+
+    try {
+      await updateFAQStatus(faq.id, !faq.is_active);
+      setFaqs((currentFAQs) =>
+        currentFAQs.map((currentFAQ) =>
+          currentFAQ.id === faq.id
+            ? { ...currentFAQ, is_active: !faq.is_active }
+            : currentFAQ
+        )
+      );
+      setSuccessMessage(
+        `FAQ ${faq.is_active ? 'deactivated' : 'activated'} successfully.`
+      );
+    } catch (statusError) {
+      console.error('FAQ STATUS UPDATE ERROR:', statusError);
+      setActionError(
+        statusError?.message || 'Unable to update FAQ status.'
+      );
+    } finally {
+      setUpdatingFAQId(null);
+    }
+  };
+
+  const handleDeleteFAQ = async (faq) => {
+    if (!window.confirm(`Delete this FAQ?\n\n${faq.question}`)) {
+      return;
+    }
+
+    setActionError('');
+    setSuccessMessage('');
+    setDeletingFAQId(faq.id);
+
+    try {
+      await deleteFAQ(faq.id);
+      setFaqs((currentFAQs) =>
+        currentFAQs.filter((currentFAQ) => currentFAQ.id !== faq.id)
+      );
+      setSuccessMessage('FAQ deleted successfully.');
+    } catch (deleteError) {
+      console.error('FAQ DELETE ERROR:', deleteError);
+      setActionError(deleteError?.message || 'Unable to delete this FAQ.');
+    } finally {
+      setDeletingFAQId(null);
+    }
+  };
+
+  const updateFAQField = (field, value) => {
+    setFAQForm((currentForm) => ({
+      ...currentForm,
+      [field]: value,
+    }));
+  };
+
+  return (
+    <div>
+      <BackButton label="Back to Content Management" onClick={onBack} />
+      <section style={{ background: '#FFFFFF', border: '1px solid #E2E7DF', borderRadius: 18, padding: 24, boxShadow: '0 8px 28px rgba(18,61,43,0.05)', marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ width: 48, height: 48, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#EAF3E8', color: '#276345', marginBottom: 14 }}><MessageCircle size={24} /></div>
+            <h2 style={{ margin: 0, fontSize: 20, color: 'var(--brand-primary)' }}>FAQ Management</h2>
+            <p style={{ margin: '6px 0 0', color: '#77746C', fontSize: 13 }}>Manage customer questions and approved answers.</p>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button type="button" className="primary-button" onClick={openCreateFAQ}>
+              <Plus size={16} />
+              Add FAQ
+            </button>
+            <button type="button" className="secondary-button" onClick={() => { setLoading(true); loadFAQs(); }} disabled={loading}>
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+      </section>
+      {error && <div style={{ marginBottom: 20, padding: 14, borderRadius: 12, background: '#FFF4F4', border: '1px solid #F0D3D3', color: '#A33A3A', fontSize: 13 }}>{error}</div>}
+      {actionError && !isEditorOpen && <div role="alert" style={{ marginBottom: 16, padding: 14, borderRadius: 12, background: '#FFF4F4', border: '1px solid #F0D3D3', color: '#A33A3A', fontSize: 13 }}>{actionError}</div>}
+      {successMessage && <div role="status" style={{ marginBottom: 16, padding: 14, borderRadius: 12, background: '#EAF3E8', border: '1px solid #CFE0CC', color: '#276345', fontSize: 13 }}>{successMessage}</div>}
+      <section style={{ background: '#FFFFFF', border: '1px solid #E2E7DF', borderRadius: 18, padding: 20, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button type="button" onClick={() => setSelectedCategory('all')} style={{ padding: '9px 15px', borderRadius: 999, border: selectedCategory === 'all' ? '1px solid #276345' : '1px solid #DCE4D9', background: selectedCategory === 'all' ? '#EAF3E8' : '#FFFFFF', color: selectedCategory === 'all' ? '#276345' : '#66645E', fontWeight: 700, cursor: 'pointer' }}>All FAQs</button>
+          {categories.map((category) => <button key={category.id} type="button" onClick={() => setSelectedCategory(category.id)} style={{ padding: '9px 15px', borderRadius: 999, border: String(selectedCategory) === String(category.id) ? '1px solid #276345' : '1px solid #DCE4D9', background: String(selectedCategory) === String(category.id) ? '#EAF3E8' : '#FFFFFF', color: String(selectedCategory) === String(category.id) ? '#276345' : '#66645E', fontWeight: 600, cursor: 'pointer' }}>{category.name}</button>)}
+        </div>
+      </section>
+      <section style={{ background: '#FFFFFF', border: '1px solid #E2E7DF', borderRadius: 18, overflow: 'hidden' }}>
+        {loading ? <div style={{ padding: 50, textAlign: 'center', color: '#77746C' }}>Loading FAQs...</div> : filteredFAQs.length === 0 ? <div style={{ padding: 50, textAlign: 'center', color: '#77746C' }}>No FAQs found.</div> : filteredFAQs.map((faq) => (
+          <div key={faq.id} style={{ padding: 20, borderBottom: '1px solid #EDF0EB' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 0, flex: '1 1 420px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <h3 style={{ margin: 0, fontSize: 15, color: '#24352B' }}>{faq.question}</h3>
+                  <span style={{ padding: '4px 8px', borderRadius: 999, background: '#F3F4E7', color: '#52624E', fontSize: 10, fontWeight: 700 }}>
+                    {faq.faq_categories?.name || categories.find((category) => String(category.id) === String(faq.category_id))?.name || 'Uncategorized'}
+                  </span>
+                  <span style={{ height: 'fit-content', padding: '5px 10px', borderRadius: 999, background: faq.is_active ? '#EAF3E8' : '#F3F3F1', color: faq.is_active ? '#276345' : '#77746C', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>{faq.is_active ? 'Active' : 'Inactive'}</span>
+                </div>
+                <p style={{ margin: '8px 0 0', color: '#716F68', fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{faq.answer}</p>
+                {Array.isArray(faq.keywords) && faq.keywords.length > 0 && (
+                  <p style={{ margin: '8px 0 0', color: '#77746C', fontSize: 11 }}>
+                    Keywords: {faq.keywords.join(', ')}
+                  </p>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  title="Edit FAQ"
+                  aria-label={`Edit FAQ: ${faq.question}`}
+                  onClick={() => openEditFAQ(faq)}
+                  style={{ width: 36, height: 36, border: '1px solid #DCE8D9', borderRadius: 9, background: '#F7FAF6', color: '#276345', cursor: 'pointer' }}
+                >
+                  <Pencil size={15} />
+                </button>
+                <button
+                  type="button"
+                  disabled={updatingFAQId === faq.id}
+                  onClick={() => handleToggleFAQStatus(faq)}
+                  style={{ minHeight: 36, padding: '0 10px', border: '1px solid #DCE4D9', borderRadius: 9, background: '#FFFFFF', color: '#52624E', fontSize: 11, fontWeight: 700, cursor: updatingFAQId === faq.id ? 'wait' : 'pointer' }}
+                >
+                  {updatingFAQId === faq.id
+                    ? 'Saving...'
+                    : faq.is_active
+                      ? 'Deactivate'
+                      : 'Activate'}
+                </button>
+                <button
+                  type="button"
+                  title="Delete FAQ"
+                  aria-label={`Delete FAQ: ${faq.question}`}
+                  disabled={deletingFAQId === faq.id}
+                  onClick={() => handleDeleteFAQ(faq)}
+                  style={{ width: 36, height: 36, border: '1px solid #F0C7C3', borderRadius: 9, background: '#FFF6F5', color: '#A3332A', cursor: deletingFAQId === faq.id ? 'wait' : 'pointer' }}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </section>
+      {isEditorOpen && (
+        <div
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !saving) {
+              setIsEditorOpen(false);
+            }
+          }}
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(11, 25, 17, 0.48)' }}
+        >
+          <form
+            onSubmit={handleSaveFAQ}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="faq-editor-title"
+            style={{ width: 'min(640px, 100%)', maxHeight: '90vh', overflowY: 'auto', padding: 24, borderRadius: 18, background: '#FFFFFF', boxShadow: '0 24px 70px rgba(0,0,0,0.25)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
+              <div>
+                <h2 id="faq-editor-title" style={{ margin: 0, color: 'var(--brand-primary)', fontSize: 20 }}>
+                  {editingFAQ ? 'Edit FAQ' : 'Add FAQ'}
+                </h2>
+                <p style={{ margin: '6px 0 0', color: '#77746C', fontSize: 13 }}>
+                  Questions and answers appear in the customer help chatbot.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close FAQ editor"
+                disabled={saving}
+                onClick={() => setIsEditorOpen(false)}
+                style={{ width: 36, height: 36, border: '1px solid #D9E0D6', borderRadius: 9, background: '#FFFFFF', color: '#52624E', cursor: 'pointer' }}
+              >
+                <X size={17} />
+              </button>
+            </div>
+
+            {actionError && (
+              <div role="alert" style={{ marginBottom: 16, padding: 12, borderRadius: 10, background: '#FFF4F4', border: '1px solid #F0D3D3', color: '#A33A3A', fontSize: 13 }}>
+                {actionError}
+              </div>
+            )}
+
+            <label style={{ display: 'block', marginBottom: 15, color: '#344239', fontSize: 12, fontWeight: 700 }}>
+              Category
+              <select
+                required
+                value={faqForm.category_id}
+                onChange={(event) => updateFAQField('category_id', event.target.value)}
+                style={{ display: 'block', boxSizing: 'border-box', width: '100%', minHeight: 42, marginTop: 7, padding: '8px 11px', border: '1px solid #DCE4D9', borderRadius: 9, background: '#FFFFFF', color: '#24352B', font: 'inherit' }}
+              >
+                <option value="" disabled>Select a category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label style={{ display: 'block', marginBottom: 15, color: '#344239', fontSize: 12, fontWeight: 700 }}>
+              Question
+              <input
+                required
+                maxLength={500}
+                value={faqForm.question}
+                onChange={(event) => updateFAQField('question', event.target.value)}
+                placeholder="Enter the customer question"
+                style={{ display: 'block', boxSizing: 'border-box', width: '100%', minHeight: 42, marginTop: 7, padding: '9px 11px', border: '1px solid #DCE4D9', borderRadius: 9, color: '#24352B', font: 'inherit' }}
+              />
+            </label>
+
+            <label style={{ display: 'block', marginBottom: 15, color: '#344239', fontSize: 12, fontWeight: 700 }}>
+              Answer
+              <textarea
+                required
+                rows={5}
+                value={faqForm.answer}
+                onChange={(event) => updateFAQField('answer', event.target.value)}
+                placeholder="Write a clear answer for customers"
+                style={{ display: 'block', boxSizing: 'border-box', width: '100%', marginTop: 7, padding: '10px 11px', border: '1px solid #DCE4D9', borderRadius: 9, color: '#24352B', font: 'inherit', lineHeight: 1.5, resize: 'vertical' }}
+              />
+            </label>
+
+            <label style={{ display: 'block', marginBottom: 15, color: '#344239', fontSize: 12, fontWeight: 700 }}>
+              Search keywords
+              <input
+                value={faqForm.keywords}
+                onChange={(event) => updateFAQField('keywords', event.target.value)}
+                placeholder="Separate keywords with commas"
+                style={{ display: 'block', boxSizing: 'border-box', width: '100%', minHeight: 42, marginTop: 7, padding: '9px 11px', border: '1px solid #DCE4D9', borderRadius: 9, color: '#24352B', font: 'inherit' }}
+              />
+            </label>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+              <label style={{ display: 'block', color: '#344239', fontSize: 12, fontWeight: 700 }}>
+                Priority
+                <input
+                  type="number"
+                  value={faqForm.priority}
+                  onChange={(event) => updateFAQField('priority', event.target.value)}
+                  style={{ display: 'block', boxSizing: 'border-box', width: '100%', minHeight: 42, marginTop: 7, padding: '9px 11px', border: '1px solid #DCE4D9', borderRadius: 9, color: '#24352B', font: 'inherit' }}
+                />
+              </label>
+              <label style={{ display: 'block', color: '#344239', fontSize: 12, fontWeight: 700 }}>
+                Sort order
+                <input
+                  type="number"
+                  value={faqForm.sort_order}
+                  onChange={(event) => updateFAQField('sort_order', event.target.value)}
+                  style={{ display: 'block', boxSizing: 'border-box', width: '100%', minHeight: 42, marginTop: 7, padding: '9px 11px', border: '1px solid #DCE4D9', borderRadius: 9, color: '#24352B', font: 'inherit' }}
+                />
+              </label>
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 17, color: '#344239', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={faqForm.is_active}
+                onChange={(event) => updateFAQField('is_active', event.target.checked)}
+                style={{ width: 16, height: 16, accentColor: '#276345' }}
+              />
+              Active — visible in the customer chatbot
+            </label>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => setIsEditorOpen(false)}
+                style={{ minHeight: 40, padding: '0 15px', border: '1px solid #D9E0D6', borderRadius: 9, background: '#FFFFFF', color: '#52624E', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="primary-button"
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : editingFAQ ? 'Save changes' : 'Add FAQ'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}

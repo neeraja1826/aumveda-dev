@@ -1185,3 +1185,148 @@ export async function deleteContentManagementItem(
     }
   );
 }
+/* ============================================================
+   FAQ MANAGEMENT
+============================================================ */
+
+export const getFAQSummary = () =>
+  apiRequest('/admin/faqs/summary');
+
+export const getFAQCategories = () =>
+  apiRequest('/admin/faqs/categories');
+
+export const createFAQCategory = (category) =>
+  apiRequest('/admin/faqs/categories', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: category.name?.trim(),
+      slug: category.slug?.trim().toLowerCase(),
+      description: category.description?.trim() || null,
+      sort_order: Number(category.sort_order ?? 0),
+      is_active: category.is_active ?? true,
+    }),
+  });
+
+export const updateFAQCategory = (categoryId, category) =>
+  apiRequest(`/admin/faqs/categories/${encodeURIComponent(categoryId)}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      ...(category.name !== undefined && {
+        name: category.name.trim(),
+      }),
+      ...(category.slug !== undefined && {
+        slug: category.slug.trim().toLowerCase(),
+      }),
+      ...(category.description !== undefined && {
+        description: category.description?.trim() || null,
+      }),
+      ...(category.sort_order !== undefined && {
+        sort_order: Number(category.sort_order),
+      }),
+      ...(category.is_active !== undefined && {
+        is_active: Boolean(category.is_active),
+      }),
+    }),
+  });
+
+export const deleteFAQCategory = (categoryId) =>
+  apiRequest(
+    `/admin/faqs/categories/${encodeURIComponent(categoryId)}`,
+    {
+      method: 'DELETE',
+    }
+  );
+
+export const getFAQs = (params = {}) => {
+  const query = new URLSearchParams();
+
+  if (params.category_id) {
+    query.append('category_id', params.category_id);
+  }
+
+  if (params.is_active !== undefined) {
+    query.append('is_active', String(params.is_active));
+  }
+
+  const queryString = query.toString();
+
+  return apiRequest(
+    `/admin/faqs${queryString ? `?${queryString}` : ''}`
+  );
+};
+
+export const getFAQ = (faqId) => {
+  if (!faqId) {
+    throw new Error('FAQ ID is required.');
+  }
+
+  return apiRequest(
+    `/admin/faqs/${encodeURIComponent(faqId)}`
+  );
+};
+
+export const createFAQ = (faq) =>
+  apiRequest('/admin/faqs', {
+    method: 'POST',
+    body: JSON.stringify({
+      category_id: faq.category_id,
+      question: faq.question?.trim(),
+      answer: faq.answer?.trim(),
+      keywords: Array.isArray(faq.keywords)
+        ? faq.keywords
+        : [],
+      priority: Number(faq.priority ?? 0),
+      sort_order: Number(faq.sort_order ?? 0),
+      is_active: faq.is_active ?? true,
+    }),
+  });
+
+export const updateFAQ = (faqId, faq) =>
+  apiRequest(`/admin/faqs/${encodeURIComponent(faqId)}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      ...(faq.category_id !== undefined && {
+        category_id: faq.category_id,
+      }),
+      ...(faq.question !== undefined && {
+        question: faq.question.trim(),
+      }),
+      ...(faq.answer !== undefined && {
+        answer: faq.answer.trim(),
+      }),
+      ...(faq.keywords !== undefined && {
+        keywords: Array.isArray(faq.keywords)
+          ? faq.keywords
+          : [],
+      }),
+      ...(faq.priority !== undefined && {
+        priority: Number(faq.priority),
+      }),
+      ...(faq.sort_order !== undefined && {
+        sort_order: Number(faq.sort_order),
+      }),
+      ...(faq.is_active !== undefined && {
+        is_active: Boolean(faq.is_active),
+      }),
+    }),
+  });
+
+export const updateFAQStatus = (faqId, isActive) =>
+  apiRequest(
+    `/admin/faqs/${encodeURIComponent(
+      faqId
+    )}/status?is_active=${encodeURIComponent(
+      Boolean(isActive)
+    )}`,
+    {
+      method: 'PATCH',
+    }
+  );
+
+export const deleteFAQ = (faqId) =>
+  apiRequest(
+    `/admin/faqs/${encodeURIComponent(faqId)}`,
+    {
+      method: 'DELETE',
+    }
+  );

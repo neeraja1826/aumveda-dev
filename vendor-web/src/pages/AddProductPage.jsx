@@ -22,6 +22,7 @@ import {
   Plus,
   Save,
   ShieldCheck,
+  Send,
   Star,
   Trash2,
   UploadCloud,
@@ -42,6 +43,15 @@ const INITIAL_FORM = {
   benefits: "",
   directions: "",
   warnings: "",
+};
+
+const INITIAL_VARIANT = {
+  name: "",
+  sku: "",
+  price: "",
+  compare_at_price: "",
+  cost_price: "",
+  stock_quantity: "0",
 };
 
 const MAX_IMAGES = 6;
@@ -97,6 +107,101 @@ function getCreatedProductId(response) {
     response?.product_id ||
     response?.id ||
     null
+  );
+}
+
+function hasVariantInput(variant) {
+  return Boolean(
+    variant.name.trim() ||
+    variant.sku.trim() ||
+    variant.price.trim() ||
+    variant.compare_at_price.trim() ||
+    variant.cost_price.trim() ||
+    variant.stock_quantity !== "0"
+  );
+}
+
+function validateProductVariant(variant, required) {
+  if (!required && !hasVariantInput(variant)) {
+    return "";
+  }
+
+  if (!variant.name.trim()) {
+    return "Variant name is required.";
+  }
+
+  if (!variant.sku.trim()) {
+    return "Variant SKU is required.";
+  }
+
+  if (!/^[A-Za-z0-9._-]+$/.test(variant.sku.trim())) {
+    return "SKU can contain letters, numbers, hyphens, underscores and periods.";
+  }
+
+  const price = Number(variant.price);
+
+  if (!Number.isFinite(price) || price <= 0) {
+    return "Enter a selling price greater than zero.";
+  }
+
+  const compareAtPrice = variant.compare_at_price.trim()
+    ? Number(variant.compare_at_price)
+    : null;
+  const costPrice = variant.cost_price.trim()
+    ? Number(variant.cost_price)
+    : null;
+  const stockQuantity = Number(variant.stock_quantity);
+
+  if (
+    compareAtPrice !== null &&
+    (!Number.isFinite(compareAtPrice) || compareAtPrice < price)
+  ) {
+    return "MRP cannot be less than the selling price.";
+  }
+
+  if (
+    costPrice !== null &&
+    (!Number.isFinite(costPrice) || costPrice < 0)
+  ) {
+    return "Cost price cannot be negative.";
+  }
+
+  if (
+    !Number.isSafeInteger(stockQuantity) ||
+    stockQuantity < 0
+  ) {
+    return "Stock quantity must be a non-negative whole number.";
+  }
+
+  return "";
+}
+
+function buildProductVariant(variant) {
+  return {
+    name: variant.name.trim(),
+    sku: variant.sku.trim().toUpperCase(),
+    price: Number(variant.price),
+    compare_at_price: variant.compare_at_price.trim()
+      ? Number(variant.compare_at_price)
+      : null,
+    cost_price: variant.cost_price.trim()
+      ? Number(variant.cost_price)
+      : null,
+    size_value: null,
+    size_unit: null,
+    stock_quantity: Number(variant.stock_quantity),
+    low_stock_threshold: 5,
+    is_default: true,
+    is_active: true,
+  };
+}
+
+function matchesProductVariant(existing, payload) {
+  return (
+    String(existing?.sku || "").trim().toUpperCase() === payload.sku &&
+    String(existing?.name || "").trim().toLowerCase() ===
+      payload.name.toLowerCase() &&
+    Number(existing?.price) === payload.price
   );
 }
 
@@ -194,6 +299,7 @@ export default function AddProductPage() {
   const uploadingRef = useRef(false);
 
   const [form, setForm] = useState(INITIAL_FORM);
+  const [variant, setVariant] = useState(INITIAL_VARIANT);
   const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
   const [primaryImageId, setPrimaryImageId] =
@@ -212,6 +318,9 @@ export default function AddProductPage() {
 
   const [createdProductId, setCreatedProductId] =
     useState(null);
+  const [variantSaved, setVariantSaved] = useState(false);
+  const [submittedForApproval, setSubmittedForApproval] =
+    useState(false);
 
   const [uploadedImageIds, setUploadedImageIds] =
     useState([]);
@@ -279,12 +388,30 @@ export default function AddProductPage() {
 
   const allImagesUploaded =
     remainingImages.length === 0;
+  const variantReady =
+    hasVariantInput(variant) &&
+    !validateProductVariant(variant, true);
 
 
   function handleChange(event) {
     const { name, value } = event.target;
 
     setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+
+    setError("");
+  }
+
+  function handleVariantChange(event) {
+    const { name, value } = event.target;
+
+    if (submitting || variantSaved || submittedForApproval) {
+      return;
+    }
+
+    setVariant((current) => ({
       ...current,
       [name]: value,
     }));
@@ -455,18 +582,42 @@ export default function AddProductPage() {
   }
 
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-
-    if (uploadingRef.current) {
+  async function saveProduct(action) {
+    if (uploadingRef.current || submittedForApproval) {
       return;
     }
 
-    if (!created && !canSubmit) {
+    if (!form.name.trim() || !form.category_id) {
       setError(
         "Product name and category are required."
       );
       return;
+    }
+
+    const variantError = validateProductVariant(
+      variant,
+      action === "approval"
+    );
+
+    if (variantError) {
+      setError(variantError);
+      return;
+    }
+
+    if (action === "approval") {
+      if (!form.description.trim()) {
+        setError(
+          "Add a full product description before submitting for approval."
+        );
+        return;
+      }
+
+      if (images.length === 0) {
+        setError(
+          "Add at least one product image before submitting for approval."
+        );
+        return;
+      }
     }
 
     uploadingRef.current = true;
@@ -521,35 +672,73 @@ export default function AddProductPage() {
         await uploadRemainingImages(productId);
       }
 
+      const needsVariant =
+        action === "approval" || hasVariantInput(variant);
+
+      if (needsVariant && !variantSaved) {
+        setProgress("Saving product variant...");
+
+        const payload = buildProductVariant(variant);
+        const existingVariants = normalizeCollection(
+          await vendorApi.getProductVariants(productId),
+          "variants"
+        );
+        const matchingVariant = existingVariants.find(
+          (item) =>
+            String(item?.sku || "").trim().toUpperCase() ===
+            payload.sku
+        );
+
+        if (matchingVariant) {
+          if (!matchesProductVariant(matchingVariant, payload)) {
+            throw new Error(
+              "A variant with this SKU already exists with different details. Review it in Variants before continuing."
+            );
+          }
+        } else {
+          if (existingVariants.length > 0) {
+            throw new Error(
+              "This product already has a variant. Review it in Variants before adding another."
+            );
+          }
+
+          await vendorApi.createProductVariant(
+            productId,
+            payload
+          );
+        }
+
+        setVariantSaved(true);
+      }
+
+      if (action === "approval") {
+        setProgress("Submitting for Admin approval...");
+        await vendorApi.submitProductForApproval(productId);
+        setSubmittedForApproval(true);
+        setSuccess("Product submitted for Admin approval.");
+      } else {
+        setSuccess("Product draft saved successfully.");
+      }
+
       setProgress("");
-
-      setSuccess(
-        "Product details saved successfully."
-      );
-
-      navigate(
-        `/products/${productId}/variants`,
-        { replace: true }
-      );
+      navigate("/products", { replace: true });
     } catch (err) {
       setProgress("");
-
-      if (productId) {
-        setError(
-          `Your product was saved, but an image upload failed: ${
-            err?.message || "Unknown upload error."
-          } You can retry the remaining uploads or continue to Variants.`
-        );
-      } else {
-        setError(
-          err?.message ||
-          "Unable to create product."
-        );
-      }
+      setError(
+        err?.message ||
+        (action === "approval"
+          ? "Unable to submit product for approval."
+          : "Unable to save product draft.")
+      );
     } finally {
       uploadingRef.current = false;
       setSubmitting(false);
     }
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    saveProduct("draft");
   }
 
 
@@ -587,9 +776,9 @@ export default function AddProductPage() {
           <h1>Add a new product</h1>
 
           <p>
-            Create a new listing for your AUMVEDA store.
-            You'll configure pricing and stock in the
-            next step.
+            Create a listing, add its first variant,
+            then save it as a draft or submit it for
+            Admin approval.
           </p>
         </div>
 
@@ -974,6 +1163,121 @@ export default function AddProductPage() {
               </FormField>
             </div>
           </section>
+
+
+          {/* FIRST PRODUCT VARIANT */}
+          <section className="ap-card">
+            <SectionHeading
+              number="04"
+              icon={PackagePlus}
+              title="First Product Variant"
+              description="Add the first SKU, selling price and stock. You can add more variants later."
+            />
+
+            <div className="ap-form-grid">
+              <FormField label="Variant Name" required>
+                <input
+                  type="text"
+                  name="name"
+                  value={variant.name}
+                  onChange={handleVariantChange}
+                  placeholder="e.g. 200 ml"
+                  maxLength={120}
+                  disabled={
+                    submitting ||
+                    variantSaved ||
+                    submittedForApproval
+                  }
+                />
+              </FormField>
+
+              <FormField label="SKU" required>
+                <input
+                  type="text"
+                  name="sku"
+                  value={variant.sku}
+                  onChange={handleVariantChange}
+                  placeholder="e.g. BHR-OIL-200"
+                  maxLength={80}
+                  disabled={
+                    submitting ||
+                    variantSaved ||
+                    submittedForApproval
+                  }
+                />
+              </FormField>
+
+              <FormField label="Selling Price (₹)" required>
+                <input
+                  type="number"
+                  name="price"
+                  value={variant.price}
+                  onChange={handleVariantChange}
+                  placeholder="349"
+                  min="0.01"
+                  step="0.01"
+                  disabled={
+                    submitting ||
+                    variantSaved ||
+                    submittedForApproval
+                  }
+                />
+              </FormField>
+
+              <FormField
+                label="MRP (₹)"
+                hint="Optional. Must be equal to or higher than the selling price."
+              >
+                <input
+                  type="number"
+                  name="compare_at_price"
+                  value={variant.compare_at_price}
+                  onChange={handleVariantChange}
+                  placeholder="399"
+                  min="0"
+                  step="0.01"
+                  disabled={
+                    submitting ||
+                    variantSaved ||
+                    submittedForApproval
+                  }
+                />
+              </FormField>
+
+              <FormField label="Cost Price (₹)">
+                <input
+                  type="number"
+                  name="cost_price"
+                  value={variant.cost_price}
+                  onChange={handleVariantChange}
+                  placeholder="Optional"
+                  min="0"
+                  step="0.01"
+                  disabled={
+                    submitting ||
+                    variantSaved ||
+                    submittedForApproval
+                  }
+                />
+              </FormField>
+
+              <FormField label="Stock Quantity" required>
+                <input
+                  type="number"
+                  name="stock_quantity"
+                  value={variant.stock_quantity}
+                  onChange={handleVariantChange}
+                  min="0"
+                  step="1"
+                  disabled={
+                    submitting ||
+                    variantSaved ||
+                    submittedForApproval
+                  }
+                />
+              </FormField>
+            </div>
+          </section>
         </div>
 
 
@@ -996,8 +1300,10 @@ export default function AddProductPage() {
 
             <p>
               {created
-                ? "Your draft is saved. Complete any remaining image uploads or continue to variant setup."
-                : "Start with your product information. Pricing, SKU and stock will be configured in the next step."}
+                ? submittedForApproval
+                  ? "Your product is pending Admin approval."
+                  : "Your draft is saved. Add a variant or submit it for review when it's ready."
+                : "Save your product and first variant as a draft, or submit the complete listing for Admin approval."}
             </p>
 
             <div className="ap-checklist">
@@ -1025,6 +1331,11 @@ export default function AddProductPage() {
                 title="Draft saved"
                 done={created}
               />
+
+              <ChecklistItem
+                title="First variant"
+                done={variantSaved || variantReady}
+              />
             </div>
 
             {progress && (
@@ -1045,6 +1356,7 @@ export default function AddProductPage() {
               className="ap-submit"
               disabled={
                 submitting ||
+                submittedForApproval ||
                 (!created && !canSubmit)
               }
             >
@@ -1053,19 +1365,34 @@ export default function AddProductPage() {
                   size={18}
                   className="ap-spin"
                 />
-              ) : created ? (
-                <UploadCloud size={18} />
               ) : (
                 <Save size={18} />
               )}
 
               {submitting
-                ? "Please wait..."
-                : created && !allImagesUploaded
-                  ? "Retry Image Uploads"
-                  : created
-                    ? "Continue to Variants"
-                    : "Create Product"}
+                ? "Saving..."
+                : submittedForApproval
+                  ? "Submitted for Review"
+                  : "Save as Draft"}
+            </button>
+
+            <button
+              type="button"
+              className="ap-continue ap-approval"
+              disabled={submitting || submittedForApproval}
+              onClick={() => saveProduct("approval")}
+            >
+              {submitting && progress.includes("Submitting") ? (
+                <LoaderCircle
+                  size={17}
+                  className="ap-spin"
+                />
+              ) : (
+                <Send size={17} />
+              )}
+              {submitting && progress.includes("Submitting")
+                ? "Submitting..."
+                : "Submit for Approval"}
             </button>
 
             {created && (

@@ -32,6 +32,7 @@ import {
 } from '../../src/services/productService';
 import {
   getProductReviews,
+  pickReviewImage,
   submitProductReview,
 } from '../../src/services/reviewService';
 import {
@@ -45,6 +46,7 @@ import {
 import { useWishlist } from '../../src/context/WishlistContext';
 
 import ProductCard from '../../src/components/home/ProductCard';
+import FAQChatbot from '../../src/components/chatbot/FAQChatbot';
 
 export default function ProductDetailsScreen() {
 
@@ -86,6 +88,8 @@ const [reviewsLoading, setReviewsLoading] = useState(false);
 const [reviewRating, setReviewRating] = useState(5);
 const [reviewTitle, setReviewTitle] = useState('');
 const [reviewText, setReviewText] = useState('');
+const [reviewImage, setReviewImage] = useState(null);
+const [reviewFormOpen, setReviewFormOpen] = useState(false);
 const [reviewSubmitting, setReviewSubmitting] = useState(false);
 const [reviewMessage, setReviewMessage] = useState('');
 const [reviewError, setReviewError] = useState('');
@@ -128,6 +132,19 @@ const [reviewError, setReviewError] = useState('');
     if (!productSlug) return;
     setRetryCount((count) => count + 1);
   };
+  const handlePickReviewImage = async () => {
+    if (reviewSubmitting) return;
+
+    setReviewError('');
+    try {
+      const image = await pickReviewImage();
+      if (image) setReviewImage(image);
+    } catch (pickerError) {
+      setReviewError(
+        pickerError.message || 'Unable to select a review image.'
+      );
+    }
+  };
 const handleSubmitReview = async () => {
   if (!isAuthenticated || !token) {
     router.push('/login');
@@ -155,15 +172,27 @@ const handleSubmitReview = async () => {
       rating: reviewRating,
       title: reviewTitle,
       reviewText,
+      image: reviewImage,
       token,
     });
+
+    if (result?.data?.id) {
+      setReviews((current) => [
+        result.data,
+        ...current.filter(
+          (review) => String(review.id) !== String(result.data.id)
+        ),
+      ]);
+    }
 
     setReviewMessage(
       result.message || 'Your review was submitted for approval.'
     );
+    setReviewFormOpen(false);
 
     setReviewTitle('');
     setReviewText('');
+    setReviewImage(null);
     setReviewRating(5);
   } catch (error) {
     setReviewError(
@@ -473,6 +502,7 @@ const rating = reviewCount > 0
             Preparing botanical details...
           </Text>
         </View>
+        <FAQChatbot />
       </SafeAreaView>
     );
   }
@@ -522,6 +552,7 @@ const rating = reviewCount > 0
             </Pressable>
           )}
         </View>
+        <FAQChatbot />
       </SafeAreaView>
     );
   }
@@ -1089,10 +1120,40 @@ const rating = reviewCount > 0
           </View>
 
           {/* SUBMIT A REVIEW */}
-          <View style={styles.reviewForm}>
-            <Text style={styles.reviewFormTitle}>
-              Share Your Experience
-            </Text>
+          {!reviewFormOpen ? (
+            <Pressable
+              style={styles.reviewOpenButton}
+              onPress={() => {
+                setReviewError('');
+                setReviewMessage('');
+                setReviewFormOpen(true);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: false }}
+            >
+              <Ionicons name="create-outline" size={17} color="#FFFFFF" />
+              <Text style={styles.reviewOpenButtonText}>Write a review</Text>
+            </Pressable>
+          ) : null}
+
+          {!!reviewMessage && (
+            <Text style={styles.reviewSuccess}>{reviewMessage}</Text>
+          )}
+
+          {reviewFormOpen ? (
+            <View style={styles.reviewForm}>
+            <View style={styles.reviewFormHeading}>
+              <Text style={styles.reviewFormTitle}>Write a review</Text>
+              <Pressable
+                onPress={() => setReviewFormOpen(false)}
+                disabled={reviewSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Close review form"
+                style={styles.reviewFormClose}
+              >
+                <Ionicons name="close" size={20} color="#123D2B" />
+              </Pressable>
+            </View>
             <Text style={styles.reviewFormHint}>
               Tell us about your experience with this product.
             </Text>
@@ -1145,12 +1206,39 @@ const rating = reviewCount > 0
               style={[styles.reviewInput, styles.reviewTextArea]}
             />
 
+            <Pressable
+              style={styles.reviewImageButton}
+              onPress={handlePickReviewImage}
+              disabled={reviewSubmitting}
+              accessibilityRole="button"
+            >
+              <Ionicons name="image-outline" size={18} color="#123D2B" />
+              <Text style={styles.reviewImageButtonText}>
+                {reviewImage ? 'Change photo' : 'Add a photo (optional)'}
+              </Text>
+            </Pressable>
+
+            {reviewImage ? (
+              <View style={styles.reviewImagePreview}>
+                <Image
+                  source={{ uri: reviewImage.uri }}
+                  style={styles.reviewImagePreviewPhoto}
+                  contentFit="cover"
+                />
+                <Pressable
+                  onPress={() => setReviewImage(null)}
+                  disabled={reviewSubmitting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove review photo"
+                  style={styles.reviewImageRemove}
+                >
+                  <Ionicons name="close-circle" size={22} color="#8B3A2D" />
+                </Pressable>
+              </View>
+            ) : null}
+
             {!!reviewError && (
               <Text style={styles.reviewError}>{reviewError}</Text>
-            )}
-
-            {!!reviewMessage && (
-              <Text style={styles.reviewSuccess}>{reviewMessage}</Text>
             )}
 
             <Pressable
@@ -1174,7 +1262,8 @@ const rating = reviewCount > 0
             <Text style={styles.reviewApprovalNote}>
               Reviews are published after approval. You must have purchased this product to review it.
             </Text>
-          </View>
+            </View>
+          ) : null}
 
           {/* APPROVED REVIEWS */}
           <View style={styles.reviewList}>
@@ -1186,7 +1275,7 @@ const rating = reviewCount > 0
               <ActivityIndicator color="#123D2B" />
             ) : reviewCount === 0 ? (
               <Text style={styles.reviewEmpty}>
-                No approved reviews yet. Be the first to share your experience.
+                Be the first to share your experience.
               </Text>
             ) : (
               reviews.map((review) => (
@@ -1226,6 +1315,13 @@ const rating = reviewCount > 0
                     <Text style={styles.reviewCardText}>
                       {review.review_text}
                     </Text>
+                  ) : null}
+                  {review.image_url ? (
+                    <Image
+                      source={{ uri: review.image_url }}
+                      style={styles.reviewImage}
+                      contentFit="cover"
+                    />
                   ) : null}
                 </View>
               ))
@@ -1270,6 +1366,7 @@ const rating = reviewCount > 0
         visible={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
+      <FAQChatbot />
     </SafeAreaView>
   );
 }
@@ -2115,6 +2212,24 @@ const styles = StyleSheet.create({
     color: '#716F68',
   },
 
+  reviewOpenButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 7,
+    minHeight: 40,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    borderRadius: 9,
+    backgroundColor: '#123D2B',
+  },
+
+  reviewOpenButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'InterSemiBold',
+  },
+
   reviewForm: {
     padding: 16,
     borderRadius: 18,
@@ -2128,6 +2243,24 @@ const styles = StyleSheet.create({
     fontFamily: 'InterSemiBold',
     fontSize: 16,
     color: '#123D2B',
+  },
+
+  reviewFormHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+
+  reviewFormClose: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8E2D5',
+    backgroundColor: '#FFFFFF',
   },
 
   reviewFormHint: {
@@ -2173,6 +2306,53 @@ const styles = StyleSheet.create({
 
   reviewTextArea: {
     minHeight: 105,
+  },
+
+  reviewImageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 7,
+    minHeight: 38,
+    paddingHorizontal: 10,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: '#D5E0D3',
+    backgroundColor: '#F6F8F3',
+  },
+
+  reviewImageButtonText: {
+    color: '#123D2B',
+    fontSize: 12,
+    fontFamily: 'InterSemiBold',
+  },
+
+  reviewImagePreview: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+
+  reviewImagePreviewPhoto: {
+    width: 96,
+    height: 96,
+    borderRadius: 10,
+  },
+
+  reviewImageRemove: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    padding: 2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+  },
+
+  reviewImage: {
+    width: 220,
+    height: 220,
+    maxWidth: '100%',
+    marginTop: 10,
+    borderRadius: 10,
   },
 
   reviewError: {

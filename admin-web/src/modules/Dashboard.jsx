@@ -18,7 +18,7 @@ const metrics = [
   ['Pending vendors', 'pending_vendors', AyurvedicLeafDoodle, 'Supplier accounts to onboard'],
 ];
 
-export default function Dashboard({ onNavigate }) {
+export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -80,8 +80,7 @@ export default function Dashboard({ onNavigate }) {
       )}
 
       {summary && (
-        <>
-          <div className="dashboard-metrics">
+        <div className="dashboard-metrics">
             {metrics.map(([label, key, Icon, subtitle]) => {
               const isPending = key.includes('pending');
               return (
@@ -102,80 +101,7 @@ export default function Dashboard({ onNavigate }) {
                 </article>
               );
             })}
-          </div>
-
-          <div className="dashboard-quick-hub">
-            <div className="dashboard-hub-header">
-              <div>
-                <h3>Ayurvedic Operations & Management</h3>
-                <p>Direct shortcuts to high-frequency console workflows</p>
-              </div>
-            </div>
-
-            <div className="dashboard-hub-grid">
-              <button
-                type="button"
-                className="dashboard-hub-card"
-                onClick={() => onNavigate?.('Products')}
-              >
-                <div className="dashboard-hub-icon-wrap">
-                  <MortarPestleDoodle size={28} color="var(--brand-primary)" opacity={0.85} />
-                </div>
-                <div className="dashboard-hub-card-content">
-                  <strong>Herbal Catalog & Remedies</strong>
-                  <p>Manage formulations, dosages, variants, pricing, and category aisles.</p>
-                  <span className="dashboard-hub-link">Open Catalog →</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                className="dashboard-hub-card"
-                onClick={() => onNavigate?.('Orders')}
-              >
-                <div className="dashboard-hub-icon-wrap">
-                  <TeaCupDoodle size={28} color="var(--brand-primary)" opacity={0.85} />
-                </div>
-                <div className="dashboard-hub-card-content">
-                  <strong>Order Fulfillment & Shipments</strong>
-                  <p>Process pending customer remedies, shipping addresses, and invoices.</p>
-                  <span className="dashboard-hub-link">Review Orders →</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                className="dashboard-hub-card"
-                onClick={() => onNavigate?.('Inventory')}
-              >
-                <div className="dashboard-hub-icon-wrap">
-                  <BottleTonicDoodle size={28} color="var(--brand-primary)" opacity={0.85} />
-                </div>
-                <div className="dashboard-hub-card-content">
-                  <strong>Stock Movements & Warehouses</strong>
-                  <p>Audit warehouse stock levels, adjust thresholds, and record batch movements.</p>
-                  <span className="dashboard-hub-link">Audit Stock →</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                className="dashboard-hub-card"
-                onClick={() => onNavigate?.('Returns')}
-              >
-                <div className="dashboard-hub-icon-wrap">
-                  <AyurvedicLeafDoodle size={28} color="var(--brand-primary)" opacity={0.85} />
-                </div>
-                <div className="dashboard-hub-card-content">
-                  <strong>Returns & Reverse Logistics</strong>
-                  <p>Inspect returned remedies, approve replacements, and process customer refunds.</p>
-                  <span className="dashboard-hub-link">Inspect Returns →</span>
-                </div>
-              </button>
-            </div>
-          </div>
-
-        </>
+        </div>
       )}
 
       {!loading && !error && !summary && (
@@ -314,103 +240,10 @@ export default function Dashboard({ onNavigate }) {
           font-weight: 500;
         }
 
-        /* Quick Operations Hub */
-        .dashboard-quick-hub {
-          background: #FFFFFF;
-          border: 1px solid #E2ECE0;
-          border-radius: 20px;
-          padding: 24px 28px;
-          box-shadow: 0 4px 20px rgba(18, 61, 43, 0.04);
-        }
-        .dashboard-hub-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding-bottom: 18px;
-          border-bottom: 1px solid #EDF3EC;
-          margin-bottom: 20px;
-        }
-        .dashboard-hub-header h3 {
-          margin: 0;
-          color: var(--brand-primary);
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 20px;
-          font-weight: 700;
-        }
-        .dashboard-hub-header p {
-          margin: 4px 0 0;
-          color: #5F6E64;
-          font-size: 13px;
-        }
-        .dashboard-hub-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 16px;
-        }
-        .dashboard-hub-card {
-          display: flex;
-          align-items: flex-start;
-          gap: 16px;
-          padding: 20px 22px;
-          background: #FFFFFF;
-          border: 1px solid #E2ECE0;
-          border-radius: 16px;
-          text-align: left;
-          cursor: pointer;
-          transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 2px 8px rgba(18, 61, 43, 0.02);
-        }
-        .dashboard-hub-card:hover {
-          background: #FAFDF9;
-          border-color: #276345;
-          transform: translateY(-2.5px);
-          box-shadow: 0 10px 26px rgba(18, 61, 43, 0.08);
-        }
-        .dashboard-hub-icon-wrap {
-          display: grid;
-          place-items: center;
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
-          background: #E8F2E7;
-          border: 1px solid #CDE2CB;
-          flex-shrink: 0;
-          transition: background-color 0.2s ease;
-        }
-        .dashboard-hub-card:hover .dashboard-hub-icon-wrap {
-          background: #DEEFE0;
-        }
-        .dashboard-hub-card-content strong {
-          display: block;
-          color: var(--brand-primary);
-          font-size: 14.5px;
-          font-weight: 700;
-        }
-        .dashboard-hub-card-content p {
-          margin: 4px 0 8px;
-          color: #5F6E64;
-          font-size: 12.5px;
-          line-height: 1.5;
-        }
-        .dashboard-hub-link {
-          color: #276345;
-          font-size: 12px;
-          font-weight: 700;
-          display: inline-block;
-          transition: transform 0.18s ease;
-        }
-        .dashboard-hub-card:hover .dashboard-hub-link {
-          color: var(--brand-primary);
-          transform: translateX(3px);
-        }
-
         @media (max-width: 900px) {
           .dashboard-metrics {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 14px;
-          }
-          .dashboard-hub-grid {
-            grid-template-columns: 1fr;
           }
         }
         @media (max-width: 540px) {

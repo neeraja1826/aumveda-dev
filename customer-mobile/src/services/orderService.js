@@ -217,9 +217,68 @@ export async function createOrder({
   return response.data;
 }
 
+export async function createBuyNowOrder({
+  addressId,
+  variantId,
+  quantity,
+  paymentMethod = 'cod',
+  couponCode = null,
+  couponPlacement = null,
+}) {
+  if (!addressId) {
+    throw new Error('Please select a delivery address.');
+  }
+
+  if (!variantId) {
+    throw new Error('The selected product variant is missing.');
+  }
+
+  const orderQuantity = Number(quantity);
+  if (!Number.isInteger(orderQuantity) || orderQuantity < 1 || orderQuantity > 100) {
+    throw new Error('Select a valid quantity between 1 and 100.');
+  }
+
+  if (paymentMethod !== 'cod') {
+    throw new Error('Only Cash on Delivery is currently supported.');
+  }
+
+  if (Boolean(couponCode) !== Boolean(couponPlacement)) {
+    throw new Error('Coupon code and placement must be provided together.');
+  }
+
+  let response;
+  try {
+    response = await apiRequest('/orders/buy-now', {
+      method: 'POST',
+      body: {
+        address_id: addressId,
+        variant_id: variantId,
+        quantity: orderQuantity,
+        payment_method: paymentMethod,
+        coupon_code: couponCode,
+        coupon_placement: couponPlacement,
+      },
+    });
+  } catch (orderError) {
+    throw getOrderError(orderError);
+  }
+
+  if (
+    !response?.data ||
+    response.data.success !== true ||
+    !response.data.order_id
+  ) {
+    throw new Error('The Buy Now order was not confirmed.');
+  }
+
+  return response.data;
+}
+
 export async function validateCustomerCoupon({
   code,
   placement,
+  variantId,
+  quantity,
 }) {
   let response;
   try {
@@ -228,6 +287,12 @@ export async function validateCustomerCoupon({
       body: {
         code,
         placement,
+        ...(variantId
+          ? {
+              variant_id: variantId,
+              quantity,
+            }
+          : {}),
       },
     });
   } catch (error) {
@@ -236,6 +301,36 @@ export async function validateCustomerCoupon({
 
   if (!response?.data || typeof response.data !== 'object') {
     throw new Error('Coupon validation returned an unexpected response.');
+  }
+
+  return response.data;
+}
+
+export async function getAvailableCustomerCoupons({
+  placement,
+  variantId,
+  quantity,
+}) {
+  let response;
+  try {
+    response = await apiRequest('/orders/coupons/available', {
+      method: 'POST',
+      body: {
+        placement,
+        ...(variantId
+          ? {
+              variant_id: variantId,
+              quantity,
+            }
+          : {}),
+      },
+    });
+  } catch (error) {
+    throw getOrderError(error);
+  }
+
+  if (!Array.isArray(response?.data)) {
+    throw new Error('Available coupons returned an unexpected response.');
   }
 
   return response.data;

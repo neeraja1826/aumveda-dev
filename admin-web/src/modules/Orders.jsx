@@ -741,15 +741,28 @@ export default function Orders() {
                     </span>
                   </p>
 
-                  <p>
-                    <span>Discount</span>
-                    <span>
-                      −₹
-                      {Number(
-                        orderDetails.discount ?? 0
-                      ).toFixed(2)}
-                    </span>
-                  </p>
+                  {orderDetails.coupon_code && (
+                    <p>
+                      <span>Coupon</span>
+                      <span>{orderDetails.coupon_code}</span>
+                    </p>
+                  )}
+
+                  {Number(orderDetails.discount ?? 0) > 0 && (
+                    <p>
+                      <span>
+                        {orderDetails.coupon_code
+                          ? 'Coupon discount'
+                          : 'Discount'}
+                      </span>
+                      <span>
+                        −₹
+                        {Number(
+                          orderDetails.discount
+                        ).toFixed(2)}
+                      </span>
+                    </p>
+                  )}
 
                   <p>
                     <span>Shipping</span>

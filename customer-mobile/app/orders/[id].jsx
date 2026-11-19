@@ -24,6 +24,7 @@ import {
 } from '../../src/services/orderService';
 import {
   getCustomerOrderReviews,
+  pickReviewImage,
   submitProductReview,
 } from '../../src/services/reviewService';
 import { colors } from '../../src/theme/colors';
@@ -291,6 +292,7 @@ export default function OrderDetailsScreen() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewText, setReviewText] = useState('');
+  const [reviewImage, setReviewImage] = useState(null);
   const [reviewSubmittingItemId, setReviewSubmittingItemId] = useState(null);
   const [reviewSubmitError, setReviewSubmitError] = useState('');
   const [reviewRetryKey, setReviewRetryKey] = useState(0);
@@ -303,6 +305,20 @@ export default function OrderDetailsScreen() {
     `${token || ''}:${orderId || ''}:${reviewRetryKey}`;
   const [invoiceDownloading, setInvoiceDownloading] = useState(false);
   const [invoiceError, setInvoiceError] = useState('');
+
+  async function handlePickReviewImage() {
+    if (reviewSubmittingItemId) return;
+
+    setReviewSubmitError('');
+    try {
+      const image = await pickReviewImage();
+      if (image) setReviewImage(image);
+    } catch (pickerError) {
+      setReviewSubmitError(
+        pickerError.message || 'Unable to select a review image.'
+      );
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -526,6 +542,7 @@ export default function OrderDetailsScreen() {
         rating: reviewRating,
         title: reviewTitle,
         reviewText,
+        image: reviewImage,
         token,
       });
 
@@ -552,6 +569,7 @@ export default function OrderDetailsScreen() {
       setReviewFormItemId(null);
       setReviewTitle('');
       setReviewText('');
+      setReviewImage(null);
       setReviewRating(5);
     } catch (submitError) {
       console.error('Submit order review error:', submitError);
@@ -1036,6 +1054,13 @@ export default function OrderDetailsScreen() {
                           {itemReview.review_text}
                         </Text>
                       ) : null}
+                      {itemReview.image_url ? (
+                        <Image
+                          source={{ uri: itemReview.image_url }}
+                          style={styles.orderReviewImage}
+                          resizeMode="cover"
+                        />
+                      ) : null}
                       {itemReview.created_at ? (
                         <Text style={styles.orderReviewDate}>
                           {new Date(itemReview.created_at).toLocaleDateString('en-IN')}
@@ -1057,6 +1082,7 @@ export default function OrderDetailsScreen() {
                           setReviewRating(5);
                           setReviewTitle('');
                           setReviewText('');
+                          setReviewImage(null);
                           setReviewSubmitError('');
                         }}
                         activeOpacity={0.8}
@@ -1132,6 +1158,45 @@ export default function OrderDetailsScreen() {
                             placeholderTextColor="#8F8D85"
                             textAlignVertical="top"
                           />
+
+                          <TouchableOpacity
+                            style={styles.reviewImageButton}
+                            onPress={handlePickReviewImage}
+                            disabled={isAnyReviewSubmitting}
+                            accessibilityRole="button"
+                          >
+                            <Ionicons
+                              name="image-outline"
+                              size={17}
+                              color="#123D2B"
+                            />
+                            <Text style={styles.reviewImageButtonText}>
+                              {reviewImage ? 'Change photo' : 'Add a photo (optional)'}
+                            </Text>
+                          </TouchableOpacity>
+
+                          {reviewImage ? (
+                            <View style={styles.reviewImagePreview}>
+                              <Image
+                                source={{ uri: reviewImage.uri }}
+                                style={styles.reviewImagePreviewPhoto}
+                                resizeMode="cover"
+                              />
+                              <TouchableOpacity
+                                onPress={() => setReviewImage(null)}
+                                disabled={isAnyReviewSubmitting}
+                                accessibilityRole="button"
+                                accessibilityLabel="Remove review photo"
+                                style={styles.reviewImageRemove}
+                              >
+                                <Ionicons
+                                  name="close-circle"
+                                  size={22}
+                                  color="#8B3A2D"
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          ) : null}
 
                           {reviewSubmitError ? (
                             <Text style={styles.formError}>
@@ -1238,18 +1303,25 @@ export default function OrderDetailsScreen() {
               value={formatAmount(order.subtotal, currency)}
             />
 
+            {order.coupon_code ? (
+              <DetailRow
+                label="Coupon"
+                value={order.coupon_code}
+              />
+            ) : null}
+
             {/* DISCOUNT IF ANY */}
             {Number(order.discount) > 0 ? (
               <DetailRow
-                label="Discount"
+                label={order.coupon_code ? "Coupon discount" : "Discount"}
                 value={`− ${formatAmount(order.discount, currency)}`}
                 valueColor="#2E7D32"
               />
             ) : null}
 
-            {Number(order.discount_amount) > 0 ? (
+            {!Number(order.discount) && Number(order.discount_amount) > 0 ? (
               <DetailRow
-                label="Discount"
+                label={order.coupon_code ? "Coupon discount" : "Discount"}
                 value={`− ${formatAmount(order.discount_amount, currency)}`}
                 valueColor="#2E7D32"
               />
@@ -1982,6 +2054,14 @@ const styles = StyleSheet.create({
     fontFamily: 'InterRegular',
   },
 
+  orderReviewImage: {
+    width: 220,
+    height: 220,
+    maxWidth: '100%',
+    borderRadius: 10,
+    marginTop: 4,
+  },
+
   reviewStars: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2051,6 +2131,45 @@ const styles = StyleSheet.create({
 
   descriptionInput: {
     height: 70,
+  },
+
+  reviewImageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 7,
+    minHeight: 36,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D5E0D3',
+    backgroundColor: '#F6F8F3',
+  },
+
+  reviewImageButtonText: {
+    color: '#123D2B',
+    fontSize: 11,
+    fontFamily: 'InterSemiBold',
+  },
+
+  reviewImagePreview: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+
+  reviewImagePreviewPhoto: {
+    width: 92,
+    height: 92,
+    borderRadius: 9,
+  },
+
+  reviewImageRemove: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    padding: 2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
   },
 
   reasonChoices: {

@@ -909,6 +909,17 @@ function ReturnDetails({
             </h3>
 
             <div className="returns-detail-grid">
+              {item.order?.coupon_code && (
+                <DetailField
+                  label="Coupon"
+                  value={`${item.order.coupon_code}${
+                    Number(item.order.discount) > 0
+                      ? ` · ${formatMoney(item.order.discount)} off`
+                      : ""
+                  }`}
+                />
+              )}
+
               <DetailField
                 label="Reason"
                 value={formatReason(item.reason)}

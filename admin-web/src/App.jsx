@@ -39,8 +39,6 @@ import './index.css';
 function AdminLayout({ onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const token = getAdminToken();
-
   return (
     <div className="admin-shell">
       <Sidebar
@@ -59,7 +57,6 @@ function AdminLayout({ onLogout }) {
 
       <div className="admin-main">
         <Header
-          tokenConnected={Boolean(token)}
           onMenuClick={() => setSidebarOpen(true)}
           onLogout={onLogout}
         />

@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ProductCard from '../../src/components/home/ProductCard';
+import FAQChatbot from '../../src/components/chatbot/FAQChatbot';
 import { getProducts } from '../../src/services/productService';
 import { colors } from '../../src/theme/colors';
 
@@ -88,6 +89,7 @@ export default function ProductsRoute() {
         <Text style={styles.loadingText}>
           Loading products...
         </Text>
+        <FAQChatbot />
       </SafeAreaView>
     );
   }
@@ -105,6 +107,7 @@ export default function ProductsRoute() {
         <Text style={styles.errorText}>
           {error}
         </Text>
+        <FAQChatbot />
       </SafeAreaView>
     );
   }
@@ -166,6 +169,7 @@ export default function ProductsRoute() {
           </View>
         }
       />
+      <FAQChatbot />
     </SafeAreaView>
   );
 }

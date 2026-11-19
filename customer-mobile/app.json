@@ -50,6 +50,7 @@
       "expo-video",
       "expo-web-browser",
       "expo-image",
+      "expo-image-picker",
       "expo-sharing",
       "expo-notifications"
     ],

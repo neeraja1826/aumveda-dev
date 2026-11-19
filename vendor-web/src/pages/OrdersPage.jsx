@@ -1212,6 +1212,16 @@ function OrderDetailsModal({
                       order.currency ||
                         "INR",
                     ],
+                    ...(order.coupon_code
+                      ? [[
+                          "Coupon",
+                          `${order.coupon_code}${
+                            Number(order.discount) > 0
+                              ? ` · ${money(order.discount, order.currency)} off`
+                              : ""
+                          }`,
+                        ]]
+                      : []),
                   ].map(([label, value]) => (
                     <div
                       className="avo-detail-row"

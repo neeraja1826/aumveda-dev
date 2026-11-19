@@ -27,6 +27,7 @@ import {
 
 import {
   createOrder,
+  createBuyNowOrder,
 } from '../../src/services/orderService';
 
 import CouponApplication from '../../src/components/CouponApplication';
@@ -230,6 +231,15 @@ const {
     ),
     [checkoutItems]
   );
+  const couponContextKey = useMemo(
+    () => checkoutItems
+      .map((item) =>
+        `${item?.variantId || item?.variant_id || item?.variant?.id || item?.id}:${Number(item?.quantity || 1)}`
+      )
+      .sort()
+      .join('|'),
+    [checkoutItems]
+  );
 
   const isEmpty = checkoutItems.length === 0;
 
@@ -272,15 +282,9 @@ const {
   // DELIVERY
   // -----------------------------------------
 
-  const deliveryCharge = useMemo(() => {
-    if (subtotal >= 999) {
-      return 0;
-    }
+  const deliveryCharge = 0;
 
-    return 50;
-  }, [subtotal]);
-
-  const effectiveCoupon = isBuyNow ? null : appliedCoupon;
+  const effectiveCoupon = appliedCoupon;
   const couponDiscount = effectiveCoupon?.applied
     ? Math.min(Number(subtotal || 0), Number(effectiveCoupon.discount_amount || 0))
     : 0;
@@ -522,34 +526,46 @@ setSelectedAddressId(addressToSelect?.id ?? null);
         );
         return;
       }
-      const order =
-        await createOrder({
-          token: currentToken,
-          addressId: selectedAddress.id,
-          shippingAddress: {
-            recipient_name: name.trim(),
-            phone: phone.replace(/\D/g, ''),
-            address_line1: address.trim(),
-            city: selectedAddress.city.trim(),
-            state: selectedAddress.state.trim(),
-            postal_code: pincode.replace(/\D/g, ''),
-            country: 'India',
-          },
-          paymentMethod,
-          couponCode: effectiveCoupon?.applied
-            ? effectiveCoupon.code
-            : null,
-          couponPlacement: effectiveCoupon?.applied
-            ? effectiveCoupon.placement
-            : null,
-          items: checkoutItems.map((item) => ({
-            product_id: item.productId ?? item.id,
-            variant_id: item.variantId ?? item.variant?.id ?? null,
-            name: item.name,
-            quantity: Number(item.quantity || 1),
-            price: Number(item.price || 0),
-          })),
-        });
+      const order = isBuyNow
+        ? await createBuyNowOrder({
+            addressId: selectedAddress.id,
+            variantId: checkoutItems[0]?.variantId,
+            quantity: Number(checkoutItems[0]?.quantity || 1),
+            paymentMethod,
+            couponCode: effectiveCoupon?.applied
+              ? effectiveCoupon.code
+              : null,
+            couponPlacement: effectiveCoupon?.applied
+              ? effectiveCoupon.placement
+              : null,
+          })
+        : await createOrder({
+            token: currentToken,
+            addressId: selectedAddress.id,
+            shippingAddress: {
+              recipient_name: name.trim(),
+              phone: phone.replace(/\D/g, ''),
+              address_line1: address.trim(),
+              city: selectedAddress.city.trim(),
+              state: selectedAddress.state.trim(),
+              postal_code: pincode.replace(/\D/g, ''),
+              country: 'India',
+            },
+            paymentMethod,
+            couponCode: effectiveCoupon?.applied
+              ? effectiveCoupon.code
+              : null,
+            couponPlacement: effectiveCoupon?.applied
+              ? effectiveCoupon.placement
+              : null,
+            items: checkoutItems.map((item) => ({
+              product_id: item.productId ?? item.id,
+              variant_id: item.variantId ?? item.variant?.id ?? null,
+              name: item.name,
+              quantity: Number(item.quantity || 1),
+              price: Number(item.price || 0),
+            })),
+          });
 
       console.log(
         'ORDER CREATED:',
@@ -1283,14 +1299,16 @@ setSelectedAddressId(addressToSelect?.id ?? null);
             </Text>
           </View>
 
-          {!isBuyNow ? (
-            <CouponApplication
-              placement="checkout"
-              subtotal={subtotal}
-              coupon={appliedCoupon}
-              onChange={setAppliedCoupon}
-            />
-          ) : null}
+          <CouponApplication
+            placement="checkout"
+            subtotal={subtotal}
+            coupon={effectiveCoupon}
+            onChange={setAppliedCoupon}
+            variantId={isBuyNow ? checkoutItems[0]?.variantId : null}
+            quantity={isBuyNow ? buyNowQuantity : null}
+            contextKey={couponContextKey}
+            persist={!isBuyNow}
+          />
 
           <View style={styles.priceRow}>
             <Text
@@ -1322,7 +1340,7 @@ setSelectedAddressId(addressToSelect?.id ?? null);
                 styles.freeDeliveryNote
               }
             >
-              Free delivery on orders above ₹999
+              Free delivery
             </Text>
           ) : null}
 

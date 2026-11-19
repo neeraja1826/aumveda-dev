@@ -77,9 +77,13 @@ export default function CartScreen() {
       });
   }, [isCartLoaded, isEmpty]);
 
-  const cartCoupon = appliedCoupon?.placement === 'cart'
-    ? appliedCoupon
-    : null;
+  const cartCoupon = appliedCoupon;
+  const couponContextKey = (cartItems || [])
+    .map((item) =>
+      `${item?.variantId || item?.variant_id || item?.variant?.id || item?.id}:${Number(item?.quantity || 1)}`
+    )
+    .sort()
+    .join('|');
   const couponDiscount = cartCoupon?.applied
     ? Math.min(Number(subtotal || 0), Number(cartCoupon.discount_amount || 0))
     : 0;
@@ -514,6 +518,7 @@ export default function CartScreen() {
             subtotal={subtotal}
             coupon={cartCoupon}
             onChange={setAppliedCoupon}
+            contextKey={couponContextKey}
           />
 
           <View style={styles.summaryDetails}>

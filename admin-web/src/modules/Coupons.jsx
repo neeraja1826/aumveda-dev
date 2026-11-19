@@ -12,6 +12,7 @@ import {
 
 import {
   getCoupons,
+  getResource,
   createCoupon,
   updateCoupon,
   updateCouponActiveStatus,
@@ -42,6 +43,8 @@ const emptyForm = {
   first_order_only: false,
   is_active: true,
   display_locations: [],
+  product_ids: [],
+  category_ids: [],
 };
 
 function getLocalDateTime(value) {
@@ -101,6 +104,12 @@ export default function Coupons() {
   const [form, setForm] = useState(emptyForm);
   const [reload, setReload] = useState(0);
   const [selectedCoupon, setSelectedCoupon] = useState(null);
+  const [targetProducts, setTargetProducts] = useState([]);
+  const [targetCategories, setTargetCategories] = useState([]);
+  const [targetsLoading, setTargetsLoading] = useState(true);
+  const [targetsError, setTargetsError] = useState('');
+  const [productTargetSearch, setProductTargetSearch] = useState('');
+  const [categoryTargetSearch, setCategoryTargetSearch] = useState('');
 
   const couponPageCount = Math.max(
     1,
@@ -110,6 +119,16 @@ export default function Coupons() {
   const pageCoupons = coupons.slice(
     couponPage * ADMIN_LIST_PAGE_SIZE,
     (couponPage + 1) * ADMIN_LIST_PAGE_SIZE
+  );
+  const filteredTargetProducts = targetProducts.filter((product) =>
+    String(product.name || '')
+      .toLowerCase()
+      .includes(productTargetSearch.trim().toLowerCase())
+  );
+  const filteredTargetCategories = targetCategories.filter((category) =>
+    String(category.name || '')
+      .toLowerCase()
+      .includes(categoryTargetSearch.trim().toLowerCase())
   );
 
   useEffect(() => {
@@ -149,6 +168,44 @@ export default function Coupons() {
     };
   }, [reload, search, status]);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadCouponTargets() {
+      try {
+        const [productsResult, categoriesResult] = await Promise.all([
+          getResource('products', { status: 'active', limit: 100 }),
+          getResource('categories'),
+        ]);
+
+        if (active) {
+          setTargetProducts(getItems(productsResult));
+          setTargetCategories(
+            getItems(categoriesResult).filter(
+              (category) => category.is_active !== false
+            )
+          );
+          setTargetsError('');
+        }
+      } catch (loadError) {
+        if (active) {
+          console.error('Unable to load coupon eligibility options:', loadError);
+          setTargetsError(
+            loadError.message || 'Unable to load products and categories.'
+          );
+        }
+      } finally {
+        if (active) setTargetsLoading(false);
+      }
+    }
+
+    loadCouponTargets();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   function updateField(field, value) {
     setForm((current) => ({
       ...current,
@@ -165,6 +222,38 @@ export default function Coupons() {
         display_locations: selected.includes(value)
           ? selected.filter((item) => item !== value)
           : [...selected, value],
+      };
+    });
+  }
+
+  function toggleTarget(field, value) {
+    setForm((current) => {
+      const selected = current[field] || [];
+      return {
+        ...current,
+        [field]: selected.includes(value)
+          ? selected.filter((item) => item !== value)
+          : [...selected, value],
+      };
+    });
+  }
+
+  function toggleAllTargets(field, visibleOptions) {
+    const visibleIds = visibleOptions.map((option) => option.id);
+
+    if (visibleIds.length === 0) return;
+
+    setForm((current) => {
+      const selected = current[field] || [];
+      const hasAllVisible = visibleIds.every((id) =>
+        selected.includes(id)
+      );
+
+      return {
+        ...current,
+        [field]: hasAllVisible
+          ? selected.filter((id) => !visibleIds.includes(id))
+          : [...new Set([...selected, ...visibleIds])],
       };
     });
   }
@@ -203,6 +292,8 @@ export default function Coupons() {
       first_order_only: Boolean(coupon.first_order_only),
       is_active: Boolean(coupon.is_active),
       display_locations: coupon.display_locations || [],
+      product_ids: coupon.product_ids || [],
+      category_ids: coupon.category_ids || [],
     });
 
     setError('');
@@ -274,6 +365,8 @@ export default function Coupons() {
       first_order_only: Boolean(form.first_order_only),
       is_active: Boolean(form.is_active),
       display_locations: form.display_locations,
+      product_ids: form.product_ids,
+      category_ids: form.category_ids,
     };
 
     setSaving(true);
@@ -811,6 +904,151 @@ export default function Coupons() {
                 </div>
               </div>
 
+              <div className="coupon-target-section">
+                <h4>Eligible products and categories</h4>
+                <p>
+                  Leave both lists empty to apply to all products. If targets
+                  are selected, matching products or categories qualify and
+                  the discount applies only to eligible items.
+                </p>
+
+                {targetsError && (
+                  <div className="coupon-target-error" role="alert">
+                    {targetsError}
+                  </div>
+                )}
+
+                {targetsLoading ? (
+                  <p className="coupon-target-loading">
+                    Loading products and categories...
+                  </p>
+                ) : (
+                  <div className="coupon-target-grid">
+                    <div className="coupon-target-group">
+                      <strong>Products</strong>
+                      <div className="coupon-target-toolbar">
+                        <label className="coupon-target-search">
+                          <Search size={14} aria-hidden="true" />
+                          <input
+                            type="search"
+                            value={productTargetSearch}
+                            onChange={(event) =>
+                              setProductTargetSearch(event.target.value)
+                            }
+                            placeholder="Search products"
+                            aria-label="Search products"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="coupon-target-select-all"
+                          onClick={() =>
+                            toggleAllTargets(
+                              'product_ids',
+                              filteredTargetProducts
+                            )
+                          }
+                          disabled={filteredTargetProducts.length === 0}
+                        >
+                          {filteredTargetProducts.length > 0 &&
+                          filteredTargetProducts.every((product) =>
+                            form.product_ids.includes(product.id)
+                          )
+                            ? 'Clear selected'
+                            : 'Select all'}
+                        </button>
+                      </div>
+                      <div className="coupon-target-list">
+                        {filteredTargetProducts.map((product) => (
+                          <label key={product.id}>
+                            <input
+                              type="checkbox"
+                              checked={form.product_ids.includes(product.id)}
+                              onChange={() =>
+                                toggleTarget('product_ids', product.id)
+                              }
+                            />
+                            <span>{product.name}</span>
+                          </label>
+                        ))}
+                        {targetProducts.length === 0 && (
+                          <span className="coupon-target-empty">
+                            No active products found.
+                          </span>
+                        )}
+                        {targetProducts.length > 0 &&
+                          filteredTargetProducts.length === 0 && (
+                            <span className="coupon-target-empty">
+                              No products match your search.
+                            </span>
+                          )}
+                      </div>
+                    </div>
+
+                    <div className="coupon-target-group">
+                      <strong>Categories</strong>
+                      <div className="coupon-target-toolbar">
+                        <label className="coupon-target-search">
+                          <Search size={14} aria-hidden="true" />
+                          <input
+                            type="search"
+                            value={categoryTargetSearch}
+                            onChange={(event) =>
+                              setCategoryTargetSearch(event.target.value)
+                            }
+                            placeholder="Search categories"
+                            aria-label="Search categories"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="coupon-target-select-all"
+                          onClick={() =>
+                            toggleAllTargets(
+                              'category_ids',
+                              filteredTargetCategories
+                            )
+                          }
+                          disabled={filteredTargetCategories.length === 0}
+                        >
+                          {filteredTargetCategories.length > 0 &&
+                          filteredTargetCategories.every((category) =>
+                            form.category_ids.includes(category.id)
+                          )
+                            ? 'Clear selected'
+                            : 'Select all'}
+                        </button>
+                      </div>
+                      <div className="coupon-target-list">
+                        {filteredTargetCategories.map((category) => (
+                          <label key={category.id}>
+                            <input
+                              type="checkbox"
+                              checked={form.category_ids.includes(category.id)}
+                              onChange={() =>
+                                toggleTarget('category_ids', category.id)
+                              }
+                            />
+                            <span>{category.name}</span>
+                          </label>
+                        ))}
+                        {targetCategories.length === 0 && (
+                          <span className="coupon-target-empty">
+                            No active categories found.
+                          </span>
+                        )}
+                        {targetCategories.length > 0 &&
+                          filteredTargetCategories.length === 0 && (
+                            <span className="coupon-target-empty">
+                              No categories match your search.
+                            </span>
+                          )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="coupon-checkboxes">
                 <label>
                   <input
@@ -1327,6 +1565,114 @@ export default function Coupons() {
           color: #68786C;
           font-size: 12px;
         }
+        .coupons-page .coupon-target-section {
+          margin-top: 16px;
+          padding: 18px;
+          border: 1px solid #E2ECE0;
+          border-radius: 12px;
+          background: var(--page-background);
+        }
+        .coupons-page .coupon-target-section h4 {
+          margin: 0;
+          color: var(--brand-primary);
+          font-size: 13px;
+        }
+        .coupons-page .coupon-target-section > p {
+          margin: 5px 0 14px;
+          color: #68786C;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+        .coupon-target-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .coupon-target-group {
+          min-width: 0;
+        }
+        .coupon-target-group > strong {
+          display: block;
+          margin-bottom: 7px;
+          color: #31483A;
+          font-size: 12px;
+        }
+        .coupon-target-toolbar {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 7px;
+        }
+        .coupon-target-search {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          min-width: 0;
+          flex: 1;
+          height: 34px;
+          padding: 0 8px;
+          border: 1px solid #DCE7DB;
+          border-radius: 8px;
+          background: #fff;
+          color: #68786C;
+        }
+        .coupon-target-search input {
+          width: 100%;
+          min-width: 0;
+          padding: 0;
+          border: 0;
+          outline: 0;
+          color: #31483A;
+          background: transparent;
+          font: inherit;
+          font-size: 11px;
+        }
+        .coupon-target-select-all {
+          flex: 0 0 auto;
+          padding: 7px 9px;
+          border: 1px solid #C8D9C6;
+          border-radius: 8px;
+          background: #fff;
+          color: var(--brand-primary);
+          font-size: 11px;
+          cursor: pointer;
+        }
+        .coupon-target-select-all:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+        .coupon-target-list {
+          display: grid;
+          gap: 6px;
+          max-height: 190px;
+          overflow: auto;
+          padding: 9px;
+          border: 1px solid #E2ECE0;
+          border-radius: 9px;
+          background: #fff;
+        }
+        .coupon-target-list label {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          color: #31483A;
+          font-size: 11px;
+          cursor: pointer;
+        }
+        .coupon-target-list input {
+          flex: 0 0 auto;
+          margin: 1px 0 0;
+        }
+        .coupon-target-empty,
+        .coupon-target-loading {
+          color: #68786C;
+          font-size: 11px;
+        }
+        .coupon-target-error {
+          margin: 10px 0;
+          color: #A33B35;
+          font-size: 12px;
+        }
         .coupons-page .coupon-placement-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1442,6 +1788,9 @@ export default function Coupons() {
           }
           .coupons-page .coupon-form-grid,
           .coupons-page .coupon-placement-grid {
+            grid-template-columns: 1fr;
+          }
+          .coupon-target-grid {
             grid-template-columns: 1fr;
           }
           .coupons-page .coupon-field.full-width {

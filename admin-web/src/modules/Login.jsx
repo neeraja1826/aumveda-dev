@@ -48,89 +48,28 @@ export default function Login({ onLogin }) {
         .aum-login {
           min-height: 100vh;
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          place-items: center;
+          box-sizing: border-box;
+          padding: 24px;
           background: var(--page-background);
           color: var(--brand-primary);
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
-        .aum-login-brand {
+        .aum-login-header {
           display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          padding: 60px 54px;
-          color: #FFFFFF;
-          background: linear-gradient(155deg, var(--brand-primary) 0%, var(--brand-deep) 45%, #092116 100%);
-          position: relative;
-          overflow: hidden;
-        }
-        .aum-login-brand::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at 80% 20%, rgba(217, 165, 46, 0.12) 0%, transparent 60%);
-          pointer-events: none;
-        }
-        .aum-login-brand h1 {
-          max-width: 460px;
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: clamp(36px, 4vw, 52px);
-          font-weight: 600;
-          line-height: 1.16;
-          color: #FFFFFF;
-          margin: 0 0 16px;
-        }
-        .aum-login-brand p {
-          max-width: 420px;
-          color: #C6DBCF;
-          font-size: 15px;
-          line-height: 1.7;
-          font-weight: 400;
-        }
-        .aum-login-logo-wrap {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .aum-login-logo-mark {
-          display: grid;
-          width: 44px;
-          height: 44px;
-          place-items: center;
-          border-radius: 13px;
-          background: #F5F4E7;
-          border: 1.5px solid #D9A52E;
-          color: var(--brand-primary);
-          font-family: 'Playfair Display', serif;
-          font-size: 24px;
-          font-weight: 700;
+          justify-content: center;
+          margin-bottom: 30px;
         }
         .aum-login-logo {
-          font-size: 22px;
-          font-weight: 800;
-          letter-spacing: 3px;
-          color: #FFFFFF;
-        }
-        .aum-login-tagline {
-          display: inline-block;
-          margin-bottom: 18px;
-          padding: 4px 12px;
-          border-radius: 20px;
-          background: rgba(217, 165, 46, 0.15);
-          color: #D9A52E;
-          border: 1px solid rgba(217, 165, 46, 0.35);
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 1.2px;
-        }
-        .aum-login-panel {
-          display: grid;
-          place-items: center;
-          padding: 40px 28px;
-          background: var(--page-background);
+          display: block;
+          width: 160px;
+          max-width: 70%;
+          height: auto;
         }
         .aum-login-card {
           width: 100%;
           max-width: 420px;
+          box-sizing: border-box;
           background: #FFFFFF;
           padding: 40px;
           border-radius: 20px;
@@ -238,93 +177,69 @@ export default function Login({ onLogin }) {
           letter-spacing: 0.2px;
         }
         @media (max-width: 820px) {
-          .aum-login {
-            grid-template-columns: 1fr;
-          }
-          .aum-login-brand {
-            min-height: 220px;
-            padding: 34px 24px;
-          }
-          .aum-login-brand h1 {
-            font-size: 28px;
-            margin: 18px 0 8px;
-          }
-          .aum-login-panel {
-            padding: 30px 18px;
-          }
           .aum-login-card {
             padding: 28px 20px;
           }
         }
       `}</style>
 
-      <section className="aum-login-brand">
-        <div className="aum-login-logo-wrap">
-          <span className="aum-login-logo-mark">A</span>
-          <span className="aum-login-logo">AUMVEDA</span>
+      <form className="aum-login-card" onSubmit={handleSubmit}>
+        <div className="aum-login-header">
+          <img
+            className="aum-login-logo"
+            src="/aumveda-logo.png"
+            alt="Aumveda Wellness LLP"
+          />
         </div>
-        <div>
-          <span className="aum-login-tagline">AYURVEDIC OPERATIONS CONSOLE</span>
-          <h1>Wellness begins with thoughtful care.</h1>
-          <p>
-            Manage products, orders, vendors, and holistic customer experiences
-            from your dedicated AUMVEDA administration workspace.
-          </p>
-        </div>
-        <small style={{ color: '#8DA998' }}>© AUMVEDA · Premium Ayurvedic Care Admin</small>
-      </section>
 
-      <section className="aum-login-panel">
-        <form className="aum-login-card" onSubmit={handleSubmit}>
-          <h2>Admin sign in</h2>
-          <p className="aum-login-muted">
-            Sign in with your authorized administrator account.
-          </p>
+        <h2>Admin sign in</h2>
+        <p className="aum-login-muted">
+          Sign in with your authorized administrator account.
+        </p>
 
-          <label className="aum-login-field">
-            Email address
+        <label className="aum-login-field">
+          Email address
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="admin@example.com"
+            autoComplete="username"
+            required
+          />
+        </label>
+
+        <label className="aum-login-field">
+          Password
+          <div className="aum-login-password">
             <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="admin@example.com"
-              autoComplete="username"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter your password"
+              autoComplete="current-password"
               required
             />
-          </label>
-
-          <label className="aum-login-field">
-            Password
-            <div className="aum-login-password">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                required
-              />
-              <button
-                className="aum-login-show"
-                type="button"
-                onClick={() => setShowPassword((value) => !value)}
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
-            </div>
-          </label>
-
-          {error && <p className="aum-login-error" role="alert">{error}</p>}
-
-          <button className="aum-login-submit" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
-
-          <div className="aum-login-footer">
-            Authorized administrators only · Secured access
+            <button
+              className="aum-login-show"
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
           </div>
-        </form>
-      </section>
+        </label>
+
+        {error && <p className="aum-login-error" role="alert">{error}</p>}
+
+        <button className="aum-login-submit" disabled={loading}>
+          {loading ? 'Signing in…' : 'Sign in'}
+        </button>
+
+        <div className="aum-login-footer">
+          Authorized administrators only · Secured access
+        </div>
+      </form>
     </div>
   );
 }

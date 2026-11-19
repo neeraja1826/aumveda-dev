@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getCouponsForPlacement } from '../services/homeService';
-import { validateCustomerCoupon } from '../services/orderService';
+import {
+  getAvailableCustomerCoupons,
+  validateCustomerCoupon,
+} from '../services/orderService';
 import {
   clearStoredCoupon,
   saveAppliedCoupon,
@@ -27,6 +29,10 @@ export default function CouponApplication({
   subtotal,
   coupon,
   onChange,
+  variantId,
+  quantity,
+  contextKey,
+  persist = true,
 }) {
   const [coupons, setCoupons] = useState([]);
   const [enteredCode, setEnteredCode] = useState(null);
@@ -38,7 +44,11 @@ export default function CouponApplication({
   useEffect(() => {
     let active = true;
 
-    getCouponsForPlacement(placement)
+    getAvailableCustomerCoupons({
+      placement,
+      variantId,
+      quantity,
+    })
       .then((availableCoupons) => {
         if (active) {
           setCoupons(Array.isArray(availableCoupons) ? availableCoupons : []);
@@ -56,7 +66,7 @@ export default function CouponApplication({
     return () => {
       active = false;
     };
-  }, [placement]);
+  }, [placement, variantId, quantity, contextKey]);
 
   useEffect(() => {
     if (!coupon?.applied || !coupon.code) return undefined;
@@ -67,6 +77,8 @@ export default function CouponApplication({
     validateCustomerCoupon({
       code: coupon.code,
       placement: appliedPlacement,
+      variantId,
+      quantity,
     })
       .then(async (quote) => {
         if (!active) return;
@@ -75,7 +87,7 @@ export default function CouponApplication({
           placement: appliedPlacement,
           applied: true,
         };
-        await saveAppliedCoupon(updatedCoupon);
+        if (persist) await saveAppliedCoupon(updatedCoupon);
         onChange(updatedCoupon);
         setError('');
       })
@@ -83,7 +95,7 @@ export default function CouponApplication({
         if (!active) return;
         console.error('Applied coupon revalidation failed:', validationError);
         try {
-          await clearStoredCoupon();
+          if (persist) await clearStoredCoupon();
         } catch (storageError) {
           console.error('Unable to clear the applied coupon:', storageError);
         }
@@ -99,18 +111,23 @@ export default function CouponApplication({
     coupon?.code,
     coupon?.placement,
     onChange,
+    persist,
     placement,
     subtotal,
+    variantId,
+    quantity,
+    contextKey,
   ]);
 
-  async function handleApply() {
-    const normalizedCode = code.trim().toUpperCase();
+  async function applyCoupon(rawCode) {
+    const normalizedCode = String(rawCode || '').trim().toUpperCase();
 
     if (!normalizedCode) {
       setError('Enter a coupon code.');
       return;
     }
 
+    setEnteredCode(normalizedCode);
     setApplying(true);
     setError('');
 
@@ -118,13 +135,15 @@ export default function CouponApplication({
       const quote = await validateCustomerCoupon({
         code: normalizedCode,
         placement,
+        variantId,
+        quantity,
       });
       const nextCoupon = {
         ...quote,
         placement,
         applied: true,
       };
-      await saveAppliedCoupon(nextCoupon);
+      if (persist) await saveAppliedCoupon(nextCoupon);
       onChange(nextCoupon);
     } catch (applyError) {
       setError(applyError?.message || 'Unable to apply this coupon.');
@@ -133,9 +152,13 @@ export default function CouponApplication({
     }
   }
 
+  function handleApply() {
+    return applyCoupon(code);
+  }
+
   async function handleRemove() {
     try {
-      await clearStoredCoupon();
+      if (persist) await clearStoredCoupon();
       onChange(null);
       setError('');
     } catch (storageError) {
@@ -151,7 +174,7 @@ export default function CouponApplication({
         <View style={styles.headingCopy}>
           <Text style={styles.title}>Apply a coupon</Text>
           <Text style={styles.subtitle}>
-            Only coupons enabled for this page are shown.
+            Only coupons eligible for your order are shown.
           </Text>
         </View>
       </View>
@@ -167,26 +190,28 @@ export default function CouponApplication({
           accessibilityLabel="Coupon code"
           style={styles.input}
         />
-        {coupon?.applied ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleRemove}
-            style={styles.removeButton}
-          >
-            <Text style={styles.removeText}>Remove</Text>
-          </Pressable>
-        ) : (
+        <Pressable
+          accessibilityRole="button"
+          disabled={applying}
+          onPress={handleApply}
+          style={[styles.applyButton, applying && styles.disabledButton]}
+        >
+          {applying ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.applyText}>
+              {coupon?.applied ? 'Replace' : 'Apply'}
+            </Text>
+          )}
+        </Pressable>
+        {coupon?.applied && (
           <Pressable
             accessibilityRole="button"
             disabled={applying}
-            onPress={handleApply}
-            style={[styles.applyButton, applying && styles.disabledButton]}
+            onPress={handleRemove}
+            style={[styles.removeButton, applying && styles.disabledButton]}
           >
-            {applying ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.applyText}>Apply</Text>
-            )}
+            <Text style={styles.removeText}>Remove</Text>
           </Pressable>
         )}
       </View>
@@ -206,21 +231,52 @@ export default function CouponApplication({
         <View style={styles.availableList}>
           <Text style={styles.availableTitle}>Available here</Text>
           {coupons.map((availableCoupon) => (
-            <Pressable
+            <View
               key={availableCoupon.id || availableCoupon.code}
-              accessibilityRole="button"
-              accessibilityLabel={`Enter coupon ${availableCoupon.code}`}
-              onPress={() => setEnteredCode(availableCoupon.code || '')}
               style={styles.availableCoupon}
             >
-              <Text style={styles.availableCode}>{availableCoupon.code}</Text>
-              <Text style={styles.availableDescription} numberOfLines={2}>
-                {availableCoupon.description ||
-                  (availableCoupon.discount_type === 'percentage'
-                    ? `${availableCoupon.discount_value}% off`
-                    : `${formatPrice(availableCoupon.discount_value)} off`)}
-              </Text>
-            </Pressable>
+              <View style={styles.availableCouponDetails}>
+                <Text style={styles.availableCode}>{availableCoupon.code}</Text>
+                <Text style={styles.availableDescription} numberOfLines={2}>
+                  {availableCoupon.description ||
+                    (availableCoupon.discount_type === 'percentage'
+                      ? `${availableCoupon.discount_value}% off`
+                      : `${formatPrice(availableCoupon.discount_value)} off`)}
+                </Text>
+                {Number(availableCoupon.min_order_value) > 0 ? (
+                  <Text style={styles.availableTerms}>
+                    Min. order {formatPrice(availableCoupon.min_order_value)}
+                  </Text>
+                ) : null}
+                {availableCoupon.discount_type === 'percentage' &&
+                Number(availableCoupon.max_discount_amount) > 0 ? (
+                  <Text style={styles.availableTerms}>
+                    Maximum savings {formatPrice(availableCoupon.max_discount_amount)}
+                  </Text>
+                ) : null}
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Apply coupon ${availableCoupon.code}`}
+                disabled={
+                  applying ||
+                  (coupon?.applied && coupon.code === availableCoupon.code)
+                }
+                onPress={() => applyCoupon(availableCoupon.code)}
+                style={[
+                  styles.availableApplyButton,
+                  coupon?.applied &&
+                    coupon.code === availableCoupon.code &&
+                    styles.availableApplyButtonApplied,
+                ]}
+              >
+                <Text style={styles.availableApplyText}>
+                  {coupon?.applied && coupon.code === availableCoupon.code
+                    ? 'Applied'
+                    : 'Apply'}
+                </Text>
+              </Pressable>
+            </View>
           ))}
         </View>
       ) : null}
@@ -343,16 +399,40 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: '#F5F7F1',
   },
+  availableCouponDetails: {
+    flex: 1,
+    gap: 3,
+  },
   availableCode: {
     color: '#173E30',
     fontSize: 11,
     fontWeight: '800',
   },
   availableDescription: {
-    flex: 1,
     color: '#796F65',
     fontSize: 10,
-    textAlign: 'right',
+  },
+  availableTerms: {
+    color: '#796F65',
+    fontSize: 9,
+  },
+  availableApplyButton: {
+    minHeight: 32,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(23, 76, 54, 0.2)',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  availableApplyButtonApplied: {
+    backgroundColor: '#EDF5ED',
+  },
+  availableApplyText: {
+    color: '#173E30',
+    fontSize: 10,
+    fontWeight: '700',
   },
   emptyText: {
     marginTop: 10,

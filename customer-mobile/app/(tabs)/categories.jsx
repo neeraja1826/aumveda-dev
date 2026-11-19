@@ -21,6 +21,7 @@ import { getProducts } from '../../src/services/productService';
 import { getCategories } from '../../src/services/categoryService';
 import HomeHeader, { getCategoryPastelTheme } from '../../src/components/home/HomeHeader';
 import ProductCard from '../../src/components/home/ProductCard';
+import FAQChatbot from '../../src/components/chatbot/FAQChatbot';
 import { colors } from '../../src/theme/colors';
 
 export default function CategoriesScreen() {
@@ -821,6 +822,7 @@ export default function CategoriesScreen() {
           </View>
         </View>
       </Modal>
+      <FAQChatbot />
     </SafeAreaView>
   );
 }

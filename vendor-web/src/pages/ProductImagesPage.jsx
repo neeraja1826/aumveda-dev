@@ -20,6 +20,8 @@ import {
   LoaderCircle,
   Package,
   RefreshCw,
+  Save,
+  Send,
   Star,
   Trash2,
   UploadCloud,
@@ -240,11 +242,17 @@ export default function ProductImagesPage() {
     (revisionMode && revision?.status === "draft")
   );
 
+  const canSubmitForApproval =
+    galleryReady &&
+    ["draft", "rejected"].includes(productStatus);
+
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [actionId, setActionId] = useState(null);
+  const [submittingForApproval, setSubmittingForApproval] =
+    useState(false);
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -385,7 +393,37 @@ export default function ProductImagesPage() {
   const isBusy =
     uploading ||
     actionId !== null ||
+    submittingForApproval ||
     refreshing;
+
+  async function handleSubmitForApproval() {
+    if (
+      !canSubmitForApproval ||
+      images.length === 0 ||
+      isBusy
+    ) {
+      return;
+    }
+
+    setSubmittingForApproval(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await vendorApi.submitProductForApproval(productId);
+      setProduct((current) =>
+        current ? { ...current, status: "pending" } : current
+      );
+      setSuccess("Product submitted for Admin review.");
+    } catch (err) {
+      setError(
+        err?.message ||
+        "Unable to submit product for Admin review."
+      );
+    } finally {
+      setSubmittingForApproval(false);
+    }
+  }
 
 
   function openFilePicker() {
@@ -718,9 +756,11 @@ export default function ProductImagesPage() {
 
       {!canEdit && (
         <div className="api-alert">
-          {revision?.status === "pending"
-            ? "Revision is awaiting Admin approval. Editing is locked."
-            : "Gallery is read-only. Create a product revision from Products to edit an approved product."}
+          {productStatus === "pending"
+            ? "Product is awaiting Admin approval. Editing is locked."
+            : revision?.status === "pending"
+              ? "Revision is awaiting Admin approval. Editing is locked."
+              : "Gallery is read-only. Create a product revision from Products to edit an approved product."}
         </div>
       )}
 
@@ -1019,36 +1059,75 @@ export default function ProductImagesPage() {
             <strong>Product image setup</strong>
 
             <p>
-              {images.length > 0
-                ? "Your product has images. Continue to inventory management when you're ready."
-                : "Add at least one product image before continuing."}
+              {images.length === 0
+                ? "Add at least one product image before submitting for review."
+                : canSubmitForApproval
+                  ? "Before submission, add a description and at least one active variant with a SKU and price."
+                  : "Your product has images. Continue to inventory management when you're ready."}
             </p>
           </div>
         </div>
 
         <div className="api-completion-actions">
-          <button
-            type="button"
-            className="api-button api-button--light"
-            onClick={() =>
-              navigate(
-                `/products/${productId}/variants`
-              )
-            }
-          >
-            <ArrowLeft size={17} />
-            Variants
-          </button>
+          {canSubmitForApproval ? (
+            <>
+              <button
+                type="button"
+                className="api-button api-button--light"
+                disabled={isBusy}
+                onClick={() => navigate("/products")}
+              >
+                <Save size={17} />
+                {productStatus === "draft"
+                  ? "Save as Draft"
+                  : "Back to Products"}
+              </button>
 
-          <button
-            type="button"
-            className="api-button api-button--primary"
-            disabled={images.length === 0}
-            onClick={() => navigate("/inventory")}
-          >
-            Continue to Inventory
-            <ArrowRight size={17} />
-          </button>
+              <button
+                type="button"
+                className="api-button api-button--primary"
+                disabled={images.length === 0 || isBusy}
+                onClick={handleSubmitForApproval}
+              >
+                {submittingForApproval ? (
+                  <LoaderCircle
+                    size={17}
+                    className="api-spin"
+                  />
+                ) : (
+                  <Send size={17} />
+                )}
+                {submittingForApproval
+                  ? "Submitting..."
+                  : "Submit for Review"}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="api-button api-button--light"
+                onClick={() =>
+                  navigate(
+                    `/products/${productId}/variants`
+                  )
+                }
+              >
+                <ArrowLeft size={17} />
+                Variants
+              </button>
+
+              <button
+                type="button"
+                className="api-button api-button--primary"
+                disabled={images.length === 0}
+                onClick={() => navigate("/inventory")}
+              >
+                Continue to Inventory
+                <ArrowRight size={17} />
+              </button>
+            </>
+          )}
         </div>
       </section>
 

@@ -203,6 +203,16 @@ function ReturnDetailsModal({ item, onClose }) {
               <dt>Order number</dt>
               <dd>{getOrderDisplay(item)}</dd>
             </div>
+            {item.order?.coupon_code && (
+              <div>
+                <dt>Coupon</dt>
+                <dd>
+                  {item.order.coupon_code}
+                  {Number(item.order.discount) > 0 &&
+                    ` · ${formatPrice(item.order.discount)} off`}
+                </dd>
+              </div>
+            )}
             <div>
               <dt>Return ID</dt>
               <dd>{getReturnId(item) || '—'}</dd>

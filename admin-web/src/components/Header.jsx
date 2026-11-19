@@ -51,11 +51,7 @@ function playNotificationSound(audioContext) {
   return true;
 }
 
-export default function Header({
-  tokenConnected,
-  onMenuClick,
-  onLogout,
-}) {
+export default function Header({ onMenuClick, onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(null);
@@ -281,17 +277,6 @@ export default function Header({
       </div>
 
       <div className="topbar-actions">
-        <span
-          className={`connection-state${
-            tokenConnected ? ' connected' : ''
-          }`}
-        >
-          <i />
-          {tokenConnected
-            ? 'API connected'
-            : 'API disconnected'}
-        </span>
-
         <button
           className="topbar-bell-button"
           type="button"

@@ -23,7 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ProductCard from '../../src/components/home/ProductCard';
 import RecentlyViewed from '../../src/components/home/RecentlyViewed';
 import { getProducts } from '../../src/services/productService';
-
+import FAQChatbot from '../../src/components/chatbot/FAQChatbot';
 import {
   PlayfairDisplay_400Regular,
   PlayfairDisplay_500Medium,
@@ -450,6 +450,7 @@ export default function HomeScreen() {
             Loading fonts...
           </Text>
         </View>
+        <FAQChatbot />
       </SafeAreaView>
     );
   }
@@ -472,6 +473,7 @@ export default function HomeScreen() {
         edges={['top', 'bottom']}
       >
         <LoadingScreen />
+        <FAQChatbot />
       </SafeAreaView>
     );
   }
@@ -788,6 +790,7 @@ export default function HomeScreen() {
         </ScrollView>
 
       </View>
+      <FAQChatbot />
     </SafeAreaView>
   );
 }
