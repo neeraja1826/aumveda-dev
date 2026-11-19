@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  BrowserRouter,
+  HashRouter,
   Navigate,
   Route,
   Routes,
@@ -197,7 +197,7 @@ export default function App() {
   });
 
   const handleLogin = () => {
-    window.location.href = '/admin/dashboard';
+    window.location.href = '/#/admin/dashboard';
   };
 
   const handleLogout = () => {
@@ -207,15 +207,15 @@ export default function App() {
 
   if (!token) {
     return (
-      <BrowserRouter>
+      <HashRouter>
         <Login onLogin={handleLogin} />
-      </BrowserRouter>
+      </HashRouter>
     );
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AdminLayout onLogout={handleLogout} />
-    </BrowserRouter>
+    </HashRouter>
   );
 }
